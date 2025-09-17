@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 
-#SBATCH --time=99:00:00
+#SBATCH --time=01:00:00
 #SBATCH --cpus-per-task=5
 #SBATCH --mem=48gb
 #SBATCH --job-name=sentinel2_download_clip_2025
