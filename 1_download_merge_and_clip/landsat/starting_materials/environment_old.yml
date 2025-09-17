@@ -1,0 +1,17 @@
+name: greenland_glacier_flow_1a
+channels:
+  - conda-forge
+dependencies:
+  - geopandas
+  - numpy
+  - pandas
+  - rasterio
+  - rioxarray
+  - pystac
+  - shapely
+  - boto3
+  - pystac-client
+  - ca-certificates
+  - certifi
+  - openssl
+  - python=3.9

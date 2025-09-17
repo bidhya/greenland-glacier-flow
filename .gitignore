@@ -213,3 +213,5 @@ __marimo__/
 1_download_merge_and_clip/logs_101_192_2024/
 lib/config.py
 s2_greenland_job.py
+control/config.sh
+Sample_code
