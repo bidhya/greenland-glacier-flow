@@ -36,9 +36,9 @@ start_date_no_hyphens="${start_date//-}"
 end_date_no_hyphens="${end_date//-}"
 
 # Determine the log name.
-log_name=../../control/logs/${run_date_no_hyphens}_greenland_glacier_flow.log
-
-
+# log_name=../../control/logs/${run_date_no_hyphens}_greenland_glacier_flow.log
+landsat_log=../../control/logs/landsat_download_clip_${run_date_no_hyphens}.log
+sentinel2_log=../../control/logs/sentinel_download_clip_${run_date_no_hyphens}.log
 
 
 # Report to terminal.
@@ -50,14 +50,14 @@ echo "============================ START GREENLAND VELOCITY WORKFLOW ===========
 
 if [[ " ${which_steps_to_run[*]} " == *" 1a "* ]]; then
     # 1a. Run Landsat download/clip sub-workflow.
-	greenland_download_merge_and_clip_landsat_job_id=$(sbatch --parsable 1_download_merge_and_clip/landsat/slurm_jobs/download_clip_landsat.sh $regions $start_date $end_date "${base_dir}/1_download_merge_and_clip/landsat" "../../control/logs/${run_date_no_hyphens}_slurm_greenland_download_clip_landsat.log")
+	greenland_download_merge_and_clip_landsat_job_id=$(sbatch --parsable 1_download_merge_and_clip/landsat/slurm_jobs/download_clip_landsat.sh $regions $start_date $end_date "${base_dir}/1_download_merge_and_clip/landsat" "$landsat_log")
 	current_time=$(date)
 	echo "Run Landsat download/clip sub-workflow, job ID: ${greenland_download_merge_and_clip_landsat_job_id}, time: ${current_time}"
 fi
 
 if [[ " ${which_steps_to_run[*]} " == *" 1b "* ]]; then
     # 1b. Run Sentinel-2 download/merge/clip sub-workflow.
-	greenland_download_merge_and_clip_sentinel2_job_id=$(sbatch --parsable 1_download_merge_and_clip/sentinel2/slurm_jobs/download_merge_clip_sentinel2.sh $regions $start_date $end_date "${base_dir}/1_download_merge_and_clip/sentinel2" "../../control/logs/${run_date}_slurm_greenland_download_merge_clip_sentinel2.log")
+	greenland_download_merge_and_clip_sentinel2_job_id=$(sbatch --parsable 1_download_merge_and_clip/sentinel2/slurm_jobs/download_merge_clip_sentinel2.sh $regions $start_date $end_date "${base_dir}/1_download_merge_and_clip/sentinel2" "$sentinel2_log")
 	current_time=$(date)
 	echo "Run Sentinel-2 download/clip sub-workflow, job ID: ${greenland_download_merge_and_clip_sentinel2_job_id}, time: ${current_time}"
 fi
