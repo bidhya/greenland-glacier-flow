@@ -141,6 +141,7 @@ setUpBasicLoggingConfig(log_name, f"Attempting download/merge/clip of Sentinel-2
 # Get the regions list from the AOI template geopackage.
 # Get a geodataframe listing regions from the AOI template geopackage.
 # TODO: move this to main code folder (with or without git tracking). For running, copy everything to node TMPDIR
+# regions = gpd.read_file('../ancillary/glacier_roi_v2/glaciers_roi_proj_v3_300m.gpkg') # new location. gpkg is adjacent to codes folder.
 regions = gpd.read_file(f'{base_dir}/ancillary/glacier_roi_v2/glaciers_roi_proj_v3_300m.gpkg') # Shapefile specifying the AOI for glaciers.
 regions.index = regions.region
 
