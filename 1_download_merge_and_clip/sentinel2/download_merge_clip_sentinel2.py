@@ -197,7 +197,7 @@ logging.info(f'Total Regions: {Total_Regions}')
 region_count = 0
 for region in regions_list:
     # Log the start of processing for this region.
-    logging.info(f'Processing {region} : {region_count}/{Total_Regions}.......')
+    logging.info(f'\n\n-------------------------Processing {region} : {region_count}/{Total_Regions}............')
 
     # Download the data for this region.
     try:

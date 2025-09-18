@@ -30,7 +30,8 @@ do
 done
 
 # Calculate other date variables.
-run_date=$(date +'%Y%m%d')
+# run_date=$(date +'%Y%m%d')
+run_date=$(date +'%Y%m%d%HH%MM')  # BNY
 run_date_no_hyphens="${run_date//-}"
 start_date_no_hyphens="${start_date//-}"
 end_date_no_hyphens="${end_date//-}"

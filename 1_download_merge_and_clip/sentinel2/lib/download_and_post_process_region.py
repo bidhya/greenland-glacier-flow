@@ -75,7 +75,7 @@ def download_and_post_process_region(
 
     print(f"DOWNLOADING {region}")
     logging.info(
-        f"\n\n-----------------------DOWNLOADING {region} {start_date} {end_date}-----------------------\n"
+        f"\n----------------------------DOWNLOADING {region} {start_date} {end_date}-----------------------"
     )
 
     # Download .tifs frow AWS Cloud using STAC.
@@ -96,7 +96,7 @@ def download_and_post_process_region(
 
     print(f"POST-PROCESSING {region}")
     logging.info(
-        f"\n\n-----------------------POST-PROCESSING {start_date} {end_date}-----------------------\n"
+        f"\n----------------------------POST-PROCESSING {start_date} {end_date}--------------------------------"
     )
 
     # Process data for this region after downloading.
@@ -122,4 +122,4 @@ def download_and_post_process_region(
     # from this script).
     concat_csv_files(base_metadata_folder, region)
 
-    logging.info(f'Finished all processing for: {region}--------------------------------------------------------------\n')
+    logging.info(f'Finished all processing for: {region} \n---------------------------------------------------------------------------------------------------')
