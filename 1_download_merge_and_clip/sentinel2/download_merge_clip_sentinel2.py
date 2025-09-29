@@ -6,9 +6,11 @@
 ###############################################################################################
 
 # Import basic python resources.
-import argparse, logging, traceback, datetime, time
+import argparse, logging, traceback, datetime, time, os
 # Import geographic-data-handling libraries.
 import geopandas as gpd
+from pathlib import Path
+
 
 # Import config values.
 from lib.config import DEFAULT_COLLECTION_NAME
@@ -126,7 +128,9 @@ log_name = args.log_name
 ###############################################################################################
 # Set up logging.
 ###############################################################################################
-
+# os.makedirs(f"{base_dir}/logs", exist_ok=True)  # Create log directory if it doesn't exist.
+# log_name = f"{base_dir}/logs/{log_name}"
+Path(log_name).touch()
 # Set up basic logging configuration.
 setUpBasicLoggingConfig(log_name, f"Attempting download/merge/clip of Sentinel-2 imagery for regions in Greenland between {start_date} and {end_date}, with starting region index {start_end_index}, on {cores} cores, outputting to {base_dir}.")
 
@@ -137,7 +141,8 @@ setUpBasicLoggingConfig(log_name, f"Attempting download/merge/clip of Sentinel-2
 # Get the regions list from the AOI template geopackage.
 # Get a geodataframe listing regions from the AOI template geopackage.
 # BY: changing location of ancillary glaciers gpks adjacent to code. Reduce steps on initial setup of project.  
-regions = gpd.read_file('../ancillary/glacier_roi_v2/glaciers_roi_proj_v3_300m.gpkg')  # new location. gpkg is adjacent to codes folder. NEW
+# regions = gpd.read_file('../ancillary/glacier_roi_v2/glaciers_roi_proj_v3_300m.gpkg')  # new location. gpkg is adjacent to codes folder. NEW
+regions = gpd.read_file('ancillary/glacier_roi_v2/glaciers_roi_proj_v3_300m.gpkg')  # new location. gpkg is adjacent to codes folder. NEW
 # regions = gpd.read_file(f'{base_dir}/ancillary/glacier_roi_v2/glaciers_roi_proj_v3_300m.gpkg')  # Shapefile specifying the AOI for glaciers. OLD
 regions.index = regions.region
 
