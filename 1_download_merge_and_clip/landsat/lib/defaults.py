@@ -12,7 +12,8 @@ ICESHEET_NAME = "greenland"
 # titles as column "region").
 # AOI_FPATH = "./regions/greenland_roi_v2_300m.gpkg"   # OLD
 # AOI_FPATH = "./regions/glaciers_roi_proj_v3_300m.gpkg"  # NEW. same as sentinel2 but in different directory.
-AOI_FPATH = "../ancillary/glacier_roi_v2/glaciers_roi_proj_v3_300m.gpkg"  # NEW. same as sentinel2.
+# AOI_FPATH = "../ancillary/glacier_roi_v2/glaciers_roi_proj_v3_300m.gpkg"  # NEW. same as sentinel2.
+AOI_FPATH = "./ancillary/glacier_roi_v2/glaciers_roi_proj_v3_300m.gpkg"  # NEW. same as sentinel2.
 
 
 # The numerical CRS code that the region is projected in (NSIDC Polar Stereographic: 3413 for Greenland).
