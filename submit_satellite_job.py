@@ -20,6 +20,7 @@ import subprocess
 import configparser
 import time
 from pathlib import Path
+import shutil
 
 
 # Set up command line argument parser
@@ -35,6 +36,7 @@ parser.add_argument('--memory', help='Memory allocation (e.g., 48G)', type=str, 
 parser.add_argument('--runtime', help='Runtime for the job (e.g., 01:00:00)', type=str, default='01:00:00')
 parser.add_argument('--dry-run', help='Generate job file but do not submit (true/false)', type=str, choices=['true', 'false'], default=None)
 parser.add_argument('--email', help='Email for job notifications', type=str)
+parser.add_argument('--execution-mode', help='Execution mode: hpc (SLURM), local (direct), auto (detect)', type=str, choices=['hpc', 'local', 'auto'], default='auto')
 
 args = parser.parse_args()
 
@@ -50,6 +52,20 @@ def mkdir_p(folder):
         os.makedirs(folder, exist_ok=True)
 
 
+def detect_execution_mode():
+    """Auto-detect whether we're on HPC or local machine"""
+    # Check if we're already in a SLURM job
+    if os.getenv('SLURM_JOB_ID'):
+        return 'hpc'
+    
+    # Check if sbatch command is available
+    if shutil.which('sbatch'):
+        return 'hpc'
+    
+    # Default to local execution
+    return 'local'
+
+
 # # Create folders and subfolders for runs and outputs
 # base_folder = "/fs/project/howat.4/cosicorr_setsm"
 # run_subfolder = f"{run_folder_prefix}_{coreg}_{res:.0f}m_{sdm_as*100:.0f}cmday"
@@ -62,17 +78,54 @@ def mkdir_p(folder):
 # mkdir_p(f"slurm_jobs/OUT")  # TODO: create inside run_folder_prefix so we can keep track of all runs
 # os.chdir(f"slurm_jobs")
 
-
-def create_job(jobname, regions, start_end_index, start_date, end_date, base_dir, download_flag, post_processing_flag, clear_downloads, cores, memory, runtime, dry_run, email, log_name, satellite):
-    """ Generate SLURM job file and submit it for either Sentinel-2 or Landsat """
-    """ Generate and submit slurm job"""
+def create_bash_job(jobname, regions, start_end_index, start_date, end_date, base_dir, download_flag, post_processing_flag, clear_downloads, cores, memory, runtime, dry_run, email, log_name, satellite):
+    """ Generate and call bash script for either Sentinel-2 or Landsat
+        This part is mostly for prototyping and testing on local machine
+    """
     logging.info(f'jobname = {jobname}    base_dir = {base_dir}   start_date = {start_date}   end_date = {end_date}   regions = {regions}   start_end_index = {start_end_index}   satellite = {satellite}\n') 
+    job_file = os.path.join(os.getcwd(), f"{jobname}.job")
+    print(f"Jobfile: {job_file}")
+    with open(job_file, 'w') as fh:
+        fh.writelines("#!/usr/bin/env bash\n\n")
+        fh.writelines("# Activate appropriate conda environment.\n")
+        fh.writelines("eval \"$(conda shell.bash hook)\"\n")
+        fh.writelines("conda activate glacier_velocity\n")
+        fh.writelines("date; hostname; pwd\n")         # Add host, time, and directory name for later troubleshooting
+        fh.writelines("python --version; which python\n")  # Check python version
+        fh.writelines("echo ========================================================\n")
+        fh.writelines("\n")
+        # fh.writelines("cd $TMPDIR\n")
+        # upto this point, it can be common to other jobs as well
+        # fh.writelines(f"mkdir -p $out_folder\n")  # creating directly here using python code.  
 
-    # for lizard in lizards:
-    # job_file = os.path.join(job_directory, f"{lizard}.job")
-    # job_file = f"/home/yadav.111/slurm_jobs/{jobname}.sh"
-    # Or create job where the job is submitted from, including ouputs/logs
-    #  relative to this location
+        fh.writelines(f"cp -r {script_dir}/1_download_merge_and_clip .\n")
+        fh.writelines("cd 1_download_merge_and_clip\n")  # required because ancillary folder located here
+        
+        # Choose the appropriate script and parameters based on satellite type
+        if satellite.lower() == "sentinel2":
+            fh.writelines(f"python sentinel2/download_merge_clip_sentinel2.py --regions {regions} --start_date {start_date} --end_date {end_date} --download_flag {download_flag} --post_processing_flag {post_processing_flag} --clear_downloads {clear_downloads} --base_dir {base_dir} --log_name {log_name}\n")
+        elif satellite.lower() == "landsat":
+            # Landsat uses different parameter names: --date1, --date2 instead of --start_date, --end_date
+            fh.writelines(f"python landsat/download_clip_landsat.py --regions {regions} --date1 {start_date} --date2 {end_date} --base_dir {base_dir} --log_name {log_name}\n")
+        else:
+            raise ValueError(f"Unsupported satellite type: {satellite}. Supported types are 'sentinel2' and 'landsat'.")
+            
+        fh.writelines("tree -L 2 \n")  # $out_folder
+        fh.writelines(f"echo Check outputs at base_dir = {base_dir}\n")
+        fh.writelines("echo Finished Slurm job \n")
+    
+    # Submit the job (unless dry_run is enabled)
+    if dry_run:
+        print(f"DRY RUN: Job file created at {job_file} but not submitted to SLURM")
+        logging.info(f"DRY RUN: Job file created but not submitted")
+    else:
+        print(f"Submitting job: {job_file}")
+        subprocess.run(['bash', job_file], check=True)  # TODO: check best practice
+
+
+def create_slurm_job(jobname, regions, start_end_index, start_date, end_date, base_dir, download_flag, post_processing_flag, clear_downloads, cores, memory, runtime, dry_run, email, log_name, satellite):
+    """ Generate SLURM job file and submit it for either Sentinel-2 or Landsat """
+    logging.info(f'jobname = {jobname}    base_dir = {base_dir}   start_date = {start_date}   end_date = {end_date}   regions = {regions}   start_end_index = {start_end_index}   satellite = {satellite}\n') 
     job_file = os.path.join(os.getcwd(), f"{jobname}.job")
     print(f"Jobfile: {job_file}")
 
@@ -97,17 +150,16 @@ def create_job(jobname, regions, start_end_index, start_date, end_date, base_dir
         fh.writelines("# Activate appropriate conda environment.\n")
         fh.writelines("eval \"$(conda shell.bash hook)\"\n")
         fh.writelines("conda activate glacier_velocity\n")
-        # # first thing we do when the job starts is to "change directory to the place where the job was submitted from".
-        fh.writelines("echo $SLURM_SUBMIT_DIR\n")
-        fh.writelines("cd $TMPDIR\n")
         fh.writelines("date; hostname; pwd\n")         # Add host, time, and directory name for later troubleshooting
         fh.writelines("python --version; which python\n")  # Check python version
+        # # first thing we do when the job starts is to "change directory to the place where the job was submitted from".
+        fh.writelines("echo $SLURM_SUBMIT_DIR\n")
         fh.writelines("echo ========================================================\n")
         fh.writelines("\n")
+        fh.writelines("cd $TMPDIR\n")
         # upto this point, it can be common to other jobs as well
         # fh.writelines(f"mkdir -p $out_folder\n")  # creating directly here using python code.  
 
-        fh.writelines("\n")
         fh.writelines(f"cp -r {script_dir}/1_download_merge_and_clip .\n")
         fh.writelines("cd 1_download_merge_and_clip\n")
         
@@ -170,7 +222,8 @@ def load_config(config_file="config.ini", cli_args=None):
         'email': config.get("SETTINGS", "email"),
         'satellite': config.get("SETTINGS", "satellite"),
         'which_steps_to_run': config.get("SETTINGS", "which_steps_to_run"),
-        'dry_run': config.getboolean("SETTINGS", "dry_run", fallback=False)
+        'dry_run': config.getboolean("SETTINGS", "dry_run", fallback=False),
+        'execution_mode': config.get("SETTINGS", "execution_mode", fallback="auto")
     }
     
     # Override with command line arguments if provided
@@ -191,6 +244,8 @@ def load_config(config_file="config.ini", cli_args=None):
             config_dict['email'] = cli_args.email
         if cli_args.dry_run is not None:
             config_dict['dry_run'] = cli_args.dry_run.lower() == 'true'
+        if cli_args.execution_mode:
+            config_dict['execution_mode'] = cli_args.execution_mode
     
     return config_dict
 
@@ -224,6 +279,13 @@ def main():
     log_name = cfg['log_name']
     email = cfg['email']
     dry_run = cfg['dry_run']
+    execution_mode = cfg['execution_mode']
+
+    # Determine execution mode (ie running on HPC or local machine)
+    if execution_mode == 'auto':
+        execution_mode = detect_execution_mode()
+    if execution_mode == 'local':
+        root_dir = '/home/bny/greenland_glacier_flow'  # Override for local runs
 
 
     base_dir = f"{root_dir}/1_download_merge_and_clip/{satellite}"  # This is where files will be downloaded, merged, clipped, and saved
@@ -252,9 +314,19 @@ def main():
     # logging.basicConfig(filename=f'slurm_job_submission_{logfile_prefix}.log', level=logging.INFO, format='%(asctime)s:%(levelname)s:%(message)s')
     logging.basicConfig(filename=f'slurm_job_submission.log', level=logging.INFO, format='%(asctime)s:%(levelname)s:%(message)s')
     logging.info('--------------------------------------Job Creation/Submission info----------------------------------------------')
-    create_job(jobname=jobname, regions=regions, start_end_index=start_end_index, start_date=start_date, end_date=end_date, 
-               base_dir=base_dir, download_flag=download_flag, post_processing_flag=post_processing_flag, clear_downloads=clear_downloads, 
-               cores=cores, memory=memory, runtime=runtime, dry_run=dry_run, email=email, log_name=f"{log_dir}/{log_name}", satellite=satellite)
+    if execution_mode == 'hpc':
+        logging.info("Execution mode: HPC (SLURM detected)")
+        create_slurm_job(jobname=jobname, regions=regions, start_end_index=start_end_index, start_date=start_date, end_date=end_date, 
+                base_dir=base_dir, download_flag=download_flag, post_processing_flag=post_processing_flag, clear_downloads=clear_downloads, 
+                cores=cores, memory=memory, runtime=runtime, dry_run=dry_run, email=email, log_name=f"{log_dir}/{log_name}", satellite=satellite)
+    elif execution_mode == 'local':
+        create_bash_job(jobname=jobname, regions=regions, start_end_index=start_end_index, start_date=start_date, end_date=end_date, 
+                base_dir=base_dir, download_flag=download_flag, post_processing_flag=post_processing_flag, clear_downloads=clear_downloads, 
+                cores=cores, memory=memory, runtime=runtime, dry_run=dry_run, email=email, log_name=f"{log_dir}/{log_name}", satellite=satellite)
+        logging.info("Execution mode: Local (direct execution)")
+    else:
+        raise ValueError(f"Unsupported execution mode: {execution_mode}. Supported modes are 'auto', 'hpc', and 'local'.")
+
     # For landsat,
     # python download_clip_landsat.py --regions $regions --date1 $start_date --date2 $end_date --base_dir $base_dir --log_name $log_name
 
