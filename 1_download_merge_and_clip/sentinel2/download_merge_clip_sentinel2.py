@@ -140,10 +140,15 @@ setUpBasicLoggingConfig(log_name, f"Attempting download/merge/clip of Sentinel-2
 
 # Get the regions list from the AOI template geopackage.
 # Get a geodataframe listing regions from the AOI template geopackage.
-# BY: changing location of ancillary glaciers gpks adjacent to code. Reduce steps on initial setup of project.  
-# regions = gpd.read_file('../ancillary/glacier_roi_v2/glaciers_roi_proj_v3_300m.gpkg')  # new location. gpkg is adjacent to codes folder. NEW
-regions = gpd.read_file('ancillary/glacier_roi_v2/glaciers_roi_proj_v3_300m.gpkg')  # new location. gpkg is adjacent to codes folder. NEW
-# regions = gpd.read_file(f'{base_dir}/ancillary/glacier_roi_v2/glaciers_roi_proj_v3_300m.gpkg')  # Shapefile specifying the AOI for glaciers. OLD
+# # BY: changing location of ancillary glaciers gpks adjacent to code. Reduce steps on initial setup of project.  
+# # regions = gpd.read_file('../ancillary/glacier_roi_v2/glaciers_roi_proj_v3_300m.gpkg')  # new location. gpkg is adjacent to codes folder. NEW
+# regions = gpd.read_file('ancillary/glacier_roi_v2/glaciers_roi_proj_v3_300m.gpkg')  # new location. gpkg is adjacent to codes folder. NEW
+# # regions = gpd.read_file(f'{base_dir}/ancillary/glacier_roi_v2/glaciers_roi_proj_v3_300m.gpkg')  # Shapefile specifying the AOI for glaciers. OLD
+
+# Use script location to determine ancillary folder path (sibling to sentinel2 directory)
+script_dir = Path(__file__).resolve().parent
+glacier_regions_path = script_dir.parent / 'ancillary' / 'glacier_roi_v2' / 'glaciers_roi_proj_v3_300m.gpkg'
+regions = gpd.read_file(glacier_regions_path)
 regions.index = regions.region
 
 # Subset the regions based on minimum and maximum area parameters.

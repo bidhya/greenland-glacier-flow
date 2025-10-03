@@ -1,4 +1,5 @@
 import datetime
+from pathlib import Path
 
 
 
@@ -13,7 +14,12 @@ ICESHEET_NAME = "greenland"
 # AOI_FPATH = "./regions/greenland_roi_v2_300m.gpkg"   # OLD
 # AOI_FPATH = "./regions/glaciers_roi_proj_v3_300m.gpkg"  # NEW. same as sentinel2 but in different directory.
 # AOI_FPATH = "../ancillary/glacier_roi_v2/glaciers_roi_proj_v3_300m.gpkg"  # NEW. same as sentinel2.
-AOI_FPATH = "./ancillary/glacier_roi_v2/glaciers_roi_proj_v3_300m.gpkg"  # NEW. same as sentinel2.
+# AOI_FPATH = "./ancillary/glacier_roi_v2/glaciers_roi_proj_v3_300m.gpkg"  # NEW. same as sentinel2.
+# Use script location to determine ancillary folder path (same as Sentinel-2)
+# Go up from lib/ to landsat/, then to parent 1_download_merge_and_clip/, then to ancillary/
+_landsat_dir = Path(__file__).resolve().parent.parent  # lib/ -> landsat/
+_landsat_parent_dir = _landsat_dir.parent  # landsat/ -> 1_download_merge_and_clip/
+AOI_FPATH = str(_landsat_parent_dir / 'ancillary' / 'glacier_roi_v2' / 'glaciers_roi_proj_v3_300m.gpkg')
 
 
 # The numerical CRS code that the region is projected in (NSIDC Polar Stereographic: 3413 for Greenland).

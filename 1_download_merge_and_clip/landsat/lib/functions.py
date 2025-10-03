@@ -140,9 +140,20 @@ def search_and_download_region(
     # using parallel-processing to download. Would have to ensure rs.Env() remains open.
 
     # Get AWS access credentials.
-    aws_creds = pd.read_csv(AWS_CREDENTIALS_FPATH)
-    access_key = aws_creds["Access key ID"].values[0]
-    secret_access_key = aws_creds["Secret access key"].values[0]
+    # Try to read from CSV file, but fall back to default credentials (e.g., Lambda execution role)
+    import os
+    credentials_path = os.path.expanduser(AWS_CREDENTIALS_FPATH)
+    if os.path.exists(credentials_path):
+        aws_creds = pd.read_csv(credentials_path)
+        access_key = aws_creds["Access key ID"].values[0]
+        secret_access_key = aws_creds["Secret access key"].values[0]
+        aws_session = boto3.Session(
+            aws_access_key_id=access_key,
+            aws_secret_access_key=secret_access_key,
+        )
+    else:
+        # Use default credential chain (environment variables, IAM role, etc.)
+        aws_session = boto3.Session()
 
     # Create the output directory.
     output_dir = os.path.join(base_dir, region_name)
@@ -156,10 +167,7 @@ def search_and_download_region(
     # Set up a Rasterio session, then...
     with rs.Env(
         AWSSession(
-            boto3.Session(
-                aws_access_key_id=access_key,
-                aws_secret_access_key=secret_access_key,
-            ),
+            aws_session,
             requester_pays=True,
         )
     ) as env:
