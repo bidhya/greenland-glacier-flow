@@ -216,3 +216,22 @@ Sample_code
 AGENTS.md
 *.out
 Archive/
+
+# AWS test files and logs
+aws/scripts/*test*.json
+aws/scripts/*result*.json
+aws/scripts/*response*.json
+aws/scripts/*fresh*.json
+aws/scripts/*final*.json
+aws/scripts/*debug*.json
+aws/scripts/*detailed*.json
+aws/scripts/*pathfix*.json
+aws/scripts/*simplified*.json
+aws/scripts/with10gb*.json
+aws/scripts/simple_download.json
+aws/scripts/historical*.json
+aws/scripts/*.log
+aws/logs/*.log
+
+# Keep these AWS config files (use ! to negate ignore)
+!aws/config/*.json
