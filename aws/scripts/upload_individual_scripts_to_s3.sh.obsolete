@@ -1,0 +1,70 @@
+#!/bin/bash
+
+# Upload Sentinel-2 Processing Scripts to S3 for Lambda
+# This script packages and uploads the processing scripts so Lambda can download them
+
+set -e
+
+BUCKET_NAME="greenland-glacier-data"
+REGION="us-west-2"
+
+echo "🚀 Uploading Sentinel-2 processing scripts to S3"
+echo "Bucket: $BUCKET_NAME"
+echo "Region: $REGION"
+
+# Create temporary directory for staging
+TEMP_DIR=$(mktemp -d)
+echo "📁 Using temp directory: $TEMP_DIR"
+
+# Copy processing scripts to temp directory
+echo "📋 Copying processing scripts..."
+
+# Create directory structure
+mkdir -p "$TEMP_DIR/scripts/1_download_merge_and_clip/sentinel2/lib"
+mkdir -p "$TEMP_DIR/scripts/1_download_merge_and_clip/ancillary/glacier_roi_v2"
+
+# Copy main processing script
+cp "1_download_merge_and_clip/sentinel2/download_merge_clip_sentinel2.py" \
+   "$TEMP_DIR/scripts/1_download_merge_and_clip/sentinel2/"
+
+# Copy library files
+cp "1_download_merge_and_clip/sentinel2/lib/"*.py \
+   "$TEMP_DIR/scripts/1_download_merge_and_clip/sentinel2/lib/"
+
+# Copy glacier regions file
+cp "1_download_merge_and_clip/ancillary/glacier_roi_v2/glaciers_roi_proj_v3_300m.gpkg" \
+   "$TEMP_DIR/scripts/1_download_merge_and_clip/ancillary/glacier_roi_v2/"
+
+# Upload files to S3
+echo "☁️  Uploading to S3..."
+
+# Upload each file individually with proper S3 key structure
+aws s3 cp "$TEMP_DIR/scripts/1_download_merge_and_clip/sentinel2/download_merge_clip_sentinel2.py" \
+    "s3://$BUCKET_NAME/scripts/1_download_merge_and_clip/sentinel2/download_merge_clip_sentinel2.py" \
+    --region $REGION
+
+# Upload lib files
+for lib_file in "$TEMP_DIR/scripts/1_download_merge_and_clip/sentinel2/lib/"*.py; do
+    filename=$(basename "$lib_file")
+    aws s3 cp "$lib_file" \
+        "s3://$BUCKET_NAME/scripts/1_download_merge_and_clip/sentinel2/lib/$filename" \
+        --region $REGION
+    echo "   Uploaded lib/$filename"
+done
+
+# Upload glacier regions file
+aws s3 cp "$TEMP_DIR/scripts/1_download_merge_and_clip/ancillary/glacier_roi_v2/glaciers_roi_proj_v3_300m.gpkg" \
+    "s3://$BUCKET_NAME/scripts/1_download_merge_and_clip/ancillary/glacier_roi_v2/glaciers_roi_proj_v3_300m.gpkg" \
+    --region $REGION
+
+# Clean up
+rm -rf "$TEMP_DIR"
+
+echo "✅ Successfully uploaded processing scripts to S3!"
+echo ""
+echo "📋 Uploaded files:"
+aws s3 ls "s3://$BUCKET_NAME/scripts/" --recursive --region $REGION
+
+echo ""
+echo "🧪 Now test with:"
+echo "python submit_aws_job.py --satellite sentinel2 --service lambda --regions 134_Arsuk --dry-run false"

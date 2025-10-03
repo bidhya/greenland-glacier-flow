@@ -141,7 +141,6 @@ def search_and_download_region(
 
     # Get AWS access credentials.
     # Try to read from CSV file, but fall back to default credentials (e.g., Lambda execution role)
-    import os
     credentials_path = os.path.expanduser(AWS_CREDENTIALS_FPATH)
     if os.path.exists(credentials_path):
         aws_creds = pd.read_csv(credentials_path)

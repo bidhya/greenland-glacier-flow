@@ -1,0 +1,54 @@
+# AWS Lambda Container Image for Sentinel-2 Processing
+# Using pip instead of conda to avoid ToS issues
+# Updated to Python 3.12 for better compatibility and performance
+
+FROM public.ecr.aws/lambda/python:3.12
+
+# Install system dependencies needed for geospatial libraries
+# Python 3.12 uses Amazon Linux 2023 - install basic build tools
+RUN dnf update -y && \
+    dnf install -y \
+        gcc \
+        gcc-c++ \
+        make \
+        wget \
+        tar \
+        gzip && \
+    dnf clean all
+
+# Upgrade pip and install geospatial packages
+RUN python -m pip install --upgrade pip && \
+    python -m pip install --no-cache-dir \
+        boto3 \
+        numpy \
+        pandas \
+        pyproj \
+        shapely \
+        fiona \
+        geopandas \
+        rasterio \
+        rioxarray \
+        pystac-client \
+        dask \
+        opencv-python-headless \
+        tqdm \
+        netcdf4 \
+        xarray \
+        joblib \
+        scikit-learn \
+        scipy \
+        matplotlib \
+        seaborn \
+        requests
+
+# Verify critical imports work
+RUN python -c "import geopandas, rioxarray, boto3, pystac_client; print('✅ All packages imported successfully')"
+
+# Copy Lambda function code from reorganized location
+COPY aws/lambda/lambda_handler.py ${LAMBDA_TASK_ROOT}/
+
+# Set working directory
+WORKDIR ${LAMBDA_TASK_ROOT}
+
+# Set the CMD to your handler
+CMD [ "lambda_handler.lambda_handler" ]
