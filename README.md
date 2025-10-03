@@ -4,6 +4,23 @@ Workflow to download and subset Landsat and Sentinel-2 imagery for Greenland, ca
 Displacement Maps for glacier velocity flow estimation from them, orthocorrect the SDMs, and then
 pack the results into NetCDF files for distribution.
 
+## 🎉 AWS Lambda Container Ready! (October 2025)
+
+**Major Achievement**: Complete AWS Lambda containerization with full geospatial processing capabilities now deployed and working! 
+
+- ✅ **Containerized Lambda**: Full scientific Python stack (geopandas, rasterio, GDAL, etc.)
+- ✅ **Complete Project Access**: Entire repository available in Lambda execution environment
+- ✅ **Production Ready**: Automated deployment via `aws/scripts/deploy_lambda_container.sh`
+- ✅ **Real Processing**: Successfully executing Sentinel-2 workflows in the cloud
+
+📁 **AWS Organization**: All AWS components now organized in the `aws/` directory:
+- `aws/scripts/` - Deployment and job submission scripts
+- `aws/lambda/` - Lambda handlers and container files
+- `aws/config/` - AWS configuration files
+- `aws/docs/` - Complete AWS documentation
+
+See `aws/docs/AWS_SETUP_STATUS.md` for complete technical details.
+
 
 ## Notes
 

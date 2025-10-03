@@ -66,18 +66,6 @@ def detect_execution_mode():
     return 'local'
 
 
-# # Create folders and subfolders for runs and outputs
-# base_folder = "/fs/project/howat.4/cosicorr_setsm"
-# run_subfolder = f"{run_folder_prefix}_{coreg}_{res:.0f}m_{sdm_as*100:.0f}cmday"
-
-# slurm_jobs_folder = f"{base_folder}/SDM/{run_subfolder}/slurm_jobs"
-# os.chdir(f"{slurm_jobs_folder}")  # This can have unintended consequences if not careful, so be sure to run this script from the right location
-
-# # Create folder to save slurm outputs and logs
-# """ Will be created relative where this script is submitted from"""
-# mkdir_p(f"slurm_jobs/OUT")  # TODO: create inside run_folder_prefix so we can keep track of all runs
-# os.chdir(f"slurm_jobs")
-
 def create_bash_job(jobname, regions, start_end_index, start_date, end_date, base_dir, download_flag, post_processing_flag, clear_downloads, cores, memory, runtime, dry_run, email, log_name, satellite):
     """ Generate and call bash script for either Sentinel-2 or Landsat
         This part is mostly for prototyping and testing on local machine
