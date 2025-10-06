@@ -83,6 +83,7 @@ def download_and_post_process_region(
         download_region(
             download_folder,
             geom,
+            aoi,
             start_date=start_date,
             end_date=end_date,
             collection_name=collection_name

@@ -33,6 +33,7 @@ from lib.config import STAC_URL, DEFAULT_COLLECTION_NAME, EPSG_CODE_STRING
 def download_region(
     download_folder,
     geom,
+    aoi,
     start_date='2021-10-01',
     end_date='2021-02-28',
     collection_name=DEFAULT_COLLECTION_NAME
@@ -62,12 +63,18 @@ def download_region(
     items = search.item_collection().items
     logging.info(f'{len(items)} items found that intersect with the search area/date range.')
 
-    # # Aside: New Oct 05, 2025: use pre-existing tiles to select only the matching items. So
-    # # unnecessary downloads are avoided.
-    # # Get the UTM tile IDs in the region (taken from pre-selected IDs from a manually-
-    # # edited geopandas dataframe).
-    # tile_ids = aoi['utm_grid'].values[0]
-    # tile_ids = tile_ids.split(',')
+    # Aside: New Oct 05, 2025: use pre-existing tiles to select only the matching items. So
+    # unnecessary downloads are avoided.
+    # Get the UTM tile IDs in the region (taken from pre-selected IDs from a manually-
+    # edited geopandas dataframe).
+    tile_ids = aoi['utm_grid'].values[0]
+    tile_ids = tile_ids.split(',')
+    print(f"Tile IDs in the region: {tile_ids}")
+    print(type(tile_ids))
+    # Filter the items to only those that match the tile IDs.
+    if len(items) > 0:
+        items = [item for item in items if item.id.split("_")[1] in tile_ids]
+        logging.info(f'{len(items)} items found that match the UTM tile IDs in the region.')
 
 
     # If there are any results, download the associated files from Band 8 (near infrared).
