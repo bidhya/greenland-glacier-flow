@@ -62,6 +62,14 @@ def download_region(
     items = search.item_collection().items
     logging.info(f'{len(items)} items found that intersect with the search area/date range.')
 
+    # # Aside: New Oct 05, 2025: use pre-existing tiles to select only the matching items. So
+    # # unnecessary downloads are avoided.
+    # # Get the UTM tile IDs in the region (taken from pre-selected IDs from a manually-
+    # # edited geopandas dataframe).
+    # tile_ids = aoi['utm_grid'].values[0]
+    # tile_ids = tile_ids.split(',')
+
+
     # If there are any results, download the associated files from Band 8 (near infrared).
     if len(items) > 0:
         for item in items:
