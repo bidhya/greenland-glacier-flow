@@ -198,6 +198,7 @@ def load_config(config_file="config.ini", cli_args=None):
         
         # Path settings
         'base_dir': config.get("PATHS", "base_dir"),
+        'local_base_dir': config.get("PATHS", "local_base_dir", fallback=None),
 
         # Processing flags
         'download_flag': config.getint("FLAGS", "download_flag", fallback=1),
@@ -272,8 +273,8 @@ def main():
     # Determine execution mode (ie running on HPC or local machine)
     if execution_mode == 'auto':
         execution_mode = detect_execution_mode()
-    if execution_mode == 'local':
-        root_dir = '/home/bny/greenland_glacier_flow'  # Override for local runs
+    if execution_mode == 'local' and cfg['local_base_dir']:
+        root_dir = cfg['local_base_dir']  # Use local_base_dir from config if available
 
 
     base_dir = f"{root_dir}/1_download_merge_and_clip/{satellite}"  # This is where files will be downloaded, merged, clipped, and saved
