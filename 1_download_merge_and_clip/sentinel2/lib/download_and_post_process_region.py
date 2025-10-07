@@ -54,7 +54,7 @@ def download_and_post_process_region(
     clip_folder = f'{base_dir}/clipped/{region}'  # OLD: f'{base_dir}/{region}/clipped'  # TODO: rename as clipped_year or clipped/year
     template_folder = f'{base_dir}/template'  # OLD: {region}/
     base_metadata_folder = f'{base_dir}/metadata'  # {region}/metadata
-    metadata_folder = f'{base_metadata_folder}/individual_csv/'
+    metadata_folder = f'{base_metadata_folder}/individual_csv/{region}'
     os.makedirs(metadata_folder, exist_ok=True)
 
 
