@@ -219,17 +219,22 @@ def run_landsat_processing(project_dir, regions, start_date, end_date, base_dir)
             'success': False
         }
 
-def upload_results_to_s3(s3_bucket, base_dir, job_name):
+def upload_results_to_s3(s3_bucket, base_dir, satellite, s3_base_path='1_download_merge_and_clip'):
     """
-    Upload all files from base_dir to S3 (HPC-style: upload entire directory)
+    Upload all files from base_dir to S3 matching local/HPC directory structure
     
-    This simple approach avoids complex pattern matching by using satellite-specific
-    base directories, similar to HPC workflows with isolated output directories.
+    S3 Structure (matches local/HPC):
+      s3://{bucket}/{s3_base_path}/{satellite}/{subfolders}/
+      
+    Examples:
+      - Sentinel-2: s3://bucket/1_download_merge_and_clip/sentinel2/clipped/134_Arsuk/...
+      - Landsat: s3://bucket/1_download_merge_and_clip/landsat/134_Arsuk/...
     
     Args:
         s3_bucket: S3 bucket name
         base_dir: Satellite-specific base directory (e.g., /tmp/glacier_processing/landsat/)
-        job_name: Job name for S3 organization
+        satellite: Satellite type ('sentinel2' or 'landsat')
+        s3_base_path: Base path in S3 (default: '1_download_merge_and_clip')
     """
     try:
         s3_client = boto3.client('s3')
@@ -241,14 +246,16 @@ def upload_results_to_s3(s3_bucket, base_dir, job_name):
             return []
         
         logger.info(f"Uploading all files from: {base_dir}")
+        logger.info(f"S3 structure: s3://{s3_bucket}/{s3_base_path}/{satellite}/")
         
-        # Upload ALL files in the satellite-specific directory
-        # No pattern matching needed - entire directory is isolated
+        # Upload ALL files matching local/HPC structure
         for file_path in base_path.rglob("*"):
             if file_path.is_file():
-                # Create S3 key with job organization
+                # Create S3 key matching local structure
+                # /tmp/glacier_processing/landsat/134_Arsuk/file.tif
+                # -> s3://bucket/1_download_merge_and_clip/landsat/134_Arsuk/file.tif
                 relative_path = file_path.relative_to(base_path)
-                s3_key = f"results/{job_name}/{relative_path}"
+                s3_key = f"{s3_base_path}/{satellite}/{relative_path}"
                 
                 # Upload file
                 s3_client.upload_file(str(file_path), s3_bucket, s3_key)
@@ -256,6 +263,7 @@ def upload_results_to_s3(s3_bucket, base_dir, job_name):
                 logger.info(f"Uploaded: {s3_key}")
         
         logger.info(f"Total files uploaded: {len(uploaded_files)}")
+        logger.info(f"S3 location: s3://{s3_bucket}/{s3_base_path}/{satellite}/")
         return uploaded_files
         
     except Exception as e:
@@ -335,9 +343,10 @@ def lambda_handler(event, context):
             )
         
         # Step 3: Upload ALL files from satellite-specific directory to S3
-        # No pattern matching needed - entire directory is isolated
+        # Using standardized structure matching local/HPC layout
         logger.info(f"Step 3: Uploading all files from {satellite} directory to S3...")
-        uploaded_files = upload_results_to_s3(s3_bucket, base_dir, job_name)
+        s3_base_path = event.get('s3_base_path', '1_download_merge_and_clip')
+        uploaded_files = upload_results_to_s3(s3_bucket, base_dir, satellite, s3_base_path)
         
         # Step 4: Cleanup - Remove satellite-specific directory to free space
         logger.info(f"Step 4: Cleaning up {satellite} directory...")
@@ -359,6 +368,7 @@ def lambda_handler(event, context):
                     'start_date': start_date,
                     'end_date': end_date,
                     's3_bucket': s3_bucket,
+                    's3_location': f's3://{s3_bucket}/{s3_base_path}/{satellite}/',
                     'job_name': job_name,
                     'mode': 'full_processing_geospatial',
                     'processing_time_remaining': context.get_remaining_time_in_millis(),
