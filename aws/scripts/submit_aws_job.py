@@ -242,65 +242,133 @@ def create_aws_lambda_job(jobname, regions, start_date, end_date, satellite, **k
     """Create and submit AWS Lambda function for satellite processing
     
     AWS Lambda is ideal for:
-    - Event-driven processing
-    - Small to medium datasets  
+    - Small glaciers (1-2 tiles)
+    - Quick processing (< 15 minutes)
     - Serverless architecture
+    
+    Integration with validated Lambda container (October 2025):
+    - Uses production-tested glacier-sentinel2-processor function
+    - Configured for 5 GB memory (optimal for small regions)
+    - Reads settings from aws/config/aws_config.ini
     """
-    print(f"AWS LAMBDA: Creating function for {satellite} processing")
+    print(f"\n{'='*60}")
+    print(f"AWS LAMBDA JOB SUBMISSION - {satellite.upper()}")
+    print(f"{'='*60}")
     
-    # Lambda configuration
-    function_name = f"glacier-{satellite}-processor"
+    # Get Lambda configuration from aws_config.ini
+    function_name = kwargs.get('lambda_function_name', 'glacier-sentinel2-processor')
     s3_bucket = kwargs.get('s3_bucket', 'greenland-glacier-data')
+    s3_base_path = kwargs.get('s3_base_path', '1_download_merge_and_clip')
     aws_region = kwargs.get('aws_region', 'us-west-2')
+    memory_size = kwargs.get('lambda_memory_size', 5120)
+    timeout = kwargs.get('lambda_timeout', 900)
     
-    # Event payload for Lambda
+    # Build event payload matching lambda_handler.py expectations
     lambda_event = {
         'satellite': satellite,
         'regions': regions,
         'start_date': start_date,
         'end_date': end_date,
         's3_bucket': s3_bucket,
+        's3_base_path': s3_base_path,  # Add S3 base path
         'download_flag': kwargs.get('download_flag', 1),
         'post_processing_flag': kwargs.get('post_processing_flag', 1),
-        'job_name': jobname
+        'cores': kwargs.get('cores', 1),
+        'base_dir': f'/tmp/glacier_processing/{satellite}',  # Lambda ephemeral storage
+        'log_name': kwargs.get('log_name', 'lambda_glacier.log')
     }
     
-    print(f"Lambda function: {function_name}")
-    print(f"Event payload: {lambda_event}")
+    print(f"\nConfiguration:")
+    print(f"  Function: {function_name}")
+    print(f"  Region: {aws_region}")
+    print(f"  Memory: {memory_size} MB")
+    print(f"  Timeout: {timeout} seconds")
+    print(f"  S3 Bucket: {s3_bucket}")
+    print(f"\nProcessing Parameters:")
+    print(f"  Satellite: {satellite}")
+    print(f"  Regions: {regions}")
+    print(f"  Date Range: {start_date} to {end_date}")
+    print(f"  Job Name: {jobname}")
     
+    # Handle dry run mode
     if kwargs.get('dry_run'):
-        print("DRY RUN: AWS Lambda function configuration created but not invoked")
-        print(f"💡 To deploy manually:")
-        print(f"   1. Create Lambda function: {function_name}")
-        print(f"   2. Upload lambda_handler.py as function code")
-        print(f"   3. Set runtime: python3.12")
-        print(f"   4. Set timeout: 15 minutes")
-        print(f"   5. Set memory: 1024 MB")
+        print(f"\n{'='*60}")
+        print("DRY RUN MODE - Lambda configuration validated")
+        print(f"{'='*60}")
+        print("\nEvent payload that would be sent:")
+        print(json.dumps(lambda_event, indent=2))
+        print(f"\n💡 To invoke manually:")
+        print(f"   aws lambda invoke \\")
+        print(f"     --function-name {function_name} \\")
+        print(f"     --payload '{json.dumps(lambda_event)}' \\")
+        print(f"     --region {aws_region} \\")
+        print(f"     /tmp/lambda_response.json")
         return
     
-    # Try to invoke existing Lambda function
+    # Invoke Lambda function
     try:
         import boto3
         lambda_client = boto3.client('lambda', region_name=aws_region)
         
-        print(f"Invoking Lambda function: {function_name}")
+        print(f"\n{'='*60}")
+        print("INVOKING LAMBDA FUNCTION")
+        print(f"{'='*60}")
+        
+        # Synchronous invocation to get immediate response
         response = lambda_client.invoke(
             FunctionName=function_name,
-            InvocationType='Event',  # Asynchronous invocation
+            InvocationType='RequestResponse',  # Synchronous - wait for result
             Payload=json.dumps(lambda_event)
         )
         
-        print(f"✅ Lambda invoked successfully")
-        print(f"   Status code: {response['StatusCode']}")
+        # Parse response
+        status_code = response['StatusCode']
+        payload = json.loads(response['Payload'].read())
+        
+        print(f"\n✅ Lambda invocation successful!")
+        print(f"   Status Code: {status_code}")
         print(f"   Request ID: {response['ResponseMetadata']['RequestId']}")
         
+        # Check for function errors
+        if 'FunctionError' in response:
+            print(f"\n⚠️  Lambda function error detected:")
+            print(f"   Error Type: {response['FunctionError']}")
+            print(f"\n   Response payload:")
+            print(json.dumps(payload, indent=2))
+        else:
+            print(f"\n✅ Processing completed successfully!")
+            
+            # Parse response body if present
+            if 'body' in payload:
+                body = json.loads(payload['body'])
+                print(f"\nResults:")
+                print(f"   Uploaded Files: {body.get('uploaded_files', 'N/A')}")
+                print(f"   S3 Location: {body.get('s3_location', 'N/A')}")
+                print(f"   Message: {body.get('message', 'N/A')}")
+            else:
+                print(f"\nResponse:")
+                print(json.dumps(payload, indent=2))
+        
+        # Log to file
+        logging.info(f"Lambda invocation: {function_name}, Job: {jobname}, Status: {status_code}")
+        
+        print(f"\n{'='*60}")
+        return response
+        
+    except ImportError:
+        print(f"\n❌ ERROR: boto3 not installed")
+        print(f"💡 Install: pip install boto3")
+        return None
+        
     except Exception as e:
-        print(f"❌ Lambda invocation failed: {e}")
-        print(f"💡 Solutions:")
-        print(f"   1. Create Lambda function manually in AWS Console")
-        print(f"   2. Upload lambda_handler.py code")
-        print(f"   3. Grant Lambda execution permissions")
-        print(f"   4. Add IAM role for S3 access")
+        print(f"\n❌ Lambda invocation failed: {e}")
+        print(f"\n💡 Troubleshooting:")
+        print(f"   1. Verify function exists: aws lambda get-function --function-name {function_name}")
+        print(f"   2. Check AWS credentials: aws sts get-caller-identity")
+        print(f"   3. Verify region: {aws_region}")
+        print(f"   4. Check CloudWatch logs: /aws/lambda/{function_name}")
+        logging.error(f"Lambda invocation failed: {e}")
+        return None
 
 
 def load_aws_config(aws_config_file="../config/aws_config.ini"):
@@ -308,6 +376,7 @@ def load_aws_config(aws_config_file="../config/aws_config.ini"):
     
     This will contain AWS-specific settings like:
     - S3 bucket names
+    - Lambda configuration
     - IAM roles
     - VPC settings
     - Cost optimization preferences
@@ -317,8 +386,20 @@ def load_aws_config(aws_config_file="../config/aws_config.ini"):
         config.read(aws_config_file)
         
         return {
+            # Storage settings
             's3_bucket': config.get("STORAGE", "s3_bucket", fallback='greenland-glacier-data'),
+            's3_base_path': config.get("STORAGE", "s3_base_path", fallback='1_download_merge_and_clip'),
+            
+            # AWS account settings
             'aws_region': config.get("AWS_ACCOUNT", "aws_region", fallback='us-west-2'),
+            
+            # Lambda settings
+            'lambda_function_name': config.get("LAMBDA", "function_name", fallback='glacier-sentinel2-processor'),
+            'lambda_memory_size': config.getint("LAMBDA", "memory_size", fallback=5120),
+            'lambda_timeout': config.getint("LAMBDA", "timeout", fallback=900),
+            'lambda_ephemeral_storage': config.getint("LAMBDA", "ephemeral_storage", fallback=10240),
+            
+            # Compute settings (for Batch/ECS)
             'instance_type': config.get("COMPUTE", "instance_type", fallback='c5.large'),
             'spot_instances': config.getboolean("COMPUTE", "spot_instances", fallback=False),
             'max_vcpus': config.getint("COMPUTE", "max_vcpus", fallback=256)
@@ -328,7 +409,12 @@ def load_aws_config(aws_config_file="../config/aws_config.ini"):
         # Return default values with us-west-2 for satellite data
         return {
             's3_bucket': 'greenland-glacier-data',
+            's3_base_path': '1_download_merge_and_clip',
             'aws_region': 'us-west-2',
+            'lambda_function_name': 'glacier-sentinel2-processor',
+            'lambda_memory_size': 5120,
+            'lambda_timeout': 900,
+            'lambda_ephemeral_storage': 10240,
             'instance_type': 'c5.large',
             'spot_instances': False,
             'max_vcpus': 256
@@ -459,9 +545,20 @@ def main():
     job_kwargs = {
         'dry_run': dry_run,
         's3_bucket': s3_bucket,
+        's3_base_path': aws_cfg.get('s3_base_path'),
         'aws_region': aws_region,
         'instance_type': args.instance_type,
-        'spot_instances': args.spot_instances
+        'spot_instances': args.spot_instances,
+        # Lambda-specific configuration from aws_config.ini
+        'lambda_function_name': aws_cfg.get('lambda_function_name'),
+        'lambda_memory_size': aws_cfg.get('lambda_memory_size'),
+        'lambda_timeout': aws_cfg.get('lambda_timeout'),
+        'lambda_ephemeral_storage': aws_cfg.get('lambda_ephemeral_storage'),
+        # Processing parameters from config.ini
+        'download_flag': cfg.get('download_flag'),
+        'post_processing_flag': cfg.get('post_processing_flag'),
+        'cores': cfg.get('cores'),
+        'log_name': cfg.get('log_name')
     }
     
     if aws_service == 'batch':
