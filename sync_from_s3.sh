@@ -38,7 +38,11 @@ NC='\033[0m' # No Color
 # Configuration
 S3_BUCKET="greenland-glacier-data"
 S3_BASE_PATH="1_download_merge_and_clip"
-LOCAL_BASE_PATH="./1_download_merge_and_clip"
+DATA_DIR="$HOME/greenland_glacier_flow"
+
+# Change to data directory (keeps Git repo separate from data)
+cd "$DATA_DIR" || { echo "Error: Cannot cd to $DATA_DIR"; exit 1; }
+echo -e "${GREEN}Working in data directory: ${DATA_DIR}${NC}\n"
 
 # Parse arguments
 SATELLITE="all"
@@ -88,11 +92,11 @@ echo ""
 sync_satellite() {
     local satellite=$1
     local s3_path="s3://${S3_BUCKET}/${S3_BASE_PATH}/${satellite}/"
-    local local_path="${LOCAL_BASE_PATH}/${satellite}/"
+    local local_path="${S3_BASE_PATH}/${satellite}/"
     
     echo -e "${BLUE}Syncing ${satellite} data...${NC}"
     echo "From: ${s3_path}"
-    echo "To:   ${local_path}"
+    echo "To:   ${PWD}/${local_path}"
     
     if [[ -n "$EXCLUDE_DOWNLOADS" ]]; then
         echo -e "${YELLOW}Excluding: download/ folder${NC}"
@@ -148,4 +152,4 @@ echo -e "${GREEN}========================================${NC}"
 # Show summary
 echo ""
 echo "Local directory structure:"
-tree -L 3 -h "${LOCAL_BASE_PATH}" 2>/dev/null || ls -lh "${LOCAL_BASE_PATH}"
+tree -L 3 -h "${S3_BASE_PATH}" 2>/dev/null || ls -lh "${S3_BASE_PATH}"
