@@ -38,11 +38,45 @@ NC='\033[0m' # No Color
 # Configuration
 S3_BUCKET="greenland-glacier-data"
 S3_BASE_PATH="1_download_merge_and_clip"
-DATA_DIR="$HOME/greenland_glacier_flow"
+
+# Read data directory from config.ini
+# Try to find config.ini in common locations
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONFIG_FILE=""
+
+if [[ -f "$SCRIPT_DIR/config.ini" ]]; then
+    CONFIG_FILE="$SCRIPT_DIR/config.ini"
+elif [[ -f "./config.ini" ]]; then
+    CONFIG_FILE="./config.ini"
+elif [[ -f "$HOME/Github/greenland-glacier-flow/config.ini" ]]; then
+    CONFIG_FILE="$HOME/Github/greenland-glacier-flow/config.ini"
+fi
+
+if [[ -n "$CONFIG_FILE" ]]; then
+    echo -e "${BLUE}Reading configuration from: ${CONFIG_FILE}${NC}"
+    
+    # Detect if we're on HPC (SLURM) or local (WSL/Ubuntu)
+    if command -v sbatch &> /dev/null; then
+        # HPC environment - use base_dir
+        DATA_DIR=$(grep "^base_dir" "$CONFIG_FILE" | cut -d'=' -f2 | tr -d ' ')
+    else
+        # Local environment - use local_base_dir
+        DATA_DIR=$(grep "^local_base_dir" "$CONFIG_FILE" | cut -d'=' -f2 | tr -d ' ')
+    fi
+    
+    if [[ -z "$DATA_DIR" ]]; then
+        echo -e "${YELLOW}Warning: Could not read data directory from config.ini${NC}"
+        exit 1
+    fi
+else
+    echo -e "${YELLOW}Warning: config.ini not found in common locations${NC}"
+    echo -e "${YELLOW}Searched: ${SCRIPT_DIR}, current dir, ~/Github/greenland-glacier-flow/${NC}"
+    exit 1
+fi
 
 # Change to data directory (keeps Git repo separate from data)
 cd "$DATA_DIR" || { echo "Error: Cannot cd to $DATA_DIR"; exit 1; }
-echo -e "${GREEN}Working in data directory: ${DATA_DIR}${NC}\n"
+echo -e "${GREEN}Working in data directory: ${PWD}${NC}\n"
 
 # Parse arguments
 SATELLITE="all"
