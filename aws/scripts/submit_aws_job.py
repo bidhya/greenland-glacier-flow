@@ -267,8 +267,8 @@ def create_aws_lambda_job(jobname, regions, start_date, end_date, satellite, **k
     lambda_event = {
         'satellite': satellite,
         'regions': regions,
-        'start_date': start_date,
-        'end_date': end_date,
+        'date1': start_date,        # Updated for parameter reconciliation
+        'date2': end_date,          # Updated for parameter reconciliation
         's3_bucket': s3_bucket,
         's3_base_path': s3_base_path,  # Add S3 base path
         'download_flag': kwargs.get('download_flag', 1),

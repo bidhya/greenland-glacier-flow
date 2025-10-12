@@ -92,8 +92,8 @@ def run_sentinel2_processing(project_dir, regions, start_date, end_date, base_di
         cmd = [
             python_exec, "download_merge_clip_sentinel2.py",
             "--regions", regions,
-            "--start_date", start_date,
-            "--end_date", end_date,
+            "--date1", start_date,      # Updated for parameter reconciliation
+            "--date2", end_date,       # Updated for parameter reconciliation
             "--download_flag", "1",
             "--post_processing_flag", "1", 
             "--cores", "1",
@@ -296,8 +296,8 @@ def lambda_handler(event, context):
         # Extract parameters from event
         satellite = event.get('satellite', 'sentinel2')
         regions = event.get('regions', '134_Arsuk')
-        start_date = event.get('start_date')
-        end_date = event.get('end_date')
+        start_date = event.get('date1')  # Updated for parameter reconciliation
+        end_date = event.get('date2')    # Updated for parameter reconciliation
         s3_bucket = event.get('s3_bucket', 'greenland-glacier-data')
         download_flag = event.get('download_flag', 1)
         post_processing_flag = event.get('post_processing_flag', 1)
@@ -305,7 +305,7 @@ def lambda_handler(event, context):
         
         # Validate required parameters
         if not start_date or not end_date:
-            raise ValueError("start_date and end_date are required")
+            raise ValueError("date1 and date2 are required")
         
         logger.info(f"Processing {satellite} data for regions: {regions}")
         logger.info(f"Date range: {start_date} to {end_date}")
@@ -415,8 +415,8 @@ if __name__ == "__main__":
     test_event = {
         "satellite": "sentinel2",
         "regions": "134_Arsuk",
-        "start_date": "2025-05-04",  
-        "end_date": "2025-05-07",
+        "date1": "2025-05-04",   # Updated for parameter reconciliation
+        "date2": "2025-05-07",   # Updated for parameter reconciliation
         "s3_bucket": "greenland-glacier-data",
         "download_flag": 1,
         "post_processing_flag": 1
