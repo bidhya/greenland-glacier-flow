@@ -38,7 +38,7 @@ See `aws/docs/AWS_SETUP_STATUS.md` for complete technical details.
 📁 **See**: `SENTINEL2_OPTIMIZATION_GUIDE.md` for complete technical details and implementation guide.
 
 
-## Notes
+## Notes: Everything below this is older notes. DO NOT use this. Will be cleaned-up when the workflow is finalized.  
 
 Currently this is an incomplete, but usable, automation workflow. There are 3 steps to the processing
 pipeline, and the 1st and 3rd have been automated. The second step (2_velocity, which does the SDM
