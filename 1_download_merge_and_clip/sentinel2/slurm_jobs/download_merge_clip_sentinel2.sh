@@ -75,8 +75,8 @@ fi
 
 
 # Run the main script.
-python download_merge_clip_sentinel2.py --regions $regions --start_date $start_date --end_date $end_date --download_flag $download_flag --post_processing_flag $post_processing_flag --clear_downloads $clear_downloads --base_dir $base_dir --log_name $log_name
-# python download_merge_clip_sentinel2.py --start_date $start_date --end_date $end_date --download_flag $download_flag --post_processing_flag $post_processing_flag --clear_downloads $clear_downloads --base_dir $base_dir --log_name $log_name --start_end_index $start_end_index
+python download_merge_clip_sentinel2.py --regions $regions --date1 $start_date --date2 $end_date --download_flag $download_flag --post_processing_flag $post_processing_flag --clear_downloads $clear_downloads --base_dir $base_dir --log_name $log_name
+# python download_merge_clip_sentinel2.py --date1 $start_date --date2 $end_date --download_flag $download_flag --post_processing_flag $post_processing_flag --clear_downloads $clear_downloads --base_dir $base_dir --log_name $log_name --start_end_index $start_end_index
 
 squeue --job $SLURM_JOBID
 # Report to terminal.

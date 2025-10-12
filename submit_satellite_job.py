@@ -91,9 +91,8 @@ def create_bash_job(jobname, regions, start_end_index, start_date, end_date, bas
         
         # Choose the appropriate script and parameters based on satellite type
         if satellite.lower() == "sentinel2":
-            fh.writelines(f"python sentinel2/download_merge_clip_sentinel2.py --regions {regions} --start_date {start_date} --end_date {end_date} --download_flag {download_flag} --post_processing_flag {post_processing_flag} --clear_downloads {clear_downloads} --base_dir {base_dir} --log_name {log_name}\n")
+            fh.writelines(f"python sentinel2/download_merge_clip_sentinel2.py --regions {regions} --date1 {start_date} --date2 {end_date} --download_flag {download_flag} --post_processing_flag {post_processing_flag} --clear_downloads {clear_downloads} --base_dir {base_dir} --log_name {log_name}\n")
         elif satellite.lower() == "landsat":
-            # Landsat uses different parameter names: --date1, --date2 instead of --start_date, --end_date
             fh.writelines(f"python landsat/download_clip_landsat.py --regions {regions} --date1 {start_date} --date2 {end_date} --base_dir {base_dir} --log_name {log_name}\n")
         else:
             raise ValueError(f"Unsupported satellite type: {satellite}. Supported types are 'sentinel2' and 'landsat'.")
@@ -153,9 +152,8 @@ def create_slurm_job(jobname, regions, start_end_index, start_date, end_date, ba
         
         # Choose the appropriate script and parameters based on satellite type
         if satellite.lower() == "sentinel2":
-            fh.writelines(f"python sentinel2/download_merge_clip_sentinel2.py --regions {regions} --start_date {start_date} --end_date {end_date} --download_flag {download_flag} --post_processing_flag {post_processing_flag} --clear_downloads {clear_downloads} --base_dir {base_dir} --log_name {log_name}\n")
+            fh.writelines(f"python sentinel2/download_merge_clip_sentinel2.py --regions {regions} --date1 {start_date} --date2 {end_date} --download_flag {download_flag} --post_processing_flag {post_processing_flag} --clear_downloads {clear_downloads} --base_dir {base_dir} --log_name {log_name}\n")
         elif satellite.lower() == "landsat":
-            # Landsat uses different parameter names: --date1, --date2 instead of --start_date, --end_date
             fh.writelines(f"python landsat/download_clip_landsat.py --regions {regions} --date1 {start_date} --date2 {end_date} --base_dir {base_dir} --log_name {log_name}\n")
         else:
             raise ValueError(f"Unsupported satellite type: {satellite}. Supported types are 'sentinel2' and 'landsat'.")
@@ -193,8 +191,8 @@ def load_config(config_file="config.ini", cli_args=None):
         'start_end_index': config.get("REGIONS", "start_end_index"),
         
         # Date settings
-        'start_date': config.get("DATES", "start_date"),
-        'end_date': config.get("DATES", "end_date"),
+        'start_date': config.get("DATES", "date1"),
+        'end_date': config.get("DATES", "date2"),
         
         # Path settings
         'base_dir': config.get("PATHS", "base_dir"),

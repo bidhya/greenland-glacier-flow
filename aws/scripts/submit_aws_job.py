@@ -436,8 +436,8 @@ def load_shared_config(config_file="../../config.ini", cli_args=None):
         'start_end_index': config.get("REGIONS", "start_end_index"),
         
         # Date settings
-        'start_date': config.get("DATES", "start_date"),
-        'end_date': config.get("DATES", "end_date"),
+        'start_date': config.get("DATES", "date1"),
+        'end_date': config.get("DATES", "date2"),
         
         # Path settings (will be adapted for S3)
         'base_dir': config.get("PATHS", "base_dir"),

@@ -103,8 +103,8 @@ def execute_locally(satellite, regions, start_date, end_date, base_dir, log_name
             cmd = [
                 'python', 'sentinel2/download_merge_clip_sentinel2.py',
                 '--regions', regions,
-                '--start_date', start_date,
-                '--end_date', end_date,
+                '--date1', start_date,
+                '--date2', end_date,
                 '--download_flag', str(kwargs.get('download_flag', 1)),
                 '--post_processing_flag', str(kwargs.get('post_processing_flag', 1)),
                 '--clear_downloads', str(kwargs.get('clear_downloads', 0)),
@@ -238,7 +238,7 @@ def create_job(jobname, regions, start_end_index, start_date, end_date, base_dir
         
         # Choose the appropriate script and parameters based on satellite type
         if satellite.lower() == "sentinel2":
-            fh.writelines(f"python sentinel2/download_merge_clip_sentinel2.py --regions {regions} --start_date {start_date} --end_date {end_date} --download_flag {download_flag} --post_processing_flag {post_processing_flag} --clear_downloads {clear_downloads} --base_dir {base_dir} --log_name {log_name}\n")
+            fh.writelines(f"python sentinel2/download_merge_clip_sentinel2.py --regions {regions} --date1 {start_date} --date2 {end_date} --download_flag {download_flag} --post_processing_flag {post_processing_flag} --clear_downloads {clear_downloads} --base_dir {base_dir} --log_name {log_name}\n")
         elif satellite.lower() == "landsat":
             # Landsat uses different parameter names: --date1, --date2 instead of --start_date, --end_date
             fh.writelines(f"python landsat/download_clip_landsat.py --regions {regions} --date1 {start_date} --date2 {end_date} --base_dir {base_dir} --log_name {log_name}\n")
@@ -278,8 +278,8 @@ def load_config(config_file="config.ini", cli_args=None):
         'start_end_index': config.get("REGIONS", "start_end_index"),
         
         # Date settings
-        'start_date': config.get("DATES", "start_date"),
-        'end_date': config.get("DATES", "end_date"),
+        'start_date': config.get("DATES", "date1"),
+        'end_date': config.get("DATES", "date2"),
         
         # Path settings
         'base_dir': config.get("PATHS", "base_dir"),

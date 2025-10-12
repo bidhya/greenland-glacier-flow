@@ -35,13 +35,17 @@ parser.add_argument(
     default=DEFAULT_COLLECTION_NAME
 )
 parser.add_argument(
-    '--start_date',
-    help='First day of data to download',
+    "-d1",
+    "--date1",
+    help="First date in date range, format `YYYY-MM-DD`",
+    dest="date1",
     type=str
 )
 parser.add_argument(
-    '--end_date',
-    help='Last day of data to download',
+    "-d2",
+    "--date2",
+    help="Second date in date range, format `YYYY-MM-DD`",
+    dest="date2",
     type=str
 )
 parser.add_argument(
@@ -59,7 +63,7 @@ parser.add_argument(
     '--start_end_index',
     help='Start and End index of regions to process with colon',
     type=str
-    )
+)
 parser.add_argument(
     '--min_area',
     help='Subset glaciers greater than or equal to',
@@ -107,12 +111,12 @@ parser.add_argument(
 )
 args = parser.parse_args()
 collection_name = args.collection_name
-start_date = args.start_date
-if not start_date:
-    start_date = '2015-06-23'  # 23 June 2015 (S2A) and 7 March 2017 (S2B)
-end_date = args.end_date
-if not end_date:
-    end_date = datetime.date.today().strftime('%Y-%m-%d')
+date1 = args.date1
+if not date1:
+    date1 = '2015-06-23'  # 23 June 2015 (S2A) and 7 March 2017 (S2B)
+date2 = args.date2
+if not date2:
+    date2 = datetime.date.today().strftime('%Y-%m-%d')
 ignore_regions = args.ignore_regions
 start_end_index = args.start_end_index
 min_area = args.min_area
@@ -132,7 +136,7 @@ log_name = args.log_name
 # log_name = f"{base_dir}/logs/{log_name}"
 Path(log_name).touch()
 # Set up basic logging configuration.
-setUpBasicLoggingConfig(log_name, f"Attempting download/merge/clip of Sentinel-2 imagery for regions in Greenland between {start_date} and {end_date}, with starting region index {start_end_index}, on {cores} cores, outputting to {base_dir}.")
+setUpBasicLoggingConfig(log_name, f"Attempting download/merge/clip of Sentinel-2 imagery for regions in Greenland between {date1} and {date2}, with starting region index {start_end_index}, on {cores} cores, outputting to {base_dir}.")
 
 ###############################################################################################
 # Get a list of regions to process.
@@ -214,8 +218,8 @@ for region in regions_list:
         download_and_post_process_region(
             region,
             regions,
-            start_date,
-            end_date,
+            date1,
+            date2,
             collection_name,
             base_dir,
             download_flag,

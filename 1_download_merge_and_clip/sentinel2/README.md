@@ -44,8 +44,8 @@ Create the output folder for this workflow, and place a copy of the `ancillary` 
 - collection_name: The name of the satellite data collection to download from.
 
 ### Date-related
-- start_date: First day of data to download.
-- end_date: Last day of data to download. By default, the current day is used.
+- date1: First day of data to download.
+- date2: Last day of data to download. By default, the current day is used.
 
 ### Glacier-related
 - regions: The name of the region or regions. This is optional - if not used, the regions list will simply be drawn from the geopackage. This parameter can also be a comma-separated list of region names (note that there must be no spaces in the region names or between them).
