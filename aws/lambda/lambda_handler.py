@@ -74,7 +74,7 @@ def download_processing_scripts(s3_client, s3_bucket):
         logger.error(f"Failed to download complete project: {e}")
         return None, []
 
-def run_sentinel2_processing(project_dir, regions, start_date, end_date, base_dir):
+def run_sentinel2_processing(project_dir, regions, date1, date2, base_dir):
     """Run the actual Sentinel-2 processing with pip-installed geospatial libraries
     
     Args:
@@ -92,8 +92,8 @@ def run_sentinel2_processing(project_dir, regions, start_date, end_date, base_di
         cmd = [
             python_exec, "download_merge_clip_sentinel2.py",
             "--regions", regions,
-            "--date1", start_date,      # Updated for parameter reconciliation
-            "--date2", end_date,       # Updated for parameter reconciliation
+            "--date1", date1,      # Updated for parameter reconciliation
+            "--date2", date2,       # Updated for parameter reconciliation
             "--download_flag", "1",
             "--post_processing_flag", "1", 
             "--cores", "1",
@@ -148,7 +148,7 @@ def run_sentinel2_processing(project_dir, regions, start_date, end_date, base_di
             'success': False
         }
 
-def run_landsat_processing(project_dir, regions, start_date, end_date, base_dir):
+def run_landsat_processing(project_dir, regions, date1, date2, base_dir):
     """Run the actual Landsat processing with pip-installed geospatial libraries
     
     Args:
@@ -166,8 +166,8 @@ def run_landsat_processing(project_dir, regions, start_date, end_date, base_dir)
         cmd = [
             python_exec, "download_clip_landsat.py",
             "--regions", regions,
-            "--date1", start_date,
-            "--date2", end_date,
+            "--date1", date1,
+            "--date2", date2,
             "--base_dir", str(base_dir),  # Satellite-specific directory
             "--log_name", "lambda_processing.log"
         ]
@@ -278,8 +278,8 @@ def lambda_handler(event, context):
     {
         "satellite": "sentinel2",
         "regions": "134_Arsuk",
-        "start_date": "2025-05-04",
-        "end_date": "2025-05-07",
+        "date1": "2025-05-04",
+        "date2": "2025-05-07",
         "s3_bucket": "greenland-glacier-data",
         "download_flag": 1,
         "post_processing_flag": 1,
@@ -296,19 +296,19 @@ def lambda_handler(event, context):
         # Extract parameters from event
         satellite = event.get('satellite', 'sentinel2')
         regions = event.get('regions', '134_Arsuk')
-        start_date = event.get('date1')  # Updated for parameter reconciliation
-        end_date = event.get('date2')    # Updated for parameter reconciliation
+        date1 = event.get('date1')  # Updated for parameter reconciliation
+        date2 = event.get('date2')    # Updated for parameter reconciliation
         s3_bucket = event.get('s3_bucket', 'greenland-glacier-data')
         download_flag = event.get('download_flag', 1)
         post_processing_flag = event.get('post_processing_flag', 1)
         job_name = event.get('job_name', f'lambda-{satellite}-{regions}')
         
         # Validate required parameters
-        if not start_date or not end_date:
+        if not date1 or not date2:
             raise ValueError("date1 and date2 are required")
         
         logger.info(f"Processing {satellite} data for regions: {regions}")
-        logger.info(f"Date range: {start_date} to {end_date}")
+        logger.info(f"Date range: {date1} to {date2}")
         logger.info(f"S3 bucket: {s3_bucket}")
         logger.info(f"Job name: {job_name}")
         
@@ -335,11 +335,11 @@ def lambda_handler(event, context):
         logger.info(f"Step 2: Running {satellite} processing in isolated directory...")
         if satellite.lower() == "landsat":
             processing_result = run_landsat_processing(
-                project_dir, regions, start_date, end_date, base_dir
+                project_dir, regions, date1, date2, base_dir
             )
         else:  # Default to Sentinel-2
             processing_result = run_sentinel2_processing(
-                project_dir, regions, start_date, end_date, base_dir
+                project_dir, regions, date1, date2, base_dir
             )
         
         # Step 3: Upload ALL files from satellite-specific directory to S3
@@ -365,8 +365,8 @@ def lambda_handler(event, context):
                     'message': 'Sentinel-2 processing completed successfully with geospatial libraries',
                     'satellite': satellite,
                     'regions': regions,
-                    'start_date': start_date,
-                    'end_date': end_date,
+                    'date1': date1,
+                    'date2': date2,
                     's3_bucket': s3_bucket,
                     's3_location': f's3://{s3_bucket}/{s3_base_path}/{satellite}/',
                     'job_name': job_name,

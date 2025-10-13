@@ -252,7 +252,7 @@ python ../aws/scripts/submit_aws_job.py --satellite sentinel2 --service lambda -
 ### Arguments
 **Sentinel-2**:
 ```python
---regions --start_date --end_date --download_flag --post_processing_flag --cores
+--regions --date1 --date2 --download_flag --post_processing_flag --cores
 ```
 
 **Landsat**:

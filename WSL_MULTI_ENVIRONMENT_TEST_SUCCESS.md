@@ -30,7 +30,7 @@ Successfully validated the complete multi-environment workflow from WSL Ubuntu a
 ### ✅ AWS Lambda Execution
 
 **Sentinel-2 Lambda Test**
-- Payload: `{"satellite":"sentinel2","regions":"134_Arsuk","start_date":"2024-07-04","end_date":"2024-07-06"}`
+- Payload: `{"satellite":"sentinel2","regions":"134_Arsuk","date1":"2024-07-04","date2":"2024-07-06"}`
 - Function: `glacier-sentinel2-processor`
 - Files Uploaded to S3: 20 files (1.7 GB)
 - S3 Location: `s3://greenland-glacier-data/results/lambda-sentinel2-134_Arsuk/`
@@ -38,7 +38,7 @@ Successfully validated the complete multi-environment workflow from WSL Ubuntu a
 - Status: ✅ Success (HTTP 200)
 
 **Landsat Lambda Test**
-- Payload: `{"satellite":"landsat","regions":"134_Arsuk","start_date":"2024-07-04","end_date":"2024-07-06"}`
+- Payload: `{"satellite":"landsat","regions":"134_Arsuk","date1":"2024-07-04","date2":"2024-07-06"}`
 - Function: `glacier-sentinel2-processor`
 - Files Uploaded to S3: 4 files (1.6 MB)
 - S3 Location: `s3://greenland-glacier-data/results/lambda-landsat-134_Arsuk/`

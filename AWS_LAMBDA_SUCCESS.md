@@ -181,7 +181,7 @@ cd /path/to/greenland-glacier-flow/aws/scripts
 ```bash
 aws lambda invoke \
   --function-name glacier-sentinel2-processor \
-  --payload '{"satellite":"landsat","regions":"134_Arsuk","start_date":"2024-07-04","end_date":"2024-07-06","s3_bucket":"greenland-glacier-data"}' \
+  --payload '{"satellite":"landsat","regions":"134_Arsuk","date1":"2024-07-04","date2":"2024-07-06","s3_bucket":"greenland-glacier-data"}' \
   response.json
 ```
 
@@ -189,7 +189,7 @@ aws lambda invoke \
 ```bash
 aws lambda invoke \
   --function-name glacier-sentinel2-processor \
-  --payload '{"satellite":"sentinel2","regions":"134_Arsuk","start_date":"2024-07-04","end_date":"2024-07-06","s3_bucket":"greenland-glacier-data"}' \
+  --payload '{"satellite":"sentinel2","regions":"134_Arsuk","date1":"2024-07-04","date2":"2024-07-06","s3_bucket":"greenland-glacier-data"}' \
   response.json
 ```
 

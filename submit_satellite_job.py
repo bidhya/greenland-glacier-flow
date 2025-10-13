@@ -8,7 +8,7 @@
     Usage examples:
     - python submit_satellite_job.py --satellite sentinel2
     - python submit_satellite_job.py --satellite landsat --regions 134_Arsuk,101_sermiligarssuk
-    - python submit_satellite_job.py --satellite landsat --start-date 2024-01-01 --end-date 2024-12-31 --dry-run true
+    - python submit_satellite_job.py --satellite landsat --date1 2024-01-01 --date2 2024-12-31 --dry-run true
     - python submit_satellite_job.py --config custom_config.ini --satellite sentinel2 --memory 64G --runtime 02:00:00
 
     Author: B. Yadav. Aug 18, 2025
@@ -28,8 +28,8 @@ parser = argparse.ArgumentParser(description='Create and submit SLURM job for sa
 parser.add_argument('--config', help='Path to configuration file', type=str, default='config.ini')
 parser.add_argument('--satellite', help='Satellite type (sentinel2 or landsat)', type=str, choices=['sentinel2', 'landsat'])
 parser.add_argument('--regions', help='Regions to process (comma-separated, no spaces)', type=str)
-parser.add_argument('--start-date', help='Start date in YYYY-MM-DD format', type=str)
-parser.add_argument('--end-date', help='End date in YYYY-MM-DD format', type=str)
+parser.add_argument('--date1', help='Start date in YYYY-MM-DD format', type=str)
+parser.add_argument('--date2', help='End date in YYYY-MM-DD format', type=str)
 parser.add_argument('--base-dir', help='Base output directory', type=str)
 parser.add_argument('--cores', help='Number of cores to use', type=int)
 parser.add_argument('--memory', help='Memory allocation (e.g., 48G)', type=str, default='48G')
@@ -66,11 +66,11 @@ def detect_execution_mode():
     return 'local'
 
 
-def create_bash_job(jobname, regions, start_end_index, start_date, end_date, base_dir, download_flag, post_processing_flag, clear_downloads, cores, memory, runtime, dry_run, email, log_name, satellite):
+def create_bash_job(jobname, regions, start_end_index, date1, date2, base_dir, download_flag, post_processing_flag, clear_downloads, cores, memory, runtime, dry_run, email, log_name, satellite):
     """ Generate and call bash script for either Sentinel-2 or Landsat
         This part is mostly for prototyping and testing on local machine
     """
-    logging.info(f'jobname = {jobname}    base_dir = {base_dir}   start_date = {start_date}   end_date = {end_date}   regions = {regions}   start_end_index = {start_end_index}   satellite = {satellite}\n') 
+    logging.info(f'jobname = {jobname}    base_dir = {base_dir}   date1 = {date1}   date2 = {date2}   regions = {regions}   start_end_index = {start_end_index}   satellite = {satellite}\n') 
     job_file = os.path.join(os.getcwd(), f"{jobname}.job")
     print(f"Jobfile: {job_file}")
     with open(job_file, 'w') as fh:
@@ -91,9 +91,9 @@ def create_bash_job(jobname, regions, start_end_index, start_date, end_date, bas
         
         # Choose the appropriate script and parameters based on satellite type
         if satellite.lower() == "sentinel2":
-            fh.writelines(f"python sentinel2/download_merge_clip_sentinel2.py --regions {regions} --date1 {start_date} --date2 {end_date} --download_flag {download_flag} --post_processing_flag {post_processing_flag} --clear_downloads {clear_downloads} --base_dir {base_dir} --log_name {log_name}\n")
+            fh.writelines(f"python sentinel2/download_merge_clip_sentinel2.py --regions {regions} --date1 {date1} --date2 {date2} --download_flag {download_flag} --post_processing_flag {post_processing_flag} --clear_downloads {clear_downloads} --base_dir {base_dir} --log_name {log_name}\n")
         elif satellite.lower() == "landsat":
-            fh.writelines(f"python landsat/download_clip_landsat.py --regions {regions} --date1 {start_date} --date2 {end_date} --base_dir {base_dir} --log_name {log_name}\n")
+            fh.writelines(f"python landsat/download_clip_landsat.py --regions {regions} --date1 {date1} --date2 {date2} --base_dir {base_dir} --log_name {log_name}\n")
         else:
             raise ValueError(f"Unsupported satellite type: {satellite}. Supported types are 'sentinel2' and 'landsat'.")
             
@@ -110,9 +110,9 @@ def create_bash_job(jobname, regions, start_end_index, start_date, end_date, bas
         subprocess.run(['bash', job_file], check=True)  # TODO: check best practice
 
 
-def create_slurm_job(jobname, regions, start_end_index, start_date, end_date, base_dir, download_flag, post_processing_flag, clear_downloads, cores, memory, runtime, dry_run, email, log_name, satellite):
+def create_slurm_job(jobname, regions, start_end_index, date1, date2, base_dir, download_flag, post_processing_flag, clear_downloads, cores, memory, runtime, dry_run, email, log_name, satellite):
     """ Generate SLURM job file and submit it for either Sentinel-2 or Landsat """
-    logging.info(f'jobname = {jobname}    base_dir = {base_dir}   start_date = {start_date}   end_date = {end_date}   regions = {regions}   start_end_index = {start_end_index}   satellite = {satellite}\n') 
+    logging.info(f'jobname = {jobname}    base_dir = {base_dir}   date1 = {date1}   date2 = {date2}   regions = {regions}   start_end_index = {start_end_index}   satellite = {satellite}\n') 
     job_file = os.path.join(os.getcwd(), f"{jobname}.job")
     print(f"Jobfile: {job_file}")
 
@@ -152,9 +152,9 @@ def create_slurm_job(jobname, regions, start_end_index, start_date, end_date, ba
         
         # Choose the appropriate script and parameters based on satellite type
         if satellite.lower() == "sentinel2":
-            fh.writelines(f"python sentinel2/download_merge_clip_sentinel2.py --regions {regions} --date1 {start_date} --date2 {end_date} --download_flag {download_flag} --post_processing_flag {post_processing_flag} --clear_downloads {clear_downloads} --base_dir {base_dir} --log_name {log_name}\n")
+            fh.writelines(f"python sentinel2/download_merge_clip_sentinel2.py --regions {regions} --date1 {date1} --date2 {date2} --download_flag {download_flag} --post_processing_flag {post_processing_flag} --clear_downloads {clear_downloads} --base_dir {base_dir} --log_name {log_name}\n")
         elif satellite.lower() == "landsat":
-            fh.writelines(f"python landsat/download_clip_landsat.py --regions {regions} --date1 {start_date} --date2 {end_date} --base_dir {base_dir} --log_name {log_name}\n")
+            fh.writelines(f"python landsat/download_clip_landsat.py --regions {regions} --date1 {date1} --date2 {date2} --base_dir {base_dir} --log_name {log_name}\n")
         else:
             raise ValueError(f"Unsupported satellite type: {satellite}. Supported types are 'sentinel2' and 'landsat'.")
             
@@ -191,8 +191,8 @@ def load_config(config_file="config.ini", cli_args=None):
         'start_end_index': config.get("REGIONS", "start_end_index"),
         
         # Date settings
-        'start_date': config.get("DATES", "date1"),
-        'end_date': config.get("DATES", "date2"),
+        'date1': config.get("DATES", "date1"),
+        'date2': config.get("DATES", "date2"),
         
         # Path settings
         'base_dir': config.get("PATHS", "base_dir"),
@@ -219,10 +219,10 @@ def load_config(config_file="config.ini", cli_args=None):
             config_dict['satellite'] = cli_args.satellite
         if cli_args.regions:
             config_dict['regions'] = cli_args.regions
-        if cli_args.start_date:  # argparse converts hyphens to underscores
-            config_dict['start_date'] = cli_args.start_date
-        if cli_args.end_date:
-            config_dict['end_date'] = cli_args.end_date
+        if cli_args.date1:
+            config_dict['date1'] = cli_args.date1
+        if cli_args.date2:
+            config_dict['date2'] = cli_args.date2
         if cli_args.base_dir:
             config_dict['base_dir'] = cli_args.base_dir
         if cli_args.cores:
@@ -254,8 +254,8 @@ def main():
     cfg = load_config(config_file, args)
     # Extract commonly used values
     regions = cfg['regions']
-    start_date = cfg['start_date']
-    end_date = cfg['end_date']
+    date1 = cfg['date1']
+    date2 = cfg['date2']
     root_dir = cfg['base_dir']
     satellite = cfg['satellite']
     start_end_index = cfg['start_end_index']
@@ -287,7 +287,7 @@ def main():
     # Path(log_name).touch()
 
     # Create job name using date strings from config
-    jobname = f"{satellite.lower()}_{start_date.replace('-', '')}"  # _{end_date.replace('-', '')}
+    jobname = f"{satellite.lower()}_{date1.replace('-', '')}"  # _{date2.replace('-', '')}
     if len(jobname) > 50:
         jobname = jobname[:50]  # Truncate to first 50 characters to avoid overly long job names  
     
@@ -303,11 +303,11 @@ def main():
     logging.info('--------------------------------------Job Creation/Submission info----------------------------------------------')
     if execution_mode == 'hpc':
         logging.info("Execution mode: HPC (SLURM detected)")
-        create_slurm_job(jobname=jobname, regions=regions, start_end_index=start_end_index, start_date=start_date, end_date=end_date, 
+        create_slurm_job(jobname=jobname, regions=regions, start_end_index=start_end_index, date1=date1, date2=date2,
                 base_dir=base_dir, download_flag=download_flag, post_processing_flag=post_processing_flag, clear_downloads=clear_downloads, 
                 cores=cores, memory=memory, runtime=runtime, dry_run=dry_run, email=email, log_name=f"{log_dir}/{log_name}", satellite=satellite)
     elif execution_mode == 'local':
-        create_bash_job(jobname=jobname, regions=regions, start_end_index=start_end_index, start_date=start_date, end_date=end_date, 
+        create_bash_job(jobname=jobname, regions=regions, start_end_index=start_end_index, date1=date1, date2=date2,
                 base_dir=base_dir, download_flag=download_flag, post_processing_flag=post_processing_flag, clear_downloads=clear_downloads, 
                 cores=cores, memory=memory, runtime=runtime, dry_run=dry_run, email=email, log_name=f"{log_dir}/{log_name}", satellite=satellite)
         logging.info("Execution mode: Local (direct execution)")
@@ -315,7 +315,7 @@ def main():
         raise ValueError(f"Unsupported execution mode: {execution_mode}. Supported modes are 'auto', 'hpc', and 'local'.")
 
     # For landsat,
-    # python download_clip_landsat.py --regions $regions --date1 $start_date --date2 $end_date --base_dir $base_dir --log_name $log_name
+    # python download_clip_landsat.py --regions $regions --date1 $date1 --date2 $date2 --base_dir $base_dir --log_name $log_name
 
     
     time.sleep(1)  # sleep for a second to avoid job submission too fast

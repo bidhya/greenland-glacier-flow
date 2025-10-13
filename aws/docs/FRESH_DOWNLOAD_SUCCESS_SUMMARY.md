@@ -93,7 +93,7 @@ aws s3 cp 1_download_merge_and_clip/sentinel2/download_merge_clip_sentinel2.py \
 ```bash
 cd aws/scripts
 aws lambda invoke --function-name glacier-sentinel2-processor \
-  --payload '{"satellite": "sentinel2", "regions": "134_Arsuk", "start_date": "2024-08-01", "end_date": "2024-08-01", "s3_bucket": "greenland-glacier-data"}' \
+  --payload '{"satellite": "sentinel2", "regions": "134_Arsuk", "date1": "2024-08-01", "date2": "2024-08-01", "s3_bucket": "greenland-glacier-data"}' \
   fresh_sentinel2_pathfix.json
 ```
 

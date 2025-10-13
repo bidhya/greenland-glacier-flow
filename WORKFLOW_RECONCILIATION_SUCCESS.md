@@ -104,7 +104,7 @@ sentinel2_args = ["--start_date", start_date, "--end_date", end_date]
 landsat_args = ["--date1", start_date, "--date2", end_date]
 
 # After (unified)
-both_args = ["--date1", start_date, "--date2", end_date]
+both_args = ["--date1", date1, "--date2", date2]
 ```
 
 #### Config File Changes

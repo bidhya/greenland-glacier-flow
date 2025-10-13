@@ -80,7 +80,7 @@ Run the command from the root directory of this repository. Here is an example c
 
 `sh control/run_greenland_velocity_workflow.sh -r '001_alison,002_anoritup' -s '2021-01-01' -e '2021-12-31' -b '/fs/project/howat.4/gravina.2/greenland_glacier_flow' -w '1a 1b 2'`
 
-(Arguments stand for "region", "start_date", "end_date", "base_dir", and "which_steps", respectively.)
+(Arguments stand for "region", "date1", "date2", "base_dir", and "which_steps", respectively.)
 
 The above command will run the workflow for 2 regions for the entirety of 2021, and place the output files in the folder `/fs/project/howat.4/gravina.2/greenland_glacier_flow`. It will only run steps 1a/1b and 2 out of 1a/1b, 2, and 3. 
 

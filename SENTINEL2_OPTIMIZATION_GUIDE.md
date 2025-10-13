@@ -271,7 +271,7 @@ sentinel2/
 #### AWS Lambda Test Results
 ```bash
 $ aws lambda invoke --function-name glacier-sentinel2-processor \
-  --payload '{"satellite":"sentinel2","regions":"134_Arsuk","start_date":"2024-07-04","end_date":"2024-07-06"}'
+  --payload '{"satellite":"sentinel2","regions":"134_Arsuk","date1":"2024-07-04","date2":"2024-07-06"}'
 ```
 
 **Response**:
@@ -550,8 +550,8 @@ else:  # tile_count >= 4
 regions = 134_Arsuk
 
 [DATES]
-start_date = 2024-07-04
-end_date = 2024-07-06
+date1 = 2024-07-04
+date2 = 2024-07-06
 ```
 
 **Region with 4 tiles (large glacier)**:
@@ -560,8 +560,8 @@ end_date = 2024-07-06
 regions = 191_Hagen_Brae  # 4 MGRS tiles: 26XMR,26XNR,26XMQ,26XNQ
 
 [DATES]
-start_date = 2024-07-04
-end_date = 2024-07-06
+date1 = 2024-07-04
+date2 = 2024-07-06
 ```
 
 **Multiple overlapping regions (maximum efficiency)**:

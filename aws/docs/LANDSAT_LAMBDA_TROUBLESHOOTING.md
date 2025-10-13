@@ -57,11 +57,11 @@ outputting to /tmp/glacier_processing/output.
 cmd = [
     "download_merge_clip_sentinel2.py",
     "--regions", regions,
-    "--start_date", start_date,      # Sentinel-2 specific
-    "--end_date", end_date,            # Sentinel-2 specific
-    "--download_flag", "1",            # Sentinel-2 specific
-    "--post_processing_flag", "1",    # Sentinel-2 specific
-    "--cores", "1",                    # Sentinel-2 specific
+    "--date1", date1,
+    "--date2", date2,
+    "--download_flag", "1",
+    "--post_processing_flag", "1",
+    "--cores", "1",
     "--base_dir", base_dir
 ]
 ```
@@ -71,8 +71,8 @@ cmd = [
 cmd = [
     "download_clip_landsat.py",
     "--regions", regions,
-    "--date1", start_date,             # Landsat uses date1
-    "--date2", end_date,               # Landsat uses date2
+    "--date1", date1,
+    "--date2", date2,
     "--base_dir", base_dir,
     "--log_name", "lambda_processing.log"
 ]
@@ -159,8 +159,8 @@ cat > test_landsat.json << 'EOF'
 {
   "satellite": "landsat",
   "regions": "134_Arsuk",
-  "start_date": "2024-08-01",
-  "end_date": "2024-08-01",
+  "date1": "2024-08-01",
+  "date2": "2024-08-01",
   "s3_bucket": "greenland-glacier-data"
 }
 EOF

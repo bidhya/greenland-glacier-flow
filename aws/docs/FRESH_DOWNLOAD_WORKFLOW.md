@@ -87,8 +87,8 @@ cat > fresh_sentinel2.json << 'EOF'
 {
   "satellite": "sentinel2",
   "regions": "134_Arsuk",
-  "start_date": "2024-08-01",
-  "end_date": "2024-08-01",
+  "date1": "2024-08-01",
+  "date2": "2024-08-01",
   "s3_bucket": "greenland-glacier-data"
 }
 EOF
@@ -236,8 +236,8 @@ FileNotFoundError: [Errno 2] No such file or directory:
 {
   "satellite": "sentinel2",
   "regions": "101_sermiligarssuk",
-  "start_date": "2024-08-01",
-  "end_date": "2024-08-01",
+  "date1": "2024-08-01",
+  "date2": "2024-08-01",
   "s3_bucket": "greenland-glacier-data"
 }
 ```
@@ -247,8 +247,8 @@ FileNotFoundError: [Errno 2] No such file or directory:
 {
   "satellite": "sentinel2",
   "regions": "134_Arsuk",
-  "start_date": "2024-07-01",
-  "end_date": "2024-07-31",
+  "date1": "2024-07-01",
+  "date2": "2024-07-31",
   "s3_bucket": "greenland-glacier-data"
 }
 ```
@@ -258,8 +258,8 @@ FileNotFoundError: [Errno 2] No such file or directory:
 {
   "satellite": "sentinel2",
   "regions": "134_Arsuk,101_sermiligarssuk",
-  "start_date": "2024-08-01",
-  "end_date": "2024-08-01",
+  "date1": "2024-08-01",
+  "date2": "2024-08-01",
   "s3_bucket": "greenland-glacier-data"
 }
 ```

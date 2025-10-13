@@ -43,7 +43,7 @@ else:  # Default to Sentinel-2
 ```
 
 **Argument Handling Differences**:
-- **Sentinel-2**: `--start_date`, `--end_date`, `--download_flag`, `--post_processing_flag`, `--cores`
+- **Sentinel-2**: `--date1`, `--date2`, `--download_flag`, `--post_processing_flag`, `--cores`
 - **Landsat**: `--date1`, `--date2`, `--base_dir`, `--log_name` (simpler, no processing flags)
 
 ### 3. ✅ Docker Container Rebuild Best Practices
@@ -274,12 +274,12 @@ cd aws/scripts && ./deploy_lambda_container.sh
 ```bash
 # Test Sentinel-2
 aws lambda invoke --function-name glacier-sentinel2-processor \
-  --payload '{"satellite": "sentinel2", "regions": "134_Arsuk", "start_date": "2024-08-01", "end_date": "2024-08-01", "s3_bucket": "greenland-glacier-data"}' \
+  --payload '{"satellite": "sentinel2", "regions": "134_Arsuk", "date1": "2024-08-01", "date2": "2024-08-01", "s3_bucket": "greenland-glacier-data"}' \
   result.json
 
 # Test Landsat (when working)
 aws lambda invoke --function-name glacier-sentinel2-processor \
-  --payload '{"satellite": "landsat", "regions": "134_Arsuk", "start_date": "2024-08-01", "end_date": "2024-08-01", "s3_bucket": "greenland-glacier-data"}' \
+  --payload '{"satellite": "landsat", "regions": "134_Arsuk", "date1": "2024-08-01", "date2": "2024-08-01", "s3_bucket": "greenland-glacier-data"}' \
   result.json
 
 # Rebuild container

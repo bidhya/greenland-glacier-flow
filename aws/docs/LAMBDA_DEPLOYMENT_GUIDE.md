@@ -66,8 +66,8 @@ zip lambda-deployment.zip lambda_handler.py
 {
   "satellite": "sentinel2",
   "regions": "134_Arsuk",
-  "start_date": "2025-05-04",
-  "end_date": "2025-05-07",
+  "date1": "2025-05-04",
+  "date2": "2025-05-07",
   "s3_bucket": "greenland-glacier-data",
   "download_flag": 1,
   "post_processing_flag": 1
@@ -92,8 +92,8 @@ python submit_aws_job.py --satellite sentinel2 --service lambda --regions 134_Ar
     "message": "Sentinel-2 processing completed successfully",
     "satellite": "sentinel2", 
     "regions": "134_Arsuk",
-    "start_date": "2025-05-04",
-    "end_date": "2025-05-07",
+    "date1": "2025-05-04",
+    "date2": "2025-05-07",
     "s3_bucket": "greenland-glacier-data"
   }
 }
@@ -258,8 +258,8 @@ The Lambda handler supports both Sentinel-2 and Landsat with different arguments
 cmd = [
     "download_merge_clip_sentinel2.py",
     "--regions", regions,
-    "--start_date", start_date,
-    "--end_date", end_date,
+    "--date1", date1,
+    "--date2", date2,
     "--download_flag", "1",
     "--post_processing_flag", "1",
     "--cores", "1",
@@ -272,8 +272,8 @@ cmd = [
 cmd = [
     "download_clip_landsat.py",
     "--regions", regions,
-    "--date1", start_date,      # Different: date1 instead of start_date
-    "--date2", end_date,          # Different: date2 instead of end_date
+    "--date1", date1,
+    "--date2", date2,
     "--base_dir", base_dir
 ]
 # Note: NO download_flag, post_processing_flag, or cores for Landsat
@@ -289,8 +289,8 @@ cat > test_sentinel2.json << 'EOF'
 {
   "satellite": "sentinel2",
   "regions": "134_Arsuk",
-  "start_date": "2024-08-01",
-  "end_date": "2024-08-01",
+  "date1": "2024-08-01",
+  "date2": "2024-08-01",
   "s3_bucket": "greenland-glacier-data"
 }
 EOF
@@ -307,8 +307,8 @@ cat > test_landsat.json << 'EOF'
 {
   "satellite": "landsat",
   "regions": "134_Arsuk",
-  "start_date": "2024-08-01",
-  "end_date": "2024-08-01",
+  "date1": "2024-08-01",
+  "date2": "2024-08-01",
   "s3_bucket": "greenland-glacier-data"
 }
 EOF

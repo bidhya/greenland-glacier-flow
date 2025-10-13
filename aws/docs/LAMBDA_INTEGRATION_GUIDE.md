@@ -77,8 +77,8 @@ aws_region = us-west-2
 regions = 134_Arsuk,101_sermiligarssuk
 
 [DATES]
-start_date = 2024-07-04
-end_date = 2024-07-06
+date1 = 2024-07-04
+date2 = 2024-07-06
 
 [FLAGS]
 download_flag = 1
@@ -320,8 +320,8 @@ cat > /tmp/payload.json << EOF
 {
   "satellite": "sentinel2",
   "regions": "134_Arsuk",
-  "start_date": "2024-07-04",
-  "end_date": "2024-07-06"
+  "date1": "2024-07-04",
+  "date2": "2024-07-06"
 }
 EOF
 

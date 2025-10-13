@@ -47,15 +47,15 @@ def download_processing_scripts(s3_bucket, temp_dir):
         logger.error(f"Failed to download processing scripts: {e}")
         return None, []
 
-def create_processing_summary(regions, start_date, end_date, s3_bucket, job_name):
+def create_processing_summary(regions, date1, date2, s3_bucket, job_name):
     """Create a processing summary and save to file"""
     try:
         summary = {
             "job_name": job_name,
             "satellite": "sentinel2",
             "regions": regions,
-            "start_date": start_date,
-            "end_date": end_date,
+            "date1": date1,
+            "date2": date2,
             "s3_bucket": s3_bucket,
             "processing_steps": [
                 "✅ Scripts downloaded from S3",
@@ -98,7 +98,7 @@ def upload_results_to_s3(s3_bucket, job_name, processing_summary):
         log_content = f"""Sentinel-2 Processing Log
 Job: {job_name}
 Regions: {processing_summary['regions']}
-Date Range: {processing_summary['start_date']} to {processing_summary['end_date']}
+Date Range: {processing_summary['date1']} to {processing_summary['date2']}
 Status: {processing_summary['status']}
 
 Processing Steps:
@@ -136,8 +136,8 @@ def lambda_handler(event, context):
         # Extract parameters from event
         satellite = event.get('satellite', 'sentinel2')
         regions = event.get('regions', '134_Arsuk')
-        start_date = event.get('start_date')
-        end_date = event.get('end_date')
+        start_date = event.get('date1')
+        end_date = event.get('date2')
         s3_bucket = event.get('s3_bucket', 'greenland-glacier-data')
         download_flag = event.get('download_flag', 1)
         post_processing_flag = event.get('post_processing_flag', 1)
@@ -145,7 +145,7 @@ def lambda_handler(event, context):
         
         # Validate required parameters
         if not start_date or not end_date:
-            raise ValueError("start_date and end_date are required")
+            raise ValueError("date1 and date2 are required")
         
         logger.info(f"Processing {satellite} data for regions: {regions}")
         logger.info(f"Date range: {start_date} to {end_date}")
@@ -181,8 +181,8 @@ def lambda_handler(event, context):
                 'message': 'Sentinel-2 processing workflow completed successfully',
                 'satellite': satellite,
                 'regions': regions,
-                'start_date': start_date,
-                'end_date': end_date,
+                'date1': start_date,
+                'date2': end_date,
                 's3_bucket': s3_bucket,
                 'job_name': job_name,
                 'mode': 'demonstration',
