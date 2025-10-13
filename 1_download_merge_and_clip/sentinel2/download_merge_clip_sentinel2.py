@@ -1,5 +1,36 @@
 #!usr/bin/env python
 
+"""
+Download, merge, and clip Sentinel-2 satellite imagery for Greenland glacier regions.
+
+This script processes Sentinel-2 data from AWS for specified glacier regions, downloading
+imagery within a date range, merging tiles, and clipping to glacier boundaries.
+
+Usage Examples:
+    # Process specific regions with date range
+    python download_merge_clip_sentinel2.py --regions 134_Arsuk,101_sermiligarssuk --date1 2024-07-01 --date2 2024-07-05 --download_flag 1 --post_processing_flag 1 --base_dir /path/to/output
+
+    # Process regions by index range (first 10 regions)
+    python download_merge_clip_sentinel2.py --start_end_index 0:10 --date1 2024-07-01 --date2 2024-07-05 --download_flag 1 --post_processing_flag 1 --base_dir /path/to/output
+
+    # Download only (no post-processing)
+    python download_merge_clip_sentinel2.py --regions 134_Arsuk --date1 2024-07-01 --date2 2024-07-05 --download_flag 1 --post_processing_flag 0 --base_dir /path/to/output
+
+    # Process large glaciers only (area >= 1000 km²)
+    python download_merge_clip_sentinel2.py --min_area 1000 --date1 2024-07-01 --date2 2024-07-05 --download_flag 1 --post_processing_flag 1 --base_dir /path/to/output
+
+    # Skip specific regions
+    python download_merge_clip_sentinel2.py --ignore_regions 134_Arsuk,191_Hagen_Brae --date1 2024-07-01 --date2 2024-07-05 --download_flag 1 --post_processing_flag 1 --base_dir /path/to/output
+
+    # Use multiple cores for faster processing
+    python download_merge_clip_sentinel2.py --regions 134_Arsuk --date1 2024-07-01 --date2 2024-07-05 --cores 4 --download_flag 1 --post_processing_flag 1 --base_dir /path/to/output
+
+    # Clear downloaded files after processing to save space
+    python download_merge_clip_sentinel2.py --regions 134_Arsuk --date1 2024-07-01 --date2 2024-07-05 --download_flag 1 --post_processing_flag 1 --clear_downloads 1 --base_dir /path/to/output
+
+Author: Greenland Glacier Flow Team
+"""
+
 
 ###############################################################################################
 # Imports.

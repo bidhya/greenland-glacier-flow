@@ -1,5 +1,37 @@
 #!/usr/bin/env python
 
+"""
+Download and clip Landsat satellite imagery for Greenland glacier regions.
+
+This script processes Landsat data for specified glacier regions, searching for
+imagery within a date range and clipping to glacier boundaries with configurable
+intersection thresholds.
+
+Usage Examples:
+    # Process specific regions with date range
+    python download_clip_landsat.py --regions 134_Arsuk,101_sermiligarssuk --date1 2024-07-01 --date2 2024-07-05 --base_dir /path/to/output
+
+    # Process regions by index range (first 10 regions)
+    python download_clip_landsat.py --start_end_index 0:10 --date1 2024-07-01 --date2 2024-07-05 --base_dir /path/to/output
+
+    # Custom intersection threshold (reject scenes with < 10% overlap)
+    python download_clip_landsat.py --regions 134_Arsuk --date1 2024-07-01 --date2 2024-07-05 --intersect_thresh 0.10 --base_dir /path/to/output
+
+    # Test run with Jakobshavn glacier only (2023 data)
+    python download_clip_landsat.py --test_run true --base_dir /path/to/output
+
+    # Process large glaciers only (area >= 1000 km²) - requires modifying the script
+    python download_clip_landsat.py --start_end_index 0:50 --date1 2024-07-01 --date2 2024-07-05 --base_dir /path/to/output
+
+    # Custom log file name
+    python download_clip_landsat.py --regions 134_Arsuk --date1 2024-07-01 --date2 2024-07-05 --log_name custom_landsat.log --base_dir /path/to/output
+
+    # Process all regions (default behavior when no --regions or --start_end_index specified)
+    python download_clip_landsat.py --date1 2024-07-01 --date2 2024-07-05 --base_dir /path/to/output
+
+Author: B. Yadav, M. Gravina, T. Chuddley  
+"""
+
 
 ###################################################################################################
 # Imports.
