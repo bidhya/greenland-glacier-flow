@@ -1,0 +1,16 @@
+name: glacier_velocity
+channels:
+  - conda-forge
+dependencies:
+  - python=3.13
+  - geopandas
+  - rioxarray
+  - boto3
+  - pystac-client
+  - dask  # for s2 clipping in parallel
+  - gdal # this remaining 3 may be used for last step of netcdf packaging 
+  - opencv # pip is called opencv-python
+  - tqdm
+  - netcdf4
+  #- rasterio  # dependency of rioxarray
+  #- pystac  # dependency of pystac-client
