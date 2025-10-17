@@ -2,7 +2,7 @@
 
 **Purpose**: Comprehensive AWS operations reference for the Greenland glacier flow processing system.
 
-**Last Updated**: October 13, 2025 - Added complete Sentinel-2 and Landsat processing workflows with successful Lambda deployment and data processing validation for both satellites.
+**Last Updated**: October 17, 2025 - Reorganized document structure, moved reference sections to end, updated future additions list, and improved logical flow from cleanup to deployment to operations to monitoring.
 **Scope**: Complete AWS workflow including cleanup, deployment, Lambda operations, data processing, and monitoring.
 **Learning Objective**: Enable independent AWS operations for satellite data processing workflows.
 
@@ -22,18 +22,16 @@ This guide provides complete AWS operations for the Greenland glacier flow proce
 
 ### **Current Sections:**
 - **Environment Cleanup**: Complete AWS environment reset for fresh testing
-- **Basic AWS Commands**: Essential CLI commands for all AWS services
 - **Deployment Operations**: Lambda container deployment and configuration
 - **Lambda Function Testing**: Sentinel-2 and Landsat data processing with AWS Lambda
 - **Data Processing Workflows**: Satellite data download and processing commands for both satellites
+- **Data Synchronization**: S3-to-local sync with bandwidth optimization
 - **Monitoring & Cost Management**: Performance monitoring and cost optimization
+- **Basic AWS Commands Reference**: Essential CLI commands for all AWS services
 
 ### **Future Additions:**
-- Lambda function testing commands
-- Data synchronization workflows
-- Cost optimization strategies
-- Performance monitoring
 - Automated deployment pipelines
+- Advanced cost optimization strategies
 
 ---
 
@@ -364,268 +362,7 @@ find . -name "*.log" -o -name "__pycache__" | wc -l  # Should return 0
 
 ---
 
-## 🚀 Section 6: Deployment Operations (Future)
-
-*Placeholder for Lambda container deployment and configuration commands*
-
----
-
-## 📊 Section 7: Lambda Function Testing (Future)
-
-*Placeholder for Lambda function invocation and testing commands*
-
----
-
-## 📥 Section 8: Data Processing Workflows (Future)
-
-*Placeholder for satellite data download and processing commands*
-
----
-
-## 📈 Section 9: Monitoring & Cost Management (Future)
-
-*Placeholder for monitoring, logging, and cost optimization commands*
-
----
-
-Once cleanup is complete, proceed with fresh deployment:
-
-```bash
-# 1. Upload fresh project files to S3
-cd /home/bny/Github/greenland-glacier-flow
-aws s3 sync . s3://greenland-glacier-data/scripts/greenland-glacier-flow/ --exclude ".git/*"
-
-# 2. Deploy fresh Lambda container
-cd aws/scripts
-chmod +x deploy_lambda_container.sh
-./deploy_lambda_container.sh
-
-# 3. Configure Lambda settings
-aws lambda update-function-configuration \
-  --function-name glacier-sentinel2-processor \
-  --memory-size 5120 \
-  --region us-west-2
-```
-
----
-
-## 📚 AWS Concepts Learned
-
-### S3 (Simple Storage Service)
-- **Buckets**: Containers for storing objects (files)
-- **Objects**: Files stored in buckets with unique keys
-- **Recursive operations**: `--recursive` flag for entire directory trees
-
-### Lambda Functions
-- **Serverless compute**: Run code without managing servers
-- **Functions**: Deployed code units with specific handlers
-- **Regions**: Services are region-specific for latency optimization
-
-### ECR (Elastic Container Registry)
-- **Container registry**: Store Docker container images
-- **Repositories**: Named collections of images
-- **Images**: Tagged versions of containerized applications
-
-### AWS CLI Patterns
-- **JMESPath queries**: `--query` parameter for filtering JSON output
-- **Region specification**: `--region` parameter for service location
-- **Force operations**: `--force` flag for non-interactive deletions
-
----
-
-## ⚠️ Important Notes
-
-1. **S3 Bucket Preservation**: The parent bucket `greenland-glacier-data` is intentionally preserved
-2. **Region Consistency**: All commands use `us-west-2` for satellite data optimization
-3. **Order Matters**: Follow the exact sequence to avoid dependency conflicts
-4. **Verification Steps**: Always verify deletions were successful
-5. **Cost Awareness**: ECR storage and Lambda invocations incur charges
-6. **IAM Permissions**: Ensure your user has necessary AWS permissions
-
----
-
-## 🔧 Section 10: Basic AWS Commands Reference
-
-**Purpose**: Essential AWS CLI commands for getting started and troubleshooting.
-
-### Account & Configuration
-
-```bash
-# Check AWS CLI version
-aws --version
-
-# Verify AWS credentials and account
-aws sts get-caller-identity
-
-# List configured profiles
-aws configure list-profiles
-
-# Show current configuration
-aws configure list
-
-# Configure AWS credentials (interactive)
-aws configure
-
-# Configure specific profile
-aws configure --profile myprofile
-```
-
-### S3 (Storage) Commands
-
-```bash
-# List all buckets
-aws s3 ls
-
-# List contents of a bucket
-aws s3 ls s3://my-bucket-name/
-
-# List contents recursively (shows all files)
-aws s3 ls s3://my-bucket-name/ --recursive
-
-# Copy file to S3
-aws s3 cp myfile.txt s3://my-bucket-name/myfile.txt
-
-# Copy directory to S3
-aws s3 cp myfolder s3://my-bucket-name/myfolder --recursive
-
-# Sync local directory to S3 (upload changes only)
-aws s3 sync myfolder s3://my-bucket-name/myfolder
-
-# Download file from S3
-aws s3 cp s3://my-bucket-name/myfile.txt myfile.txt
-
-# Download directory from S3
-aws s3 cp s3://my-bucket-name/myfolder myfolder --recursive
-
-# Delete file from S3
-aws s3 rm s3://my-bucket-name/myfile.txt
-
-# Delete directory from S3
-aws s3 rm s3://my-bucket-name/myfolder --recursive
-
-# Create bucket
-aws s3 mb s3://my-new-bucket-name
-
-# Delete bucket (must be empty)
-aws s3 rb s3://my-bucket-name
-```
-
-### Lambda Commands
-
-```bash
-# List all Lambda functions
-aws lambda list-functions
-
-# List functions in specific region
-aws lambda list-functions --region us-west-2
-
-# Get function details
-aws lambda get-function --function-name my-function
-
-# Invoke function
-aws lambda invoke --function-name my-function response.json
-
-# Update function code
-aws lambda update-function-code --function-name my-function --zip-file fileb://function.zip
-
-# Update function configuration
-aws lambda update-function-configuration --function-name my-function --memory-size 512
-
-# Delete function
-aws lambda delete-function --function-name my-function
-```
-
-### ECR (Container Registry) Commands
-
-```bash
-# List repositories
-aws ecr describe-repositories
-
-# Create repository
-aws ecr create-repository --repository-name my-repo
-
-# List images in repository
-aws ecr list-images --repository-name my-repo
-
-# Delete image
-aws ecr batch-delete-image --repository-name my-repo --image-ids imageDigest=sha256:xxxxx
-
-# Delete repository
-aws ecr delete-repository --repository-name my-repo --force
-
-# Login to ECR (for Docker)
-aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin ACCOUNT.dkr.ecr.us-west-2.amazonaws.com
-```
-
-### IAM Commands
-
-```bash
-# List users
-aws iam list-users
-
-# Get current user details
-aws iam get-user
-
-# List policies attached to user
-aws iam list-attached-user-policies --user-name myuser
-
-# List user access keys
-aws iam list-access-keys --user-name myuser
-```
-
-### General AWS Commands
-
-```bash
-# List all regions
-aws ec2 describe-regions
-
-# Get account information
-aws sts get-account-summary
-
-# Check service limits
-aws service-quotas get-service-quota --service-code lambda --quota-code L-2ACBD22F
-
-# Get billing information (requires billing permissions)
-aws ce get-cost-and-usage --time-period Start=2025-01-01,End=2025-01-31 --granularity MONTHLY --metrics BlendedCost
-```
-
-### Troubleshooting Commands
-
-```bash
-# Check AWS CLI configuration
-aws configure list
-
-# Test S3 access
-aws s3 ls s3://my-bucket-name/
-
-# Test Lambda permissions
-aws lambda list-functions --max-items 1
-
-# Check CloudWatch logs for Lambda
-aws logs tail /aws/lambda/my-function --follow
-
-# Get Lambda function logs
-aws logs filter-log-events --log-group-name /aws/lambda/my-function
-```
-
-### Cost Monitoring
-
-```bash
-# Get current month costs
-aws ce get-cost-and-usage \
-  --time-period Start=$(date +%Y-%m-01),End=$(date +%Y-%m-%d) \
-  --granularity MONTHLY \
-  --metrics BlendedCost
-
-# List services with costs
-aws ce get-dimension-values \
-  --dimension SERVICE \
-  --time-period Start=$(date +%Y-%m-01),End=$(date +%Y-%m-%d)
-```
-
----
-
-## � Section 6: Deployment Operations
+## 🚀 Section 6: Deployment Operations
 
 **Purpose**: Deploy Lambda container and prepare for satellite data processing.
 
@@ -872,7 +609,7 @@ python aws/scripts/submit_aws_job.py --satellite sentinel2 --service lambda --re
 
 ---
 
-## � Section 9: Data Synchronization (S3 to Local)
+## 🔄 Section 9: Data Synchronization (S3 to Local)
 
 **Purpose**: Download processed satellite data from AWS S3 to your local machine or HPC for analysis.
 
@@ -1091,7 +828,7 @@ ls -lh ~/greenland_glacier_flow/1_download_merge_and_clip/sentinel2/clipped/
 
 ---
 
-## �📈 Section 10: Monitoring & Cost Management
+## 📈 Section 10: Monitoring & Cost Management
 
 **Purpose**: Monitor Lambda performance and manage AWS costs.
 
@@ -1154,7 +891,223 @@ aws ce get-cost-and-usage --time-period Start=$(date +%Y-%m-01),End=$(date +%Y-%
 
 ---
 
-## �📚 AWS Learning Resources
+## 🔧 Section 11: Basic AWS Commands Reference
+
+**Purpose**: Essential AWS CLI commands for getting started and troubleshooting.
+
+### Account & Configuration
+
+```bash
+# Check AWS CLI version
+aws --version
+
+# Verify AWS credentials and account
+aws sts get-caller-identity
+
+# List configured profiles
+aws configure list-profiles
+
+# Show current configuration
+aws configure list
+
+# Configure AWS credentials (interactive)
+aws configure
+
+# Configure specific profile
+aws configure --profile myprofile
+```
+
+### S3 (Storage) Commands
+
+```bash
+# List all buckets
+aws s3 ls
+
+# List contents of a bucket
+aws s3 ls s3://my-bucket-name/
+
+# List contents recursively (shows all files)
+aws s3 ls s3://my-bucket-name/ --recursive
+
+# Copy file to S3
+aws s3 cp myfile.txt s3://my-bucket-name/myfile.txt
+
+# Copy directory to S3
+aws s3 cp myfolder s3://my-bucket-name/myfolder --recursive
+
+# Sync local directory to S3 (upload changes only)
+aws s3 sync myfolder s3://my-bucket-name/myfolder
+
+# Download file from S3
+aws s3 cp s3://my-bucket-name/myfile.txt myfile.txt
+
+# Download directory from S3
+aws s3 cp s3://my-bucket-name/myfolder myfolder --recursive
+
+# Delete file from S3
+aws s3 rm s3://my-bucket-name/myfile.txt
+
+# Delete directory from S3
+aws s3 rm s3://my-bucket-name/myfolder --recursive
+
+# Create bucket
+aws s3 mb s3://my-new-bucket-name
+
+# Delete bucket (must be empty)
+aws s3 rb s3://my-bucket-name
+```
+
+### Lambda Commands
+
+```bash
+# List all Lambda functions
+aws lambda list-functions
+
+# List functions in specific region
+aws lambda list-functions --region us-west-2
+
+# Get function details
+aws lambda get-function --function-name my-function
+
+# Invoke function
+aws lambda invoke --function-name my-function response.json
+
+# Update function code
+aws lambda update-function-code --function-name my-function --zip-file fileb://function.zip
+
+# Update function configuration
+aws lambda update-function-configuration --function-name my-function --memory-size 512
+
+# Delete function
+aws lambda delete-function --function-name my-function
+```
+
+### ECR (Container Registry) Commands
+
+```bash
+# List repositories
+aws ecr describe-repositories
+
+# Create repository
+aws ecr create-repository --repository-name my-repo
+
+# List images in repository
+aws ecr list-images --repository-name my-repo
+
+# Delete image
+aws ecr batch-delete-image --repository-name my-repo --image-ids imageDigest=sha256:xxxxx
+
+# Delete repository
+aws ecr delete-repository --repository-name my-repo --force
+
+# Login to ECR (for Docker)
+aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin ACCOUNT.dkr.ecr.us-west-2.amazonaws.com
+```
+
+### IAM Commands
+
+```bash
+# List users
+aws iam list-users
+
+# Get current user details
+aws iam get-user
+
+# List policies attached to user
+aws iam list-attached-user-policies --user-name myuser
+
+# List user access keys
+aws iam list-access-keys --user-name myuser
+```
+
+### General AWS Commands
+
+```bash
+# List all regions
+aws ec2 describe-regions
+
+# Get account information
+aws sts get-account-summary
+
+# Check service limits
+aws service-quotas get-service-quota --service-code lambda --quota-code L-2ACBD22F
+
+# Get billing information (requires billing permissions)
+aws ce get-cost-and-usage --time-period Start=2025-01-01,End=2025-01-31 --granularity MONTHLY --metrics BlendedCost
+```
+
+### Troubleshooting Commands
+
+```bash
+# Check AWS CLI configuration
+aws configure list
+
+# Test S3 access
+aws s3 ls s3://my-bucket-name/
+
+# Test Lambda permissions
+aws lambda list-functions --max-items 1
+
+# Check CloudWatch logs for Lambda
+aws logs tail /aws/lambda/my-function --follow
+
+# Get Lambda function logs
+aws logs filter-log-events --log-group-name /aws/lambda/my-function
+```
+
+### Cost Monitoring
+
+```bash
+# Get current month costs
+aws ce get-cost-and-usage \
+  --time-period Start=$(date +%Y-%m-01),End=$(date +%Y-%m-%d) \
+  --granularity MONTHLY \
+  --metrics BlendedCost
+
+# List services with costs
+aws ce get-dimension-values \
+  --dimension SERVICE \
+  --time-period Start=$(date +%Y-%m-01),End=$(date +%Y-%m-%d)
+```
+
+---
+
+## ⚠️ Important Notes
+
+1. **S3 Bucket Preservation**: The parent bucket `greenland-glacier-data` is intentionally preserved
+2. **Region Consistency**: All commands use `us-west-2` for satellite data optimization
+3. **Order Matters**: Follow the exact sequence to avoid dependency conflicts
+4. **Verification Steps**: Always verify deletions were successful
+5. **Cost Awareness**: ECR storage and Lambda invocations incur charges
+6. **IAM Permissions**: Ensure your user has necessary AWS permissions
+
+---
+
+## 📚 AWS Concepts Learned
+
+### S3 (Simple Storage Service)
+- **Buckets**: Containers for storing objects (files)
+- **Objects**: Files stored in buckets with unique keys
+- **Recursive operations**: `--recursive` flag for entire directory trees
+
+### Lambda Functions
+- **Serverless compute**: Run code without managing servers
+- **Functions**: Deployed code units with specific handlers
+- **Regions**: Services are region-specific for latency optimization
+
+### ECR (Elastic Container Registry)
+- **Container registry**: Store Docker container images
+- **Repositories**: Named collections of images
+- **Images**: Tagged versions of containerized applications
+
+### AWS CLI Patterns
+- **JMESPath queries**: `--query` parameter for filtering JSON output
+- **Region specification**: `--region` parameter for service location
+- **Force operations**: `--force` flag for non-interactive deletions
+
+---
+
+## 📚 AWS Learning Resources
 
 - **AWS CLI Documentation**: https://docs.aws.amazon.com/cli/
 - **AWS Free Tier**: https://aws.amazon.com/free/
