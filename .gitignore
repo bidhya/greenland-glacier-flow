@@ -216,6 +216,7 @@ Sample_code
 AGENTS.md
 *.out
 Archive/
+qaqc/
 
 # AWS test files and logs
 aws/scripts/*test*.json

@@ -49,7 +49,16 @@ def download_and_post_process_region(
     # 1. Set up folder structure.
     ###########################################################################################
 
-    # Create the output folders for this region.
+    # Create the output folders for this region. 
+    # # Old structure (M Gravina): Uncomment to reprocess older files
+    # download_folder = f'{base_dir}/{region}/download'  # TODO: remove region subfolder to avoid deep paths
+    # clip_folder = f'{base_dir}/{region}/clipped'  # TODO: rename as clipped_year or clipped/year
+    # template_folder = f'{base_dir}/{region}/template'  # TODO: remove region subfolder to avoid deep paths
+    # base_metadata_folder = f'{base_dir}/{region}/metadata'  # TODO: put adjacent to clipped_year folder and rename as metadata_year
+    # metadata_folder = f'{base_metadata_folder}/individual_csv/'
+    # os.makedirs(metadata_folder, exist_ok=True)
+
+    # [New structure by BNY, Oct 2025]
     download_folder = f'{base_dir}/download'  # OLD: f'{base_dir}/{region}/download'
     clip_folder = f'{base_dir}/clipped/{region}'  # OLD: f'{base_dir}/{region}/clipped'  # TODO: rename as clipped_year or clipped/year
     template_folder = f'{base_dir}/template'  # OLD: {region}/
