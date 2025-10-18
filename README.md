@@ -37,6 +37,19 @@ See `aws/docs/AWS_SETUP_STATUS.md` for complete technical details.
 
 📁 **See**: `SENTINEL2_OPTIMIZATION_GUIDE.md` for complete technical details and implementation guide.
 
+## 📖 Current Workflow Documentation
+
+**For the current unified satellite processing workflow (Sentinel-2 & Landsat), see `AGENTS.md`** - this contains the complete guide for:
+- Job submission using `submit_job.sh` wrapper (recommended for local testing)
+- Direct Python script calls (`submit_satellite_job.py`) for advanced users
+- Configuration management and CLI overrides  
+- Multi-environment execution (local, HPC, AWS Lambda)
+- Testing strategies and best practices
+
+⚠️ **Important**: For local testing, use `./submit_job.sh` to ensure proper conda environment activation. Direct Python calls require manual environment setup.
+
+**🤖 AI Agents**: See the "AI Agent Quick Command Reference" section in `AGENTS.md` for rapid command determination.
+
 
 ## Notes: Everything below this is older notes. DO NOT use this. Will be cleaned-up when the workflow is finalized.  
 
