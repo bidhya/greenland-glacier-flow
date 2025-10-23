@@ -455,7 +455,8 @@ def concat_csv_files(
     """
 
     # Set up file paths.
-    metadata_folder = f'{base_metadata_folder}/individual_csv/{region}'
+    # metadata_folder = f'{base_metadata_folder}/individual_csv'  # old workflow where files downloaded separately per region
+    metadata_folder = f'{base_metadata_folder}/individual_csv/{region}'  # new workflow Oct 2025 where downloads are in common folder
 
     # Get a list of .csv files in the metadata folder.
     csv_files = [f for f in os.listdir(f'{metadata_folder}') if f.endswith('.csv')]
