@@ -2,14 +2,19 @@
 
 """ Generate and submit Slurm job for satellite data processing (Sentinel-2 or Landsat)
     - Must run from command line; this script will thus submit the slurm jobs
-    - Only for HPC.
+    - Supports both HPC (SLURM) and local execution modes
     - Can override config.ini values using command line arguments
 
     Usage examples:
     - python submit_satellite_job.py --satellite sentinel2
     - python submit_satellite_job.py --satellite landsat --regions 134_Arsuk,101_sermiligarssuk
     - python submit_satellite_job.py --satellite landsat --date1 2024-01-01 --date2 2024-12-31 --dry-run true
+    - python submit_satellite_job.py --satellite sentinel2 --execution-mode local --date1 2024-10-01 --date2 2024-10-05
+    - python submit_satellite_job.py --satellite sentinel2 --memory 64G --runtime 12:00:00 --cores 4
     - python submit_satellite_job.py --config custom_config.ini --satellite sentinel2 --memory 64G --runtime 02:00:00
+
+    Note: For local development, use submit_job.sh wrapper script which handles conda environment activation automatically.
+    Direct Python calls require manual environment activation: conda activate glacier_velocity
 
     Author: B. Yadav. Aug 18, 2025
 """
@@ -304,12 +309,12 @@ def main():
     if execution_mode == 'hpc':
         logging.info("Execution mode: HPC (SLURM detected)")
         create_slurm_job(jobname=jobname, regions=regions, start_end_index=start_end_index, date1=date1, date2=date2,
-                base_dir=base_dir, download_flag=download_flag, post_processing_flag=post_processing_flag, clear_downloads=clear_downloads, 
-                cores=cores, memory=memory, runtime=runtime, dry_run=dry_run, email=email, log_name=f"{log_dir}/{log_name}", satellite=satellite)
+                         base_dir=base_dir, download_flag=download_flag, post_processing_flag=post_processing_flag, clear_downloads=clear_downloads,
+                         cores=cores, memory=memory, runtime=runtime, dry_run=dry_run, email=email, log_name=f"{log_dir}/{log_name}", satellite=satellite)
     elif execution_mode == 'local':
         create_bash_job(jobname=jobname, regions=regions, start_end_index=start_end_index, date1=date1, date2=date2,
-                base_dir=base_dir, download_flag=download_flag, post_processing_flag=post_processing_flag, clear_downloads=clear_downloads, 
-                cores=cores, memory=memory, runtime=runtime, dry_run=dry_run, email=email, log_name=f"{log_dir}/{log_name}", satellite=satellite)
+                        base_dir=base_dir, download_flag=download_flag, post_processing_flag=post_processing_flag, clear_downloads=clear_downloads,
+                        cores=cores, memory=memory, runtime=runtime, dry_run=dry_run, email=email, log_name=f"{log_dir}/{log_name}", satellite=satellite)
         logging.info("Execution mode: Local (direct execution)")
     else:
         raise ValueError(f"Unsupported execution mode: {execution_mode}. Supported modes are 'auto', 'hpc', and 'local'.")
