@@ -14,6 +14,7 @@ import pandas as pd
 import geopandas as gpd
 import rioxarray as rxr
 import rasterio as rs
+# import xarray as xr  # use for coverage calculation (currently not used)
 from rasterio.enums import Resampling
 # Import AWS-interfacing resources.
 from rasterio.session import AWSSession
@@ -445,6 +446,26 @@ def download_clip_and_squeeze_one_stac_result(
         # Export (save) the dataset as a geotiff.
         rxr_ds.rio.to_raster(output_fpath)
 
+        # ###############################################################################################
+        # # Check coverage quality - reject scenes with < 50% glacier coverage.
+        # ###############################################################################################
+        # # Get the region area in km².
+        # aoi_area = region_aoi_gdf.Area.item()
+        
+        # # Calculate covered area: count pixels > 0, multiply by 225 m²/pixel (15m × 15m), convert to km².
+        # covered_pixels = xr.where(rxr_ds > 0, 1, 0).sum().item()
+        # covered_area = covered_pixels * 225 / 1e6  # 225 m² per pixel for Landsat
+        # coverage_fraction = covered_area / aoi_area
+        
+        # # If coverage fraction is above the 50% threshold, save to file.
+        # if coverage_fraction > 0.5:
+        #     # Export (save) the dataset as a geotiff.
+        #     rxr_ds.rio.to_raster(output_fpath)
+        # else:
+        #     # Log rejection for scenes below threshold.
+        #     logstr = f"Scene {subset_id} rejected: {coverage_fraction:.1%} coverage ({covered_area:.1f} km² / {aoi_area:.1f} km²) - below 50% threshold"
+        #     logging.info(logstr)
+        #     print(logstr)
     # Catch and record any errors, but keep going to the rest of the STAC results.
     except Exception as error:
         logstr = f"Download of {subset_id} failed. Continuing... Err: {error}"
