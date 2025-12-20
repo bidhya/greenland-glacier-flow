@@ -130,6 +130,13 @@ parser.add_argument(
     default=1
 )
 parser.add_argument(
+    '--folder_structure',
+    help='Folder structure to use: "old" (region-specific folders) or "new" (shared folders)',
+    type=str,
+    default='old',
+    choices=['old', 'new']
+)
+parser.add_argument(
     '--base_dir',
     help='Base folder for processing',
     type=str
@@ -156,6 +163,7 @@ download_flag = args.download_flag
 post_processing_flag = args.post_processing_flag
 clear_downloads = args.clear_downloads
 cores = args.cores
+folder_structure = args.folder_structure
 base_dir = args.base_dir
 log_name = args.log_name
 
@@ -255,7 +263,8 @@ for region in regions_list:
             base_dir,
             download_flag,
             post_processing_flag,
-            cores
+            cores,
+            folder_structure
         )
     except Exception as e:
         logging.error(f"Error while downloading and processing region {region}: {repr(e)}\nTraceback: {traceback.format_exc()}")

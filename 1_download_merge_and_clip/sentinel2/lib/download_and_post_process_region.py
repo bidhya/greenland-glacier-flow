@@ -26,7 +26,8 @@ def download_and_post_process_region(
     base_dir,
     download_flag,
     post_processing_flag,
-    cores
+    cores,
+    folder_structure='old'
 ):
     """
     Downloads data for the specified region and date range, then post-processes it (merging and
@@ -43,27 +44,27 @@ def download_and_post_process_region(
     download_flag: 0/1 boolean, indicating whether data should be downloaded.
     post_processing_flag: 0/1 boolean, indicating whether data should be post-processed.
     cores: How many cores are available for parallel processing.
+    folder_structure: 'old' or 'new' folder structure. 'old' uses region-specific folders, 'new' uses shared folders.
     """
-
-    ###########################################################################################
     # 1. Set up folder structure.
     ###########################################################################################
 
-    # Create the output folders for this region. 
-    # # Old structure (M Gravina): Uncomment to reprocess older files
-    # download_folder = f'{base_dir}/{region}/download'  # TODO: remove region subfolder to avoid deep paths
-    # clip_folder = f'{base_dir}/{region}/clipped'  # TODO: rename as clipped_year or clipped/year
-    # template_folder = f'{base_dir}/{region}/template'  # TODO: remove region subfolder to avoid deep paths
-    # base_metadata_folder = f'{base_dir}/{region}/metadata'  # TODO: put adjacent to clipped_year folder and rename as metadata_year
-    # metadata_folder = f'{base_metadata_folder}/individual_csv/'
-    # os.makedirs(metadata_folder, exist_ok=True)
+    # Create the output folders for this region based on folder structure.
+    if folder_structure == 'old':
+        # Old structure (M Gravina): Region-specific folders
+        download_folder = f'{base_dir}/{region}/download'
+        clip_folder = f'{base_dir}/{region}/clipped'
+        template_folder = f'{base_dir}/{region}/template'
+        base_metadata_folder = f'{base_dir}/{region}/metadata'
+        metadata_folder = f'{base_metadata_folder}/individual_csv/'
+    else:
+        # New structure (Oct 2025): Shared folders across regions
+        download_folder = f'{base_dir}/download'
+        clip_folder = f'{base_dir}/clipped/{region}'
+        template_folder = f'{base_dir}/template'
+        base_metadata_folder = f'{base_dir}/metadata'
+        metadata_folder = f'{base_metadata_folder}/individual_csv/{region}'
 
-    # [New structure by BNY, Oct 2025]
-    download_folder = f'{base_dir}/download'  # OLD: f'{base_dir}/{region}/download'
-    clip_folder = f'{base_dir}/clipped/{region}'  # OLD: f'{base_dir}/{region}/clipped'  # TODO: rename as clipped_year or clipped/year
-    template_folder = f'{base_dir}/template'  # OLD: {region}/
-    base_metadata_folder = f'{base_dir}/metadata'  # {region}/metadata
-    metadata_folder = f'{base_metadata_folder}/individual_csv/{region}'
     os.makedirs(metadata_folder, exist_ok=True)
 
 
@@ -127,9 +128,9 @@ def download_and_post_process_region(
     # 3. Cleanup for this region.
     ###########################################################################################
 
-    # Combine all indivisual .csv files corresponding to clipped_tif into a single .csv file. 
+    # Combine all individual .csv files corresponding to clipped_tif into a single .csv file. 
     # Note: This will include all the .csv files that were generated at any time (ie, just not
     # from this script).
-    concat_csv_files(base_metadata_folder, region)
+    concat_csv_files(base_metadata_folder, region, folder_structure)
 
     logging.info(f'Finished all processing for: {region} \n---------------------------------------------------------------------------------------------------')

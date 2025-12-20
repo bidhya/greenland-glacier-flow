@@ -440,7 +440,8 @@ def merge_and_clip_tifs(
 
 def concat_csv_files(
         base_metadata_folder,
-        region
+        region,
+        folder_structure='old'
     ):
     """ 
         Merge individual .csv files for each region into a single, combined file that can be used
@@ -451,12 +452,15 @@ def concat_csv_files(
         Parameters
         ----------
         base_metadata_folder: Path to the folder where image metadata files have been saved.
-        region: ???
+        region: Region name.
+        folder_structure: 'old' or 'new' folder structure.
     """
 
-    # Set up file paths.
-    # metadata_folder = f'{base_metadata_folder}/individual_csv'  # old workflow where files downloaded separately per region
-    metadata_folder = f'{base_metadata_folder}/individual_csv/{region}'  # new workflow Oct 2025 where downloads are in common folder
+    # Set up file paths based on folder structure.
+    if folder_structure == 'old':
+        metadata_folder = f'{base_metadata_folder}/individual_csv'  # old workflow where files downloaded separately per region
+    else:
+        metadata_folder = f'{base_metadata_folder}/individual_csv/{region}'  # new workflow Oct 2025 where downloads are in common folder
 
     # Get a list of .csv files in the metadata folder.
     csv_files = [f for f in os.listdir(f'{metadata_folder}') if f.endswith('.csv')]
