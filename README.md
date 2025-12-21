@@ -1,134 +1,218 @@
-# Greenland glacier flow
+# Greenland Glacier Flow Processing - Step 1: Data Acquisition
 
-Workflow to download and subset Landsat and Sentinel-2 imagery for Greenland, calculate Surface
-Displacement Maps for glacier velocity flow estimation from them, orthocorrect the SDMs, and then
-pack the results into NetCDF files for distribution.
+**Step 1 of 3-Step Workflow**: Download, process, and organize satellite imagery for glacier velocity analysis.
 
-## 🎉 AWS Lambda Container Ready! (October 2025)
+This is the **data acquisition and preprocessing stage** of the Greenland glacier flow velocity workflow. It downloads and processes Sentinel-2 and Landsat satellite imagery, organizing outputs for downstream velocity calculations (Step 2) and final data packaging (Step 3). All subsequent workflow steps depend on the file structure and data products generated here.
 
-**Major Achievement**: Complete AWS Lambda containerization with full geospatial processing capabilities now deployed and working! 
+## Workflow Pipeline
 
-- ✅ **Containerized Lambda**: Full scientific Python stack (geopandas, rasterio, GDAL, etc.)
-- ✅ **Complete Project Access**: Entire repository available in Lambda execution environment
-- ✅ **Production Ready**: Automated deployment via `aws/scripts/deploy_lambda_container.sh`
-- ✅ **Real Processing**: Successfully executing Sentinel-2 workflows in the cloud
+1. **Step 1 (This Repository)**: Download, merge, clip, and organize satellite imagery → `1_download_merge_and_clip/`
+2. **Step 2 (Downstream)**: Calculate surface displacement maps for velocity estimation → Requires Step 1 outputs
+3. **Step 3 (Downstream)**: Orthocorrect and package results into NetCDF files → Requires Steps 1 & 2 outputs
 
-📁 **AWS Organization**: All AWS components now organized in the `aws/` directory:
-- `aws/scripts/` - Deployment and job submission scripts
-- `aws/lambda/` - Lambda handlers and container files
-- `aws/config/` - AWS configuration files
-- `aws/docs/` - Complete AWS documentation
+## 🎯 Project Status (December 2025)
 
-See `aws/docs/AWS_SETUP_STATUS.md` for complete technical details.
+**Production Ready**: Batch processing infrastructure complete and validated for HPC deployment.
 
-## 🚀 Sentinel-2 Optimizations (October 2025)
+- ✅ **192 Glacier Regions**: Full Greenland coverage with predictable batch slicing
+- ✅ **Dual Satellite Support**: Unified workflow for Sentinel-2 and Landsat
+- ✅ **Multi-Environment**: HPC (SLURM) and local (WSL/Ubuntu) execution
+- ✅ **Batch Processing**: `--start-end-index` parameter for systematic region batching
+- ✅ **Configuration-Driven**: INI config with CLI override capability
 
-**Performance Breakthrough**: 50%+ reduction in downloads and storage through intelligent architecture!
+## 🚀 Quick Start
 
-- ✅ **Centralized Downloads**: Shared tile pool eliminates duplication across overlapping regions
-- ✅ **Pre-Download Filtering**: Only downloads necessary MGRS tiles using curated metadata
-- ✅ **Proven Results**: 134_Arsuk reduced from 6 tiles to 1 (83% savings)
-- ✅ **Production Ready**: Validated on WSL, HPC, and AWS Lambda environments
+### Process Specific Regions
+```bash
+# Single region
+./submit_job.sh --satellite sentinel2 --regions 134_Arsuk --date1 2025-01-01 --date2 2025-12-31
 
-**Key Benefits**:
-- **Storage**: 50-85% reduction depending on region overlap
-- **Bandwidth**: Critical for 196-region production runs
-- **Speed**: Subsequent regions process nearly instantly if tiles exist
+# Multiple regions
+./submit_job.sh --satellite landsat --regions 134_Arsuk,101_sermiligarssuk --date1 2025-01-01 --date2 2025-12-31
+```
 
-📁 **See**: `SENTINEL2_OPTIMIZATION_GUIDE.md` for complete technical details and implementation guide.
+### Batch Processing (HPC Production)
+```bash
+# Process first 48 glaciers (batch 1 of 4)
+./submit_job.sh --satellite sentinel2 --start-end-index 0:48 --date1 2025-01-01 --date2 2025-12-31
 
-## 📖 Current Workflow Documentation
+# Process next 48 glaciers (batch 2 of 4)
+./submit_job.sh --satellite sentinel2 --start-end-index 48:96 --date1 2025-01-01 --date2 2025-12-31
 
-**For the current unified satellite processing workflow (Sentinel-2 & Landsat), see `AGENTS.md`** - this contains the complete guide for:
-- Job submission using `submit_job.sh` wrapper (recommended for local testing)
-- Direct Python script calls (`submit_satellite_job.py`) for advanced users
-- Configuration management and CLI overrides  
-- Multi-environment execution (local, HPC, AWS Lambda)
-- Testing strategies and best practices
+# Continue with remaining batches: 96:144, 144:192
+```
 
-⚠️ **Important**: For local testing, use `./submit_job.sh` to ensure proper conda environment activation. Direct Python calls require manual environment setup.
+### Test Before Production
+```bash
+# Dry-run to verify job file generation
+./submit_job.sh --satellite sentinel2 --start-end-index 0:3 --date1 2025-01-01 --date2 2025-01-31 --dry-run true
 
-**🤖 AI Agents**: See the "AI Agent Quick Command Reference" section in `AGENTS.md` for rapid command determination.
+# Local execution for debugging
+./submit_job.sh --satellite sentinel2 --regions 134_Arsuk --execution-mode local --date1 2025-01-01 --date2 2025-01-31
+```
 
+## 📖 Documentation
 
-## Notes: Everything below this is older notes. DO NOT use this. Will be cleaned-up when the workflow is finalized.  
+- **[AGENTS.md](AGENTS.md)** - Complete workflow guide, architecture decisions, and AI agent instructions
+- **[CHANGELOG.md](CHANGELOG.md)** - Detailed change history and feature additions
+- **[config.ini](config.ini)** - Configuration file (modify for your environment)
 
-Currently this is an incomplete, but usable, automation workflow. There are 3 steps to the processing
-pipeline, and the 1st and 3rd have been automated. The second step (2_velocity, which does the SDM
-calculations) is not yet automated and must be run manually in between steps 1 and 3.
+## 🏗️ Architecture
 
-Be sure to read the READMEs for each of the component steps, as each one has its own nuances.
+### Core Scripts
+- **`submit_satellite_job.py`** - Master job submission script (HPC/local)
+- **`submit_job.sh`** - Wrapper script with conda environment activation
+- **`config.ini`** - Central configuration with sectioned parameters
 
+### Processing Workflows
+- **Sentinel-2**: `1_download_merge_and_clip/sentinel2/download_merge_clip_sentinel2.py`
+  - Downloads MGRS tiles, merges overlapping scenes, clips to glacier boundaries
+  - Outputs: clipped imagery, metadata CSVs, reference templates
+- **Landsat**: `1_download_merge_and_clip/landsat/download_clip_landsat.py`
+  - Downloads Landsat scenes via STAC API, clips to glacier regions
+  - Outputs: clipped imagery, STAC query results, reference templates
 
-## Setup
+### Output Structure (Required by Downstream Steps)
+```
+1_download_merge_and_clip/
+├── sentinel2/
+│   └── <region_name>/      # Region-specific processing directory
+│       ├── download/        # Raw MGRS tiles (intermediate)
+│       ├── clipped/         # Clipped scenes → Used by Step 2
+│       ├── metadata/        # Processing metadata → Used by Step 3
+│       └── template/        # Reference templates → Used by Steps 2 & 3
+└── landsat/
+    ├── <region_name>/   # Clipped Landsat scenes → Used by Step 2
+    └── _reference/      # STAC metadata and templates → Used by Steps 2 & 3
+```
 
-Copy the file `control/config_template.sh` and remove the "_template" part of the copy's name. That is now the actual default-parameter-values file. You can make changes to this config without having to worry about Git tracking it.
+**⚠️ Critical**: Do not modify output folder structure - Steps 2 and 3 expect this exact organization.
 
-Install each of the 4 sub-workflows in their own folder underneath this repository's top-level folder:
+### Key Features
+- **Alphabetical Sorting**: Both satellites use identical glacier ordering (001→192)
+- **Mutual Exclusivity**: `--regions` and `--start-end-index` cannot be used together
+- **Package Logging**: Automatic version reporting for debugging (rioxarray, rasterio, GDAL, geopandas, xarray)
+- **Environment Detection**: Automatic HPC vs local mode selection
 
-1. **Landsat downloader/clipper**
-    - Code [here](https://code.osu.edu/BPCRC/outreach/glacier-dynamics/greenland-glacier-flow-download-clip-landsat).
-    - Install at `<this repo's top level folder>/1_download_merge_and_clip/landsat`.
+## 🔧 Configuration
 
-2. **Sentinel-2 downloader/merger/clipper**
-    - Code [here](https://code.osu.edu/BPCRC/outreach/glacier-dynamics/greenland-glacier-flow-download-merge-clip-sentinel-2).
-    - Install at `<this repo's top level folder>/1_download_merge_and_clip/sentinel2`.
+Edit `config.ini` for your environment, or use CLI overrides:
 
-3. **Veclocity calculator**
-    - Code [here](https://code.osu.edu/BPCRC/outreach/glacier-dynamics/greenland-glacier-flow-velocity).
-    - Install at `<this repo's top level folder>/2_velocity`.
+```ini
+[REGIONS]
+regions = 140_CentralLindenow
+start_end_index = 0:48
 
-4. **Orthocorrector and packager**
-    - Code [here](https://code.osu.edu/BPCRC/outreach/glacier-dynamics/greenland-glacier-flow-orthocorrect-netcdf-package).
-    - Install at `<this repo's top level folder>/3_orthocorrect_and_netcdf-package`.
+[DATES]
+date1 = 2025-01-01
+date2 = 2025-12-31
 
-Set up each of these sub-workflows according to their own READMEs. This must be done before this top-level script can be run.
+[PATHS]
+base_dir = /fs/project/howat.4/greenland_glacier_flow
+local_base_dir = /home/bny/greenland_glacier_flow
 
-You will need to create a destination folder to receive the data from the workflow. This folder will contain sub-folders which mirror the above structure of the application code (for example, the Sentinel-2 download/merge/clip step will output to `<top level output folder>/1_download_merge_and_clip/sentinel2`). It is a good idea to create this mirrored folder structure before you begin running the workflow. Also note that at least one of the sub-workflows (Sentinel 2) requires some files to pre-exist in the destination folder before a run. See the READMEs for those sub-workflows for details.
+[SETTINGS]
+satellite = sentinel2
+cores = 1
+dry_run = False
+execution_mode = auto
+```
 
+**⚠️ Important**: Use CLI overrides for testing. Never commit test values to `config.ini`.
 
-## How to run
+## 🧪 Environment Setup
 
-Run the command from the root directory of this repository. Here is an example command (note that supplying arguments at the command line overrides the equivalent settings in the config file):
+### Required Environment
+```bash
+# Activate conda environment (handled automatically by submit_job.sh)
+conda activate glacier_velocity
 
-`sh control/run_greenland_velocity_workflow.sh -r '001_alison,002_anoritup' -s '2021-01-01' -e '2021-12-31' -b '/fs/project/howat.4/gravina.2/greenland_glacier_flow' -w '1a 1b 2'`
+# Key dependencies
+# - Python 3.11+
+# - rioxarray, rasterio, GDAL, geopandas, xarray
+# - For HPC: SLURM scheduler
+```
 
-(Arguments stand for "region", "date1", "date2", "base_dir", and "which_steps", respectively.)
+### HPC Requirements
+- SLURM job scheduler
+- Conda environment: `glacier_velocity`
+- Network access to satellite data archives
 
-The above command will run the workflow for 2 regions for the entirety of 2021, and place the output files in the folder `/fs/project/howat.4/gravina.2/greenland_glacier_flow`. It will only run steps 1a/1b and 2 out of 1a/1b, 2, and 3. 
+### Local Requirements
+- WSL/Ubuntu or Linux environment
+- Conda/mamba with `glacier_velocity` environment
+- Sufficient disk space for downloaded imagery
 
-However, this assumes that the automation for step 2 is functional. Remember, it isn't, so in reality, DON'T DO THIS! You should run steps 1a and 1b using the `-which_steps '1a 1b'` flag, then run step 2 manually, then run step 3 using `-which_steps '3'` flag.
+## 📊 Batch Processing Strategy
 
-For information on how to run step 2 manually, see the README in that step's folder.
+**192 Glaciers → 4 Batches** (optimal for HPC resource management):
 
-Also note these important details:
+| Batch | Index Range | Regions | Example Glaciers |
+|-------|-------------|---------|------------------|
+| 1 | 0:48 | 48 | 001_alison → 048_ingia |
+| 2 | 48:96 | 48 | 049_jakobshavn → 096_... |
+| 3 | 96:144 | 48 | 097_... → 144_... |
+| 4 | 144:192 | 48 | 145_... → 192_CH_Ostenfeld |
 
-- Step 1b (Sentinel-2) is very disk-intensive. The intermediate files in the `download` folder for that step are huge and rapidly eat up your lab's available space. It is generally best to run a set of regions through this step, then once the run is done, delete the intermediate files in `download`.
+**Why this works**: Alphabetical sorting ensures consistent glacier assignment across both satellites.
 
-- Currently, Step 3 overwrites data by year within a given glacier. For example, if you run glacier 001 for the year 2022, and then run it again for year 2023, the output NetCDF files for 2022 will be removed and replaced with 2023. Plan to run all the years you need in one run, or else isolate older output files before rerunning.
+## 🎓 Usage Tips
 
-When you are done with a run, check the logs in `/control/logs`. They are a useful source of info and allow you to confirm whether there were errors during the run.
+1. **Test with dry-run first**: Verify job files before submission
+2. **Start small**: Test 3-5 glaciers before full batch runs
+3. **Monitor resources**: Check memory/runtime requirements with initial runs
+4. **Use wrappers**: `./submit_job.sh` handles environment activation automatically
+5. **Check logs**: SLURM output includes package versions for debugging
 
+## 🚨 Troubleshooting
 
-## Scope for future development
+### Common Issues
 
-Step 2, which handles Surface Displacement Mapping, is written in MATLAB and uses the SETSM
-package (written in C++) as its main component. Steps 1 and 3, in comparision, are written mostly
-in Python.
+**Package version errors**: Check job output for installed package versions
+```
+Python 3.11.5
+    rioxarray: 0.15.0
+    rasterio: 1.3.9
+    osgeo: 3.6.2
+```
 
-In addition, Step 2 has multiple parts where jobs are submitted to the Unity Cluster and must
-complete before the workflow can continue.
+**Wrong glaciers processed**: Verify region sorting is enabled in processing scripts
 
-Automating step 2 would require finding a way to control MATLAB scripts from .sh or .py files.
-Alternately, the MATLAB scripts could be rebuilt ground-up in Python on shell directly.
+**Job fails immediately**: Check conda environment activation and SLURM configuration
 
-Either way, logic must be added to check the status of the jobs on the Unity cluster and only
-allow the workflow to continue once the jobs have successfully completed.
+## 🔬 Development
 
-Error-catching logic must also be added, which will log errors to the same error directory as
-the rest of the workflow, and which will stop operation if encountered (ideally on a per-region
-basis to avoid grinding huge, multi-region runs to a halt).
+### Recent Achievements (December 2025)
+- ✅ Batch processing infrastructure complete
+- ✅ Consistent region sorting across both satellites
+- ✅ Package version logging added to all job outputs
+- ✅ Code cleanup (removed legacy parameters)
 
-Step 3 should be written to be non-destructive (to leave data from pre-existing processed years in place instead of deleting and replacing them).
+### Future Enhancements
+- [ ] Automated resource allocation based on region size
+- [ ] Incremental processing (only new dates)
+- [ ] Result validation pipeline
+- [ ] Integration with downstream velocity analysis
 
-Finally, note that the "auto-clear" function on step 1b (Sentinel-2 download/merge/clip) doesn't work reliably. In order to avoid unpredictable failures, this has been disabled by default. However, the consequence is that the `downloads` folder for Sentinel-2 data must be frequently cleared out, manually by the person overseeing large automated runs of this integrated workflow, or it will grow very large (eventually overflowing the GD lab's partition on Unity. In the future, this should be solved if you want a truly autonomous workflow.
+## 📝 Citation
+
+If you use this workflow in your research, please cite:
+
+```
+Yadav, B., et al. (2025). Greenland Glacier Flow Processing System.
+GitHub: https://github.com/bidhya/greenland-glacier-flow
+```
+
+## 👥 Contributors
+
+- B. Yadav - Original Sentinel-2 workflow developer, Current maintainer, HPC/AWS workflow development
+- T. Chuddley - Original Landsat workflow developer
+- M. Gravina -  Code refactoring and re-organization
+
+## 📧 Contact
+
+For questions or issues, please open a GitHub issue or contact the maintainers.
+
+---
+
+**Legacy Documentation**: See `legacy_README.md` for historical workflow information (pre-2025 refactoring).
