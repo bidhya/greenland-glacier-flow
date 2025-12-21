@@ -193,6 +193,8 @@ script_dir = Path(__file__).resolve().parent
 glacier_regions_path = script_dir.parent / 'ancillary' / 'glacier_roi_v2' / 'glaciers_roi_proj_v3_300m.gpkg'
 regions = gpd.read_file(glacier_regions_path)
 regions.index = regions.region
+# Sort regions alphabetically by index to ensure predictable numeric order (001→192)
+regions = regions.sort_index()
 
 # Subset the regions based on minimum and maximum area parameters.
 if min_area:
