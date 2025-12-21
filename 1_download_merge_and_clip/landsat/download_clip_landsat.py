@@ -159,6 +159,9 @@ if aoi_gdf.crs != f"epsg:{NSIDC_EPSG_CODE}":
     raise ValueError(
         f"AOI file is not in specified epsg:{NSIDC_EPSG_CODE}."
     )
+# BNY (Dec 2025): next two lines to match with sentinel2 code
+aoi_gdf.index = aoi_gdf.region  
+aoi_gdf = aoi_gdf.sort_index()
 
 
 ###############################################################################################
