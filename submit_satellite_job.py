@@ -33,6 +33,7 @@ parser = argparse.ArgumentParser(description='Create and submit SLURM job for sa
 parser.add_argument('--config', help='Path to configuration file', type=str, default='config.ini')
 parser.add_argument('--satellite', help='Satellite type (sentinel2 or landsat)', type=str, choices=['sentinel2', 'landsat'])
 parser.add_argument('--regions', help='Regions to process (comma-separated, no spaces)', type=str)
+parser.add_argument('--start-end-index', help='Start and end index for batch processing (e.g., 0:48)', type=str)
 parser.add_argument('--date1', help='Start date in YYYY-MM-DD format', type=str)
 parser.add_argument('--date2', help='End date in YYYY-MM-DD format', type=str)
 parser.add_argument('--base-dir', help='Base output directory', type=str)
@@ -85,6 +86,7 @@ def create_bash_job(jobname, regions, start_end_index, date1, date2, base_dir, d
         fh.writelines("conda activate glacier_velocity\n")
         fh.writelines("date; hostname; pwd\n")         # Add host, time, and directory name for later troubleshooting
         fh.writelines("python --version; which python\n")  # Check python version
+        fh.writelines("python -c \"for p in ['rioxarray','rasterio','osgeo','geopandas','xarray']: print(f'\\t{p}: {__import__(p).__version__}')\"\n")  # Check key package versions
         fh.writelines("echo ========================================================\n")
         fh.writelines("\n")
         # fh.writelines("cd $TMPDIR\n")
@@ -94,11 +96,14 @@ def create_bash_job(jobname, regions, start_end_index, date1, date2, base_dir, d
         fh.writelines(f"cp -r {script_dir}/1_download_merge_and_clip .\n")
         fh.writelines("cd 1_download_merge_and_clip\n")  # required because ancillary folder located here
         
+        # Determine region selection method (mutually exclusive: either specific regions OR batch index range)
+        region_param = f"--start_end_index {start_end_index}" if start_end_index else f"--regions {regions}"
+        
         # Choose the appropriate script and parameters based on satellite type
         if satellite.lower() == "sentinel2":
-            fh.writelines(f"python sentinel2/download_merge_clip_sentinel2.py --regions {regions} --date1 {date1} --date2 {date2} --download_flag {download_flag} --post_processing_flag {post_processing_flag} --clear_downloads {clear_downloads} --base_dir {base_dir} --log_name {log_name}\n")
+            fh.writelines(f"python sentinel2/download_merge_clip_sentinel2.py {region_param} --date1 {date1} --date2 {date2} --download_flag {download_flag} --post_processing_flag {post_processing_flag} --clear_downloads {clear_downloads} --base_dir {base_dir} --log_name {log_name}\n")
         elif satellite.lower() == "landsat":
-            fh.writelines(f"python landsat/download_clip_landsat.py --regions {regions} --date1 {date1} --date2 {date2} --base_dir {base_dir} --log_name {log_name}\n")
+            fh.writelines(f"python landsat/download_clip_landsat.py {region_param} --date1 {date1} --date2 {date2} --base_dir {base_dir} --log_name {log_name}\n")
         else:
             raise ValueError(f"Unsupported satellite type: {satellite}. Supported types are 'sentinel2' and 'landsat'.")
             
@@ -144,6 +149,7 @@ def create_slurm_job(jobname, regions, start_end_index, date1, date2, base_dir, 
         fh.writelines("conda activate glacier_velocity\n")
         fh.writelines("date; hostname; pwd\n")         # Add host, time, and directory name for later troubleshooting
         fh.writelines("python --version; which python\n")  # Check python version
+        fh.writelines("python -c \"for p in ['rioxarray','rasterio','osgeo','geopandas','xarray']: print(f'\\t{p}: {__import__(p).__version__}')\"\n")  # Check key package versions
         # # first thing we do when the job starts is to "change directory to the place where the job was submitted from".
         fh.writelines("echo $SLURM_SUBMIT_DIR\n")
         fh.writelines("echo ========================================================\n")
@@ -155,11 +161,14 @@ def create_slurm_job(jobname, regions, start_end_index, date1, date2, base_dir, 
         fh.writelines(f"cp -r {script_dir}/1_download_merge_and_clip .\n")
         fh.writelines("cd 1_download_merge_and_clip\n")
         
+        # Determine region selection method (mutually exclusive: either specific regions OR batch index range)
+        region_param = f"--start_end_index {start_end_index}" if start_end_index else f"--regions {regions}"
+        
         # Choose the appropriate script and parameters based on satellite type
         if satellite.lower() == "sentinel2":
-            fh.writelines(f"python sentinel2/download_merge_clip_sentinel2.py --regions {regions} --date1 {date1} --date2 {date2} --download_flag {download_flag} --post_processing_flag {post_processing_flag} --clear_downloads {clear_downloads} --base_dir {base_dir} --log_name {log_name}\n")
+            fh.writelines(f"python sentinel2/download_merge_clip_sentinel2.py {region_param} --date1 {date1} --date2 {date2} --download_flag {download_flag} --post_processing_flag {post_processing_flag} --clear_downloads {clear_downloads} --base_dir {base_dir} --log_name {log_name}\n")
         elif satellite.lower() == "landsat":
-            fh.writelines(f"python landsat/download_clip_landsat.py --regions {regions} --date1 {date1} --date2 {date2} --base_dir {base_dir} --log_name {log_name}\n")
+            fh.writelines(f"python landsat/download_clip_landsat.py {region_param} --date1 {date1} --date2 {date2} --base_dir {base_dir} --log_name {log_name}\n")
         else:
             raise ValueError(f"Unsupported satellite type: {satellite}. Supported types are 'sentinel2' and 'landsat'.")
             
@@ -213,7 +222,7 @@ def load_config(config_file="config.ini", cli_args=None):
         'log_name': config.get("SETTINGS", "log_name"),
         'email': config.get("SETTINGS", "email"),
         'satellite': config.get("SETTINGS", "satellite"),
-        'which_steps_to_run': config.get("SETTINGS", "which_steps_to_run"),
+        # 'which_steps_to_run': config.get("SETTINGS", "which_steps_to_run"),
         'dry_run': config.getboolean("SETTINGS", "dry_run", fallback=False),
         'execution_mode': config.get("SETTINGS", "execution_mode", fallback="auto")
     }
@@ -224,6 +233,8 @@ def load_config(config_file="config.ini", cli_args=None):
             config_dict['satellite'] = cli_args.satellite
         if cli_args.regions:
             config_dict['regions'] = cli_args.regions
+        if cli_args.start_end_index:
+            config_dict['start_end_index'] = cli_args.start_end_index
         if cli_args.date1:
             config_dict['date1'] = cli_args.date1
         if cli_args.date2:
@@ -272,6 +283,12 @@ def main():
     email = cfg['email']
     dry_run = cfg['dry_run']
     execution_mode = cfg['execution_mode']
+    
+    # Auto-append batch range to log name if using start_end_index
+    if start_end_index:
+        base_log = log_name.rsplit('.', 1)[0]
+        ext = log_name.rsplit('.', 1)[1] if '.' in log_name else 'log'
+        log_name = f"{base_log}_{start_end_index.replace(':', '-')}.{ext}"
 
     # Determine execution mode (ie running on HPC or local machine)
     if execution_mode == 'auto':
@@ -297,8 +314,8 @@ def main():
         jobname = jobname[:50]  # Truncate to first 50 characters to avoid overly long job names  
     
     # Use CLI arguments for runtime and memory if provided, otherwise use defaults
-    runtime = args.runtime if args.runtime else "01:00:00"
-    memory = args.memory if args.memory else "48G"
+    runtime = args.runtime if args.runtime else "25:00:00"
+    memory = args.memory if args.memory else "60G"
 
     
     # Set up logging using current YMDHM format.
