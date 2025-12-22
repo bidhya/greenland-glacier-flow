@@ -8,7 +8,7 @@ dependencies:
   - boto3
   - pystac-client
   - dask  # for s2 clipping in parallel
-  - gdal # this remaining 3 may be used for last step of netcdf packaging 
+  - gdal=3.10.3  # Fixed to 3.10.3 - newer versions trigger warnings, may not be thoroughly tested
   - opencv # pip is called opencv-python
   - tqdm
   - netcdf4

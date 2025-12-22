@@ -23,17 +23,17 @@ email = yadav.111@osu.edu  # Update if needed
 
 ### 2. Adjust Resource Allocation (Optional)
 
-Edit `submit_satellite_job.py` default values if needed:
+Edit `config.ini` [SETTINGS] section for production values:
 
-```python
-# Line 334: Default runtime
-runtime = args.runtime if args.runtime else "25:00:00"  # Adjust hours
-
-# Line 335: Default memory  
-memory = args.memory if args.memory else "60G"  # Adjust GB
+```ini
+[SETTINGS]
+memory = 60G      # Adjust as needed
+runtime = 24:00:00  # Adjust hours:minutes:seconds
 ```
 
 Or override via command line: `--runtime 12:00:00 --memory 48G`
+
+**Note**: After December 22, 2025 bug fix, config.ini is now the authoritative source for runtime/memory (not hardcoded defaults).
 
 ### 3. Run Batch Jobs
 

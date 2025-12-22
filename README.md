@@ -16,9 +16,10 @@ This is the **data acquisition and preprocessing stage** of the Greenland glacie
 
 - ✅ **192 Glacier Regions**: Full Greenland coverage with predictable batch slicing
 - ✅ **Dual Satellite Support**: Unified workflow for Sentinel-2 and Landsat
-- ✅ **Multi-Environment**: HPC (SLURM) and local (WSL/Ubuntu) execution
+- ✅ **Multi-Environment**: HPC (SLURM), local (WSL/Ubuntu), and AWS Lambda execution
 - ✅ **Batch Processing**: `--start-end-index` parameter for systematic region batching
 - ✅ **Configuration-Driven**: INI config with CLI override capability
+- ✅ **Cloud Ready**: AWS Lambda containerized deployment (production-ready, de-prioritized for HPC focus)
 
 ## 🚀 Quick Start
 
@@ -53,9 +54,18 @@ This is the **data acquisition and preprocessing stage** of the Greenland glacie
 
 ## 📖 Documentation
 
+### Main Documentation
 - **[AGENTS.md](AGENTS.md)** - Complete workflow guide, architecture decisions, and AI agent instructions
 - **[CHANGELOG.md](CHANGELOG.md)** - Detailed change history and feature additions
 - **[config.ini](config.ini)** - Configuration file (modify for your environment)
+
+### AWS Cloud Processing
+- **[aws/README.md](aws/README.md)** - AWS directory structure and component overview
+- **[aws/docs/](aws/docs/)** - Comprehensive AWS Lambda documentation and setup guides
+- **Note**: All satellite data is hosted on AWS. Cloud processing capability is production-ready but currently de-prioritized in favor of HPC batch processing.
+
+### Historical Documentation
+- **[Archive/legacy_README.md](Archive/legacy_README.md)** - Pre-2025 workflow documentation
 
 ## 🏗️ Architecture
 
@@ -128,7 +138,7 @@ execution_mode = auto
 conda activate glacier_velocity
 
 # Key dependencies
-# - Python 3.11+
+# - Python 3.13+
 # - rioxarray, rasterio, GDAL, geopandas, xarray
 # - For HPC: SLURM scheduler
 ```
@@ -170,11 +180,13 @@ conda activate glacier_velocity
 
 **Package version errors**: Check job output for installed package versions
 ```
-Python 3.11.5
+Python 3.13
     rioxarray: 0.15.0
     rasterio: 1.3.9
     osgeo: 3.6.2
 ```
+
+**GDAL version warnings**: Environment uses GDAL 3.10.3 (fixed in [environment.yml](environment.yml)). Newer versions may trigger warnings and have not been thoroughly tested with this workflow.
 
 **Wrong glaciers processed**: Verify region sorting is enabled in processing scripts
 
@@ -183,10 +195,14 @@ Python 3.11.5
 ## 🔬 Development
 
 ### Recent Achievements (December 2025)
-- ✅ Batch processing infrastructure complete
-- ✅ Consistent region sorting across both satellites
-- ✅ Package version logging added to all job outputs
-- ✅ Code cleanup (removed legacy parameters)
+- ✅ **December 22**: Fixed critical config hierarchy bug (runtime/memory now correctly read from config.ini)
+- ✅ **December 22**: Enhanced config.ini with comprehensive batch processing documentation
+- ✅ **December 22**: Streamlined AGENTS.md (83% reduction, optimized for AI agents)
+- ✅ **December 22**: Restored AWS context to documentation (Lambda ready for future cloud processing)
+- ✅ **December 21**: Batch processing infrastructure complete with automatic log/job naming
+- ✅ **December 21**: Consistent region sorting across both satellites
+- ✅ **December 21**: Package version logging added to all job outputs
+- ✅ **December 21**: Code cleanup (removed legacy parameters)
 
 ### Future Enhancements
 - [ ] Automated resource allocation based on region size
@@ -205,14 +221,20 @@ GitHub: https://github.com/bidhya/greenland-glacier-flow
 
 ## 👥 Contributors
 
-- B. Yadav - Original Sentinel-2 workflow developer, Current maintainer, HPC/AWS workflow development
-- T. Chuddley - Original Landsat workflow developer
-- M. Gravina -  Code refactoring and re-organization
+- B. Yadav - Sentinel-2 workflow developer, Current maintainer, HPC/AWS workflow development and deployment
+- T. Chuddley - Landsat workflow developer
+- M. Gravina - Code refactoring and re-organization
 
 ## 📧 Contact
 
 For questions or issues, please open a GitHub issue or contact the maintainers.
 
+## 🔗 Related Resources
+
+- **AWS Data Source**: Satellite imagery accessed from AWS Open Data Registry (Sentinel-2, Landsat)
+- **AWS Lambda Documentation**: See `aws/docs/` for cloud processing setup and deployment guides
+- **Historical Workflow**: See `Archive/legacy_README.md` for pre-2025 refactoring documentation
+
 ---
 
-**Legacy Documentation**: See `legacy_README.md` for historical workflow information (pre-2025 refactoring).
+**Current Focus**: HPC batch processing for 2025 production data delivery. AWS Lambda capability maintained for future cloud-scale processing when needed.
