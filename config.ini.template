@@ -1,0 +1,113 @@
+# ============================================================================
+# Workflow configuration for Greenland glacier flow processing
+# ============================================================================
+# NOTE: This is a TEMPLATE file. Copy to config.ini and customize for your environment.
+#
+# SETUP INSTRUCTIONS:
+# ------------------
+# 1. Copy this file: cp config.ini.template config.ini
+# 2. Edit config.ini with your specific values:
+#    - [PATHS] base_dir: Your HPC project directory
+#    - [PATHS] local_base_dir: Your local working directory
+#    - [SETTINGS] email: Your notification email
+# 3. DO NOT commit config.ini (it's in .gitignore)
+#
+# BATCH PROCESSING USAGE:
+# -----------------------
+# This config file serves as the single source of truth for workflow settings.
+# For batch runs, most parameters are set here and only satellite type and 
+# region range need to be specified on the command line.
+#
+# TYPICAL BATCH COMMANDS:
+#   ./submit_job.sh --satellite sentinel2 --start-end-index 0:25
+#   ./submit_job.sh --satellite sentinel2 --start-end-index 25:50
+#   ./submit_job.sh --satellite landsat --start-end-index 0:100
+#
+# CONFIGURATION PRIORITY:
+#   1. Command-line arguments (highest priority)
+#   2. Values in this config.ini file
+#   3. Script defaults (fallback only)
+#
+# KEY PARAMETERS FOR BATCH RUNS:
+#   - Set in config.ini: date1, date2, memory, runtime, cores, base_dir
+#   - Override via CLI: satellite, start_end_index (or regions)
+#   - Leave empty in config.ini: regions, start_end_index (use CLI instead)
+#
+# BATCH PROCESSING NOTES:
+#   - Regions are processed in alphabetical order (consistent across satellites)
+#   - start_end_index uses Python slicing (0:25 = first 25 regions)
+#   - Job names and log files automatically include batch range suffix
+#   - Example: sentinel2_20250101_0_25.job, satellite_glacier_0_25.log
+#
+# For detailed documentation, see:
+#   - PRODUCTION_WORKFLOW.md (operational procedures)
+#   - docs/ARCHITECTURE.md (system architecture)
+#   - AGENTS.md (AI agent guide with full context)
+#
+# ⚠️ IMPORTANT: DO NOT COMMENT OUT OR DELETE VARIABLE LINES
+#   - To disable a parameter, leave it EMPTY after the equals sign (e.g., regions = )
+#   - Commenting out or deleting lines will cause ConfigParser errors and script failure
+#   - Example: Use "regions = " NOT "#regions = 134_Arsuk"
+#
+# ============================================================================
+
+[REGIONS]
+# List of glacier regions to process (comma-separated, no spaces)
+# If empty: processes all 192 regions (or subset defined by start_end_index)
+# If specified: processes only listed regions (cannot use with start_end_index)
+# Examples: 134_Arsuk  OR  134_Arsuk,101_sermiligarssuk,191_Hagen_Brae
+regions =
+
+# Start and end index for region processing (alternative to regions list)
+# Format: start:end (e.g., 0:10 or 5: for start=5 to end of list)
+# Leave empty to use regions list instead
+# Provide via command line for batch runs
+# This takes precedence over the regions list if both are set
+start_end_index =
+
+[DATES]
+# Start and end dates (inclusive) in ISO format
+# date2 can be future and script will still pull up to the latest available data
+date1 = 2025-01-01
+date2 = 2025-12-31
+
+[PATHS]
+# Base output directory to download, clip, and save files (on HPC)
+# CUSTOMIZE THIS: Replace with your HPC project directory
+base_dir = /fs/project/YOUR_PROJECT/YOUR_USERNAME/greenland_glacier_flow
+
+# Base output directory for local runs (WSL/Ubuntu)
+# CUSTOMIZE THIS: Replace with your local working directory
+local_base_dir = /home/YOUR_USERNAME/greenland_glacier_flow
+
+[FLAGS]
+# Workflow flags [1 = True, 0 = False]
+download_flag = 1
+post_processing_flag = 1
+clear_downloads = 0
+
+[SETTINGS]
+# Number of cores to use for multiprocessing
+cores = 1
+
+# Memory allocation for SLURM job (e.g., 60G for batch of 25 Sentinel-2 regions)
+memory = 60G
+
+# Runtime for SLURM job (HH:MM:SS format)
+# Note: Batch of 25 Sentinel-2 regions requires ~24 hours
+runtime = 24:00:00
+
+# Log filename for this run
+log_name = satellite_glacier.log
+
+# CUSTOMIZE THIS: Your email for SLURM notifications
+email = your.email@institution.edu
+
+# Satellite type: "sentinel2" or "landsat"
+satellite = sentinel2
+
+# Dry run flag: set to True to test without actual submission
+dry_run = False
+
+# Execution mode: "auto" (detect), "hpc" (SLURM), "local" (direct execution)
+execution_mode = auto
