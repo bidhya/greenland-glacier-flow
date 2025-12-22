@@ -208,7 +208,6 @@ __marimo__/
 
 # Custom ignores
 .flake8
-1_download_merge_and_clip/ancillary/
 1_download_merge_and_clip/logs/
 1_download_merge_and_clip/logs_101_192_2024/
 control/config.sh
