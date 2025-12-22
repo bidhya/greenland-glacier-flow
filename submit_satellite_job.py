@@ -38,8 +38,8 @@ parser.add_argument('--date1', help='Start date in YYYY-MM-DD format', type=str)
 parser.add_argument('--date2', help='End date in YYYY-MM-DD format', type=str)
 parser.add_argument('--base-dir', help='Base output directory', type=str)
 parser.add_argument('--cores', help='Number of cores to use', type=int)
-parser.add_argument('--memory', help='Memory allocation (e.g., 48G)', type=str, default='48G')
-parser.add_argument('--runtime', help='Runtime for the job (e.g., 01:00:00)', type=str, default='01:00:00')
+parser.add_argument('--memory', help='Memory allocation (e.g., 48G)', type=str)
+parser.add_argument('--runtime', help='Runtime for the job (e.g., 01:00:00)', type=str)
 parser.add_argument('--dry-run', help='Generate job file but do not submit (true/false)', type=str, choices=['true', 'false'], default=None)
 parser.add_argument('--email', help='Email for job notifications', type=str)
 parser.add_argument('--execution-mode', help='Execution mode: hpc (SLURM), local (direct), auto (detect)', type=str, choices=['hpc', 'local', 'auto'], default='auto')
@@ -219,6 +219,8 @@ def load_config(config_file="config.ini", cli_args=None):
         
         # General settings
         'cores': config.getint("SETTINGS", "cores", fallback=1),
+        'memory': config.get("SETTINGS", "memory", fallback="48G"),
+        'runtime': config.get("SETTINGS", "runtime", fallback="01:00:00"),
         'log_name': config.get("SETTINGS", "log_name"),
         'email': config.get("SETTINGS", "email"),
         'satellite': config.get("SETTINGS", "satellite"),
@@ -243,6 +245,10 @@ def load_config(config_file="config.ini", cli_args=None):
             config_dict['base_dir'] = cli_args.base_dir
         if cli_args.cores:
             config_dict['cores'] = cli_args.cores
+        if cli_args.memory:
+            config_dict['memory'] = cli_args.memory
+        if cli_args.runtime:
+            config_dict['runtime'] = cli_args.runtime
         if cli_args.email:
             config_dict['email'] = cli_args.email
         if cli_args.dry_run is not None:
@@ -281,6 +287,8 @@ def main():
     cores = cfg['cores']
     log_name = cfg['log_name']
     email = cfg['email']
+    memory = cfg['memory']
+    runtime = cfg['runtime']
     dry_run = cfg['dry_run']
     execution_mode = cfg['execution_mode']
     
@@ -288,7 +296,7 @@ def main():
     if start_end_index:
         base_log = log_name.rsplit('.', 1)[0]
         ext = log_name.rsplit('.', 1)[1] if '.' in log_name else 'log'
-        log_name = f"{base_log}_{start_end_index.replace(':', '-')}.{ext}"
+        log_name = f"{base_log}_{start_end_index.replace(':', '_')}.{ext}"
 
     # Determine execution mode (ie running on HPC or local machine)
     if execution_mode == 'auto':
@@ -310,12 +318,13 @@ def main():
 
     # Create job name using date strings from config
     jobname = f"{satellite.lower()}_{date1.replace('-', '')}"  # _{date2.replace('-', '')}
-    if len(jobname) > 50:
-        jobname = jobname[:50]  # Truncate to first 50 characters to avoid overly long job names  
     
-    # Use CLI arguments for runtime and memory if provided, otherwise use defaults
-    runtime = args.runtime if args.runtime else "25:00:00"
-    memory = args.memory if args.memory else "60G"
+    # Auto-append batch range to job name if using start_end_index
+    if start_end_index:
+        jobname = f"{jobname}_{start_end_index.replace(':', '_')}"
+    
+    if len(jobname) > 50:
+        jobname = jobname[:50]  # Truncate to first 50 characters to avoid overly long job names
 
     
     # Set up logging using current YMDHM format.
