@@ -1,6 +1,6 @@
 # Architecture Documentation
 
-**Last Updated**: December 21, 2025  
+**Last Updated**: December 24, 2025  
 **Status**: Production system with 192-glacier batch processing capability
 
 ## System Overview
@@ -24,8 +24,8 @@ graph TB
     end
     
     subgraph "Satellite Processing"
-        S2[Sentinel-2<br/>Processing]
-        LS[Landsat<br/>Processing]
+        S2[Sentinel-2<br/>STAC Download<br/>Tile Merge/Clip<br/>37-char Truncation<br/>Individual+Combined CSVs]
+        LS[Landsat<br/>STAC Download<br/>Individual Scene Clip<br/>Subset ID Naming<br/>Reference CSVs/Templates]
     end
     
     subgraph "Output Structure"
@@ -422,6 +422,37 @@ timeline
                  : Alphabetical region sorting
                  : Automatic log naming
                  : Production deployment (192 glaciers)
+```
+
+## Metadata and Reference Data Architecture
+
+```mermaid
+graph TB
+    subgraph "Sentinel-2 Metadata"
+        S2_INDIV[Individual CSVs<br/>Per Clipped TIF<br/>Source File Lineage]
+        S2_COMB[Combined CSVs<br/>Regional Manifests<br/>NSIDC Metadata<br/><i>Unused in Workflow</i>]
+        S2_TEMP[Templates<br/>Per Region<br/>Reprojection Reference]
+    end
+    
+    subgraph "Landsat Metadata"
+        LS_QUERY[STAC Query CSVs<br/>Per Region<br/>Search Results Log<br/>Overwritten on Reprocess]
+        LS_TEMP[Templates<br/>Per Region<br/>Persistent Across Years<br/>Master Spatial Reference]
+    end
+    
+    subgraph "Technical Debts"
+        UNUSED[Unused Return Values<br/>Sentinel-2 merge_and_clip_tifs<br/>Intended for NSIDC]
+        COMMENTED[Commented Coverage Checks<br/>Both Satellites<br/>All Scenes Saved]
+        PERSIST[Template Persistence<br/>Landsat Yearly Runs<br/>Potential Mismatches]
+    end
+    
+    S2_INDIV --> S2_COMB
+    LS_QUERY -.-> COMMENTED
+    S2_TEMP -.-> PERSIST
+    LS_TEMP -.-> PERSIST
+    
+    style COMMENTED fill:#FFE4B5
+    style UNUSED fill:#FFB6C1
+    style PERSIST fill:#DDA0DD
 ```
 
 ## Related Documentation
