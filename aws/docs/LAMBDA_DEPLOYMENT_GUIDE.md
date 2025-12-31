@@ -33,12 +33,23 @@ Since we don't have IAM/Lambda permissions via AWS CLI, we'll deploy manually th
 
 #### 4. Configure Function Settings
 1. **General configuration**:
-   - **Timeout**: `15 minutes 0 seconds`
-   - **Memory**: `1024 MB`
+   - **Timeout**: `15 minutes 0 seconds` (900 seconds - maximum)
+   - **Memory**: `10240 MB` (10 GB - maximum)
+   - **Ephemeral storage**: `10240 MB` (10 GB - maximum)
 
 2. **Environment variables** (optional):
    - `S3_BUCKET`: `greenland-glacier-data`
    - `AWS_REGION`: `us-west-2`
+
+#### ⚠️ Critical Resource Note (December 2025)
+**Always use maximum resources** for Sentinel-2 processing:
+- **Memory**: 10GB required for geospatial processing
+- **Storage**: 10GB required for tile downloads (~100MB each)
+- **Timeout**: 15 minutes required for complete workflow
+
+**Reason**: Default resources (512MB storage) limit processing to 3-4 tiles. Maximum resources enable full workflow completion.
+
+See: `LAMBDA_RESOURCE_TROUBLESHOOTING.md` for complete analysis.
 
 #### 5. Set S3 Permissions
 1. Go to **Configuration** → **Permissions**

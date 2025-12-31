@@ -74,7 +74,7 @@ def download_processing_scripts(s3_client, s3_bucket):
         logger.error(f"Failed to download complete project: {e}")
         return None, []
 
-def run_sentinel2_processing(project_dir, regions, date1, date2, base_dir):
+def run_sentinel2_processing(project_dir, regions, start_end_index, date1, date2, base_dir):
     """Run the actual Sentinel-2 processing with pip-installed geospatial libraries
     
     Args:
@@ -89,9 +89,19 @@ def run_sentinel2_processing(project_dir, regions, date1, date2, base_dir):
         os.chdir(sentinel2_dir)
         
         # Build command for Sentinel-2 processing
+        # Determine region selection method (mutually exclusive: either specific regions OR batch index range)
         cmd = [
             python_exec, "download_merge_clip_sentinel2.py",
-            "--regions", regions,
+        ]
+        
+        # Add region arguments only if they have values
+        if start_end_index:
+            cmd.extend(["--start_end_index", start_end_index])
+        elif regions and regions.strip():
+            cmd.extend(["--regions", regions])
+        
+        # Add other required arguments
+        cmd.extend([
             "--date1", date1,      # Updated for parameter reconciliation
             "--date2", date2,       # Updated for parameter reconciliation
             "--download_flag", "1",
@@ -99,16 +109,21 @@ def run_sentinel2_processing(project_dir, regions, date1, date2, base_dir):
             "--cores", "1",
             "--base_dir", str(base_dir),  # Satellite-specific directory
             "--log_name", "lambda_processing.log"
-        ]
+        ])
         
         logger.info(f"Running command: {' '.join(cmd)}")
         logger.info(f"Working directory: {os.getcwd()}")
+        logger.info(f"Python executable: {python_exec}")
+        logger.info(f"Sentinel-2 script exists: {os.path.exists('download_merge_clip_sentinel2.py')}")
         
         # Set up environment variables
         env = os.environ.copy()
         env['PYTHONPATH'] = str(sentinel2_dir)
         
+        logger.info(f"Environment PYTHONPATH: {env.get('PYTHONPATH')}")
+        
         # Run the processing with timeout
+        logger.info("Starting subprocess...")
         result = subprocess.run(
             cmd,
             capture_output=True,
@@ -117,6 +132,7 @@ def run_sentinel2_processing(project_dir, regions, date1, date2, base_dir):
             env=env,
             cwd=sentinel2_dir
         )
+        logger.info("Subprocess completed.")
         
         logger.info(f"Process completed with return code: {result.returncode}")
         if result.stdout:
@@ -148,7 +164,7 @@ def run_sentinel2_processing(project_dir, regions, date1, date2, base_dir):
             'success': False
         }
 
-def run_landsat_processing(project_dir, regions, date1, date2, base_dir):
+def run_landsat_processing(project_dir, regions, start_end_index, date1, date2, base_dir):
     """Run the actual Landsat processing with pip-installed geospatial libraries
     
     Args:
@@ -163,14 +179,24 @@ def run_landsat_processing(project_dir, regions, date1, date2, base_dir):
         os.chdir(landsat_dir)
         
         # Build command for Landsat processing (note: different arguments than Sentinel-2)
+        # Determine region selection method (mutually exclusive: either specific regions OR batch index range)
         cmd = [
             python_exec, "download_clip_landsat.py",
-            "--regions", regions,
+        ]
+        
+        # Add region arguments only if they have values
+        if start_end_index:
+            cmd.extend(["--start_end_index", start_end_index])
+        elif regions and regions.strip():
+            cmd.extend(["--regions", regions])
+        
+        # Add other required arguments
+        cmd.extend([
             "--date1", date1,
             "--date2", date2,
             "--base_dir", str(base_dir),  # Satellite-specific directory
             "--log_name", "lambda_processing.log"
-        ]
+        ])
         
         logger.info(f"Running command: {' '.join(cmd)}")
         logger.info(f"Working directory: {os.getcwd()}")
@@ -296,6 +322,7 @@ def lambda_handler(event, context):
         # Extract parameters from event
         satellite = event.get('satellite', 'sentinel2')
         regions = event.get('regions', '134_Arsuk')
+        start_end_index = event.get('start_end_index')
         date1 = event.get('date1')  # Updated for parameter reconciliation
         date2 = event.get('date2')    # Updated for parameter reconciliation
         s3_bucket = event.get('s3_bucket', 'greenland-glacier-data')
@@ -335,11 +362,11 @@ def lambda_handler(event, context):
         logger.info(f"Step 2: Running {satellite} processing in isolated directory...")
         if satellite.lower() == "landsat":
             processing_result = run_landsat_processing(
-                project_dir, regions, date1, date2, base_dir
+                project_dir, regions, start_end_index, date1, date2, base_dir
             )
         else:  # Default to Sentinel-2
             processing_result = run_sentinel2_processing(
-                project_dir, regions, date1, date2, base_dir
+                project_dir, regions, start_end_index, date1, date2, base_dir
             )
         
         # Step 3: Upload ALL files from satellite-specific directory to S3

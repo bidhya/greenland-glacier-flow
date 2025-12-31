@@ -49,6 +49,77 @@ aws/
 - **AWS Settings**: `aws_config.ini` - S3 buckets, regions, instance types
 - **IAM Policy**: `minimal-lambda-policy.json` - Required Lambda permissions
 
+## AWS File Organization and Syncing
+
+### S3 Bucket Structure
+All AWS Lambda processing uses the S3 bucket `greenland-glacier-data` with the following organization:
+
+```
+greenland-glacier-data/
+├── scripts/                          # Lambda-accessible project files
+│   └── greenland-glacier-flow/       # Complete project codebase
+│       ├── config.ini               # Main configuration file
+│       ├── 1_download_merge_and_clip/  # Processing scripts
+│       ├── ancillary/               # Glacier region data
+│       └── ...                      # All project files
+├── 1_download_merge_and_clip/       # Processing data and results
+│   ├── sentinel2/                   # Sentinel-2 data
+│   │   ├── download/                # Downloaded satellite tiles
+│   │   ├── clipped/                 # Post-processed results
+│   │   ├── metadata/                # Processing metadata
+│   │   └── template/                # Template files
+│   └── landsat/                     # Landsat data (same structure)
+└── ...                              # Other data as needed
+```
+
+### File Synchronization Requirements
+
+#### Critical Files for Lambda Execution
+- **config.ini**: Main project configuration (dates, regions, flags)
+- **Processing Scripts**: Complete `1_download_merge_and_clip/` directory
+- **Ancillary Data**: `ancillary/` directory with glacier region shapefiles
+- **Library Code**: All supporting Python modules and utilities
+
+#### Sync Commands
+```bash
+# From project root directory
+cd /home/bny/Github/greenland-glacier-flow
+
+# Sync config.ini (after local changes)
+aws s3 cp config.ini s3://greenland-glacier-data/scripts/greenland-glacier-flow/config.ini
+
+# Sync complete project (for Lambda access)
+aws s3 sync . s3://greenland-glacier-data/scripts/greenland-glacier-flow/ \
+  --exclude ".git/*" \
+  --exclude "__pycache__/*" \
+  --exclude "*.pyc" \
+  --exclude "aws/logs/*" \
+  --exclude "Archive/*"
+
+# Verify sync
+aws s3 ls s3://greenland-glacier-data/scripts/greenland-glacier-flow/ | head -10
+```
+
+#### Validation Checklist
+- [ ] config.ini uploaded to `scripts/greenland-glacier-flow/config.ini`
+- [ ] Processing scripts in `scripts/greenland-glacier-flow/1_download_merge_and_clip/`
+- [ ] Ancillary data in `scripts/greenland-glacier-flow/ancillary/`
+- [ ] No excluded files (.git, cache) in S3
+- [ ] Lambda can access all required files
+
+### Data Flow
+1. **Local Development**: Edit files in local repository
+2. **Sync to S3**: Upload updated files to `scripts/greenland-glacier-flow/`
+3. **Lambda Execution**: Downloads project from S3, processes data
+4. **Results Storage**: Outputs saved to `1_download_merge_and_clip/` paths
+5. **Result Access**: Download results from S3 for analysis
+
+### Common Sync Issues
+- **Missing config.ini**: Lambda fails with configuration errors
+- **Outdated scripts**: Processing uses old code version
+- **Missing ancillary data**: Region processing fails
+- **Permission issues**: Ensure S3 write access for sync operations
+
 ## Usage Examples
 
 ### Lambda Container Deployment
@@ -163,6 +234,45 @@ nano ../README.md
 - Lambda handlers download complete project from S3
 - Processing scripts called with same parameters as HPC/local modes
 - Results uploaded to S3 buckets for further analysis
+
+## AWS Processing Workflow
+
+### Quick Start Commands
+```bash
+# Deploy container to AWS ECR (one-time setup)
+./aws/scripts/deploy_lambda_container.sh
+
+# Sync updated config.ini to S3 (required for Lambda to access latest settings)
+aws s3 cp config.ini s3://greenland-glacier-data/scripts/greenland-glacier-flow/config.ini
+
+# Process Landsat batch (efficient, ~31s for 23 glaciers)
+python aws/scripts/submit_aws_job.py --satellite landsat --service lambda --start-end-index 0:23
+
+# Process Sentinel-2 batch (resource-intensive, ~6min for 3 glaciers)
+python aws/scripts/submit_aws_job.py --satellite sentinel2 --service lambda --start-end-index 0:3
+```
+
+### S3 Bucket Structure
+**Bucket:** `greenland-glacier-data`
+
+```
+greenland-glacier-data/
+├── 1_download_merge_and_clip/          # Processed satellite data
+│   ├── landsat/                        # Landsat orthorectified imagery
+│   │   ├── {region_name}/              # Individual glacier regions
+│   │   └── _reference/                 # STAC metadata and templates
+│   └── sentinel2/                      # Sentinel-2 processed data
+└── scripts/greenland-glacier-flow/     # Project codebase backup
+    ├── config.ini                      # ⚠️ ACTIVE CONFIG FILE LOCATION
+    ├── aws/config/aws_config.ini       # AWS-specific settings
+    └── [all project files...]          # Complete repository backup
+```
+
+**⚠️ Critical:** Config file must be synced to `s3://greenland-glacier-data/scripts/greenland-glacier-flow/config.ini` for Lambda functions to access updated settings. Without syncing, Lambda will use the previous config version stored on S3.
+
+### Known Issues
+- **Sentinel-2 Timeout**: Processing may timeout after 15 minutes (AWS Lambda limit) but still complete successfully. Check S3 for outputs and CloudWatch logs if invocation fails.
+- **Memory Requirements**: Sentinel-2 processing requires adequate memory allocation (tested with 5GB, may need optimization)
 
 ## Future Enhancements
 

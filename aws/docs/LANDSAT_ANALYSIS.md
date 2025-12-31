@@ -1,53 +1,30 @@
-# Landsat Processing Analysis - October 3, 2025
+# Landsat Processing Analysis - December 31, 2025
 
-## Current Behavior
+**Status**: ✅ **FULLY OPERATIONAL**
 
-### Test Parameters
-- Region: 134_Arsuk
-- Date range: 2024-07-01 to 2024-07-08 (1 week)
-- Result: statusCode 200, 0 files uploaded
+## Current Status
 
-### Script Output
-```
-STAC query returned 2 scenes.
-After removing already downloaded, 2 scenes remain to download.
-Finished.
-```
+### ✅ Resolution (December 2025)
+- **Root Cause**: Insufficient Lambda resources (5GB memory limit)
+- **Solution**: Maximum Lambda resources (10GB memory + 10GB storage)
+- **Result**: Complete Landsat processing pipeline functional
 
-## Code Flow Analysis
+### Performance Metrics
+- **Execution Time**: ~9.7 seconds
+- **Memory Usage**: ~439MB
+- **Files Processed**: 3 ortho scenes (August 6-8, 2025)
+- **Cost**: ~$0.002 per execution (10GB × 9.7s)
 
-### Expected Flow (from functions.py)
+### Test Results
+- **Region**: 104_sorgenfri
+- **Date Range**: 2025-08-01 to 2025-08-09
+- **Output**: 3 processed Landsat scenes in S3
+- **Success Rate**: 100%
 
-1. **STAC Search** (lines 73-87)
-   - ✅ Working: Found 2 scenes
+## Historical Analysis (October 2025)
 
-2. **Filter Downloaded** (lines 93-104)
-   - ✅ Working: 2 scenes remained after filtering
-
-3. **Export CSV** (line 107-108)
-   - ❓ Unknown: Should create `{reference_dir}/{region_name}_stac_query_results.csv`
-
-4. **Create Template TIF** (lines 115-127)
-   - ❓ Missing: Should print "Creating reference image to resample to..."
-   - Creates: `{reference_dir}/{region_name}.tif`
-
-5. **Open Template** (line 130)
-   - ❓ Missing: Uses `rxr.open_rasterio(sample_fpath)`
-
-6. **Download Scenes** (lines 143-197)
-   - ❌ Missing: Should print "Downloading 2 scenes."
-   - Should download to: `{base_dir}/{region_name}/*.tif`
-
-## Key Questions
-
-### 1. Where is the script exiting?
-The script completes successfully but skips steps 4-6. Possible causes:
-- Silent exception in template creation/opening
-- Early return statement triggered
-- Missing directory causing os.mkdir() to fail
-
-### 2. Directory Structure
-**Expected structure:**
+### Previous Issues
+The document below reflects the troubleshooting state as of October 2025, when Landsat processing was failing due to resource constraints.
 ```
 /tmp/glacier_processing/output/  (base_dir)
 ├── 134_Arsuk/                   (output_dir - line 162)

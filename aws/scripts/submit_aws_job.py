@@ -28,6 +28,7 @@ parser.add_argument('--aws-config', help='Path to AWS-specific configuration fil
 parser.add_argument('--satellite', help='Satellite type (sentinel2 or landsat)', type=str, choices=['sentinel2', 'landsat'])
 parser.add_argument('--service', help='AWS service to use', type=str, choices=['batch', 'ecs', 'lambda', 'fargate'], default='batch')
 parser.add_argument('--regions', help='Regions to process (comma-separated, no spaces)', type=str)
+parser.add_argument('--start-end-index', help='Start and end index for batch processing (e.g., 0:48)', type=str)
 parser.add_argument('--date1', help='Start date in YYYY-MM-DD format', type=str)
 parser.add_argument('--date2', help='End date in YYYY-MM-DD format', type=str)
 parser.add_argument('--s3-bucket', help='S3 bucket for data storage', type=str)
@@ -238,7 +239,7 @@ def create_aws_ecs_job(jobname, regions, date1, date2, satellite, **kwargs):
         print("TODO: Submit to AWS ECS")
 
 
-def create_aws_lambda_job(jobname, regions, date1, date2, satellite, **kwargs):
+def create_aws_lambda_job(jobname, regions, start_end_index, date1, date2, satellite, **kwargs):
     """Create and submit AWS Lambda function for satellite processing
     
     AWS Lambda is ideal for:
@@ -267,6 +268,7 @@ def create_aws_lambda_job(jobname, regions, date1, date2, satellite, **kwargs):
     lambda_event = {
         'satellite': satellite,
         'regions': regions,
+        'start_end_index': start_end_index,
         'date1': date1,        # Updated for parameter reconciliation
         'date2': date2,          # Updated for parameter reconciliation
         's3_bucket': s3_bucket,
@@ -461,6 +463,8 @@ def load_shared_config(config_file="../../config.ini", cli_args=None):
             config_dict['satellite'] = cli_args.satellite
         if cli_args.regions:
             config_dict['regions'] = cli_args.regions
+        if hasattr(cli_args, 'start_end_index') and cli_args.start_end_index:
+            config_dict['start_end_index'] = cli_args.start_end_index
         if cli_args.date1:
             config_dict['date1'] = cli_args.date1
         if cli_args.date2:
@@ -507,6 +511,7 @@ def main():
     
     # Extract commonly used values
     regions = cfg['regions']
+    start_end_index = cfg['start_end_index']
     date1 = cfg['date1']
     date2 = cfg['date2']
     satellite = cfg['satellite']
@@ -529,6 +534,10 @@ def main():
     
     # Create job name
     jobname = f"aws-{satellite}-{date1.replace('-', '')}"
+    
+    # Auto-append batch range to job name if using start_end_index
+    if start_end_index:
+        jobname = f"{jobname}_{start_end_index.replace(':', '_')}"
     
     # Set up logging for AWS jobs
     log_dir = script_dir / "../logs"
@@ -566,7 +575,7 @@ def main():
     elif aws_service == 'ecs':
         create_aws_ecs_job(jobname, regions, date1, date2, satellite, **job_kwargs)
     elif aws_service == 'lambda':
-        create_aws_lambda_job(jobname, regions, date1, date2, satellite, **job_kwargs)
+        create_aws_lambda_job(jobname, regions, start_end_index, date1, date2, satellite, **job_kwargs)
     elif aws_service == 'fargate':
         print("Fargate mode: ECS with serverless compute")
         create_aws_ecs_job(jobname, regions, date1, date2, satellite, **job_kwargs)

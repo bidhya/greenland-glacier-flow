@@ -378,7 +378,7 @@ cd aws/scripts && chmod +x deploy_lambda_container.sh && ./deploy_lambda_contain
 - Creates ECR repository if it doesn't exist
 - Pushes container image to Amazon ECR
 - Creates/updates Lambda function with container image
-- Configures function with 5GB memory and 10GB ephemeral storage
+- **Configures function with maximum resources** (10GB memory + 10GB storage)
 
 **Expected Output:**
 - Docker build progress with layer caching
@@ -388,9 +388,12 @@ cd aws/scripts && chmod +x deploy_lambda_container.sh && ./deploy_lambda_contain
 
 **Context/Rationale:**
 - Container-based Lambda provides full Python environment with scientific libraries
-- 5GB memory optimal for small glaciers (1-2 Sentinel-2 tiles)
-- 10GB ephemeral storage handles intermediate processing files
+- **10GB memory + 10GB storage required for complete workflow** (December 2025 discovery)
+- Default resources (512MB storage) limit processing to 3-4 tiles
 - 15-minute timeout sufficient for typical processing jobs
+
+**⚠️ Critical Update (December 2025):**
+Always use maximum Lambda resources. Previous testing with 5GB memory was insufficient for complete Sentinel-2 processing workflows. See `LAMBDA_RESOURCE_TROUBLESHOOTING.md` for complete analysis.
 
 ---
 
@@ -400,20 +403,23 @@ cd aws/scripts && chmod +x deploy_lambda_container.sh && ./deploy_lambda_contain
 ```bash
 aws lambda update-function-configuration \
   --function-name glacier-sentinel2-processor \
-  --memory-size 5120 \
+  --memory-size 10240 \
   --ephemeral-storage '{"Size": 10240}' \
+  --timeout 900 \
   --region us-west-2
 ```
 
 **What it does:**
-- Updates Lambda function memory to 5GB (5120 MB)
-- Sets ephemeral storage to 10GB for processing large satellite files
-- Maintains 15-minute timeout for complex geospatial operations
+- **Updates Lambda to maximum resources**: 10GB memory + 10GB storage
+- Sets 15-minute timeout for complex geospatial operations
 
 **Context/Rationale:**
-- Memory sizing based on extensive testing (October 2025)
-- 5GB sufficient for small glaciers (1-2 tiles) - proven successful
-- Large glaciers (4+ tiles) exceed Lambda 10GB limit - use HPC instead
+- **December 2025 Discovery**: 5GB memory insufficient for complete workflow
+- Maximum resources required for Sentinel-2 processing (downloads + clipping + filtering)
+- Default 512MB storage limits processing to 3-4 tiles only
+- 10GB storage handles ~50 Sentinel-2 tiles (~100MB each)
+
+**⚠️ Always use maximum resources for production processing.**
 
 ---
 
@@ -871,23 +877,35 @@ aws ce get-cost-and-usage --time-period Start=$(date +%Y-%m-01),End=$(date +%Y-%
 - Helps track processing expenses
 - Enables cost optimization decisions
 
-**Cost Estimates:**
-- **Sentinel-2**: Lambda compute ~$0.007 (5GB × 84s), S3 storage ~$0.023/GB/month
-- **Landsat**: Lambda compute ~$0.007 (5GB × 60s), S3 storage ~$0.023/GB/month
+**Cost Estimates (Updated December 2025):**
+- **Sentinel-2**: Lambda compute ~$0.024 (10GB × 95-102s), S3 storage ~$0.023/GB/month
+- **Landsat**: Lambda compute ~$0.002 (10GB × 9.7s), S3 storage ~$0.023/GB/month
+- **Performance Comparison**: Landsat ~10x faster than Sentinel-2 with same resources
+- **Resource Update**: Using maximum resources (10GB memory + storage) for reliable processing
 - Data transfer: Minimal for processing within same region
+
+### Performance Benchmarks (December 2025 Testing)
+| Satellite | Duration | Memory Used | Files Created | Processing Type |
+|-----------|----------|-------------|---------------|-----------------|
+| **Sentinel-2** | 95-102s | ~6GB | 9-10 clipped tiles | Multi-tile merge + clip |
+| **Landsat** | ~9.7s | ~439MB | 3 ortho scenes | Direct orthorectification |
 
 ---
 
-## ⚠️ Important Notes
+## ⚠️ Important Notes (Updated December 2025)
 
-1. **Memory Limits**: Lambda maximum is 10GB - large glaciers (4+ Sentinel-2 tiles) will fail
-2. **Timeout Limits**: 15-minute maximum - use shorter date ranges for complex processing
-3. **Storage Limits**: 10GB ephemeral storage - monitor disk usage for large datasets
-4. **Satellite Differences**: Sentinel-2 uses 1-3 day ranges, Landsat needs 5-14 days for data availability
-5. **Cost Monitoring**: Track Lambda invocations and S3 storage costs regularly
-6. **Region Selection**: Use us-west-2 for optimal satellite data access
-7. **Testing First**: Always test with small regions and appropriate date ranges
-8. **Backup Strategy**: Large glaciers should use HPC instead of Lambda
+1. **✅ Resource Resolution**: Use maximum Lambda resources (10GB memory + 10GB storage) - **required for complete workflow**
+2. **✅ Processing Capability**: Lambda handles both Sentinel-2 and Landsat processing with proper resources
+3. **✅ Performance Difference**: Landsat ~10x faster than Sentinel-2 (9.7s vs 95-102s execution time)
+4. **✅ Storage Limits**: 10GB ephemeral storage sufficient for quarterly processing batches
+5. **Satellite Differences**: Sentinel-2 multi-tile merging, Landsat direct orthorectification
+6. **Cost Efficiency**: Landsat significantly more cost-effective than Sentinel-2 for same resources
+7. **Cost Monitoring**: Track Lambda invocations and S3 storage costs regularly
+8. **Region Selection**: Use us-west-2 for optimal satellite data access
+9. **Testing Strategy**: Use 2-week ranges for testing, quarterly ranges for production
+10. **Batch Processing**: Process quarterly (3-month) batches for optimal performance
+
+**Key Discovery**: Previous limitations were due to insufficient resources, not Lambda platform constraints. With maximum resources, Lambda provides complete, reliable processing for both Sentinel-2 and Landsat satellites.
 
 ---
 

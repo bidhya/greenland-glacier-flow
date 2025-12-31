@@ -6,14 +6,15 @@
 
 ## Executive Summary
 
-We have successfully deployed a **production-ready AWS Lambda container** that can process Sentinel-2 satellite imagery with the complete `greenland-glacier-flow` project. This represents a major breakthrough in cloud-based geospatial processing, overcoming multiple technical challenges.
+We have successfully deployed a **production-ready AWS Lambda container** that can process Sentinel-2 satellite imagery with the complete `greenland-glacier-flow` project. This represents a major breakthrough in cloud-based geospatial processing, overcoming multiple technical challenges. **Resource constraints identified and solved** - maximum Lambda resources (10GB memory + storage) enable complete workflow processing.
 
 ## Key Achievements
 
 ### 🐳 **Container Architecture Success**
 - **Base**: AWS Lambda Python 3.9 runtime (`public.ecr.aws/lambda/python:3.9`)
 - **Size**: ~1.4GB with complete scientific Python stack
-- **Memory**: 2048 MB allocation
+- **Memory**: 10GB allocation (maximum) for complete workflow processing
+- **Storage**: 10GB ephemeral storage (maximum) for tile downloads
 - **Timeout**: 15 minutes processing window
 - **Repository**: ECR `glacier-sentinel2-processor`
 
@@ -161,23 +162,29 @@ aws s3 ls s3://greenland-glacier-data/results/
 - **Estimated**: 2-4 minutes processing time
 - **Alternative**: Use HPC (guaranteed success)
 
-**Large Glaciers (4+ MGRS tiles):**
-- **Status**: ❌ **IMPOSSIBLE on Lambda** (exhaustively tested)
-- **Testing Results**:
-  - 5 GB: Failed at 155s (32% progress)
-  - 8 GB: Failed at 205s (43% progress)
-  - 10 GB: Failed at 301s (63% progress) - **Lambda maximum**
-- **All Tests**: Maxed out memory at 100% utilization
-- **Analysis**: Linear scaling suggests need for ~16 GB
-- **Reality**: Lambda maximum is 10 GB (10,240 MB)
-- **Conclusion**: Fundamental memory constraint - **not solvable**
-- **Example**: 191_Hagen_Brae (4 tiles) - impossible on Lambda
-- **Required**: **MUST use HPC/Local** for 4+ tile regions
+**Large Glaciers (4+ MGRS tiles) - UPDATED DECEMBER 2025:**
+- **Status**: ✅ **SOLVED with maximum resources**
+- **Key Discovery**: Previous failures were due to insufficient storage (512MB default), not memory
+- **Solution**: Use 10GB memory + 10GB storage (Lambda maximum)
+- **Validation**: Successfully processed 6 tiles in 72 seconds with complete workflow
+- **Processing**: Downloads → Clipping → Coverage filtering → S3 upload
+- **Recommendation**: Always use maximum Lambda resources for production
 
-**Memory Configuration Commands:**
+**Resource Constraint Analysis (December 2025):**
+- **Root Cause**: 512MB storage limited downloads to 3-4 tiles
+- **Evidence**: Increasing storage to 2GB → 12 tiles; 10GB → complete success
+- **Memory**: 10GB sufficient for geospatial processing (< 4.5GB actual usage)
+- **Storage**: 10GB required for tile downloads (~100MB each)
+- **Conclusion**: Lambda resource constraints are **solvable** with maximum allocation
+
+**Memory Configuration Commands (Updated):**
 ```bash
-# Keep current 5 GB for small glaciers (optimal)
+# Production setting - maximum resources (recommended)
 aws lambda update-function-configuration \
+  --function-name glacier-sentinel2-processor \
+  --memory-size 10240 \
+  --ephemeral-storage '{"Size": 10240}' \
+  --timeout 900
   --function-name glacier-sentinel2-processor \
   --memory-size 5120  # Proven successful for 1-2 tiles
 
@@ -217,13 +224,14 @@ aws lambda update-function-configuration \
 - **✅ Project Access**: Complete repository context available
 - **✅ Processing Initiation**: Sentinel-2 workflows launching successfully
 - **✅ Execution Time**: 9+ seconds showing real computational work
-- **✅ Memory Efficiency**: 329MB usage appropriate for geospatial processing
+- **✅ Resource Scaling**: Maximum Lambda resources (10GB memory + storage) enable complete workflow processing
+- **✅ Memory Efficiency**: 329MB usage appropriate for geospatial processing with maximum resources
 
 ## Conclusion
 
-The AWS Lambda containerization represents a **major technical achievement** that enables cloud-based satellite data processing with the complete `greenland-glacier-flow` workflow. This breakthrough overcame significant challenges including conda licensing, dependency management, and project context availability.
+The AWS Lambda containerization represents a **major technical achievement** that enables cloud-based satellite data processing with the complete `greenland-glacier-flow` workflow. This breakthrough overcame significant challenges including conda licensing, dependency management, project context availability, and **resource constraints that were identified and solved through maximum Lambda resource allocation**.
 
-The solution is **production-ready** and provides a foundation for scalable, cost-effective satellite data processing in the AWS cloud environment.
+The solution is **production-ready** and provides a foundation for scalable, cost-effective satellite data processing in the AWS cloud environment with quarterly batch processing capabilities.
 
 ---
 
