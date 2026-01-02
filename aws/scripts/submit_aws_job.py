@@ -26,7 +26,7 @@ parser = argparse.ArgumentParser(description='Submit satellite data processing j
 parser.add_argument('--config', help='Path to configuration file', type=str, default='../../config.ini')
 parser.add_argument('--aws-config', help='Path to AWS-specific configuration file', type=str, default='../config/aws_config.ini')
 parser.add_argument('--satellite', help='Satellite type (sentinel2 or landsat)', type=str, choices=['sentinel2', 'landsat'])
-parser.add_argument('--service', help='AWS service to use', type=str, choices=['batch', 'ecs', 'lambda', 'fargate'], default='batch')
+parser.add_argument('--service', help='AWS service to use', type=str, choices=['batch', 'ecs', 'lambda', 'fargate'], default='lambda')
 parser.add_argument('--regions', help='Regions to process (comma-separated, no spaces)', type=str)
 parser.add_argument('--start-end-index', help='Start and end index for batch processing (e.g., 0:48)', type=str)
 parser.add_argument('--date1', help='Start date in YYYY-MM-DD format', type=str)
@@ -299,9 +299,10 @@ def create_aws_lambda_job(jobname, regions, start_end_index, date1, date2, satel
         print(f"{'='*60}")
         print("\nEvent payload that would be sent:")
         print(json.dumps(lambda_event, indent=2))
-        print(f"\n💡 To invoke manually:")
+        print(f"\n💡 To invoke manually (asynchronous):")
         print(f"   aws lambda invoke \\")
         print(f"     --function-name {function_name} \\")
+        print(f"     --invocation-type Event \\")
         print(f"     --payload '{json.dumps(lambda_event)}' \\")
         print(f"     --region {aws_region} \\")
         print(f"     /tmp/lambda_response.json")
@@ -316,40 +317,25 @@ def create_aws_lambda_job(jobname, regions, start_end_index, date1, date2, satel
         print("INVOKING LAMBDA FUNCTION")
         print(f"{'='*60}")
         
-        # Synchronous invocation to get immediate response
+        # Asynchronous invocation - fire and forget (better for long-running functions)
         response = lambda_client.invoke(
             FunctionName=function_name,
-            InvocationType='RequestResponse',  # Synchronous - wait for result
+            InvocationType='Event',  # Asynchronous - don't wait for result
             Payload=json.dumps(lambda_event)
         )
         
         # Parse response
         status_code = response['StatusCode']
-        payload = json.loads(response['Payload'].read())
         
-        print(f"\n✅ Lambda invocation successful!")
+        print(f"\n✅ Lambda function invoked successfully!")
         print(f"   Status Code: {status_code}")
         print(f"   Request ID: {response['ResponseMetadata']['RequestId']}")
+        print(f"   Invocation Type: Asynchronous (Event)")
+        print(f"\n💡 Function is running in background. Check CloudWatch logs or S3 for results:")
+        print(f"   Logs: https://{aws_region}.console.aws.amazon.com/cloudwatch/home?region={aws_region}#logsV2:log-groups/log-group/$252Faws$252Flambda$252F{function_name.replace('-', '$252D')}")
+        print(f"   S3: s3://{s3_bucket}/1_download_merge_and_clip/{satellite}/")
         
-        # Check for function errors
-        if 'FunctionError' in response:
-            print(f"\n⚠️  Lambda function error detected:")
-            print(f"   Error Type: {response['FunctionError']}")
-            print(f"\n   Response payload:")
-            print(json.dumps(payload, indent=2))
-        else:
-            print(f"\n✅ Processing completed successfully!")
-            
-            # Parse response body if present
-            if 'body' in payload:
-                body = json.loads(payload['body'])
-                print(f"\nResults:")
-                print(f"   Uploaded Files: {body.get('uploaded_files', 'N/A')}")
-                print(f"   S3 Location: {body.get('s3_location', 'N/A')}")
-                print(f"   Message: {body.get('message', 'N/A')}")
-            else:
-                print(f"\nResponse:")
-                print(json.dumps(payload, indent=2))
+        return True
         
         # Log to file
         logging.info(f"Lambda invocation: {function_name}, Job: {jobname}, Status: {status_code}")
