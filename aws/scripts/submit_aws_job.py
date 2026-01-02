@@ -4,13 +4,21 @@
     - Designed specifically for AWS cloud services
     - Supports various AWS compute services (Batch, ECS, Lambda, etc.)
     - Experimental/development version for learning AWS
+    - Lambda service now supports orchestration of multiple regions
+
+    Lambda Orchestration:
+    - Single region: Direct Lambda invocation
+    - Multiple regions: Concurrent orchestration of separate Lambda functions
+    - Supports both specific regions and start_end_index batching
 
     Future usage examples:
     - python submit_aws_job.py --satellite sentinel2 --service batch
     - python submit_aws_job.py --satellite landsat --service ecs --regions 134_Arsuk
+    - python submit_aws_job.py --satellite sentinel2 --service lambda --start-end-index 0:25
+    - python submit_aws_job.py --satellite landsat --service lambda --regions 140_CentralLindenow,134_Arsuk
     - python submit_aws_job.py --satellite sentinel2 --service lambda --date1 2024-01-01 --date2 2024-12-31 --dry-run true
 
-    Author: B. Yadav. Sep 30, 2025
+    Author: B. Yadav. Jan 2, 2026
 """
 import os
 import logging
@@ -19,6 +27,7 @@ import subprocess
 import configparser
 import time
 import json
+import concurrent.futures
 from pathlib import Path
 
 # Set up command line argument parser for AWS-specific options
@@ -28,6 +37,7 @@ parser.add_argument('--aws-config', help='Path to AWS-specific configuration fil
 parser.add_argument('--satellite', help='Satellite type (sentinel2 or landsat)', type=str, choices=['sentinel2', 'landsat'])
 parser.add_argument('--service', help='AWS service to use', type=str, choices=['batch', 'ecs', 'lambda', 'fargate'], default='lambda')
 parser.add_argument('--regions', help='Regions to process (comma-separated, no spaces)', type=str)
+parser.add_argument('--region', help='Single region to process (for Lambda)', type=str)
 parser.add_argument('--start-end-index', help='Start and end index for batch processing (e.g., 0:48)', type=str)
 parser.add_argument('--date1', help='Start date in YYYY-MM-DD format', type=str)
 parser.add_argument('--date2', help='End date in YYYY-MM-DD format', type=str)
@@ -239,17 +249,17 @@ def create_aws_ecs_job(jobname, regions, date1, date2, satellite, **kwargs):
         print("TODO: Submit to AWS ECS")
 
 
-def create_aws_lambda_job(jobname, regions, start_end_index, date1, date2, satellite, **kwargs):
+def create_aws_lambda_job(jobname, region, date1, date2, satellite, **kwargs):
     """Create and submit AWS Lambda function for satellite processing
     
     AWS Lambda is ideal for:
-    - Small glaciers (1-2 tiles)
+    - Small to medium glaciers (1-3 tiles)
     - Quick processing (< 15 minutes)
     - Serverless architecture
     
     Integration with validated Lambda container (October 2025):
     - Uses production-tested glacier-sentinel2-processor function
-    - Configured for 5 GB memory (optimal for small regions)
+    - Configured for 8 GB memory (optimal for Sentinel-2 processing)
     - Reads settings from aws/config/aws_config.ini
     """
     print(f"\n{'='*60}")
@@ -261,14 +271,13 @@ def create_aws_lambda_job(jobname, regions, start_end_index, date1, date2, satel
     s3_bucket = kwargs.get('s3_bucket', 'greenland-glacier-data')
     s3_base_path = kwargs.get('s3_base_path', '1_download_merge_and_clip')
     aws_region = kwargs.get('aws_region', 'us-west-2')
-    memory_size = kwargs.get('lambda_memory_size', 5120)
+    memory_size = kwargs.get('lambda_memory_size', 8192)
     timeout = kwargs.get('lambda_timeout', 900)
     
     # Build event payload matching lambda_handler.py expectations
     lambda_event = {
         'satellite': satellite,
-        'regions': regions,
-        'start_end_index': start_end_index,
+        'region': region,  # Single region for Lambda processing
         'date1': date1,        # Updated for parameter reconciliation
         'date2': date2,          # Updated for parameter reconciliation
         's3_bucket': s3_bucket,
@@ -288,7 +297,7 @@ def create_aws_lambda_job(jobname, regions, start_end_index, date1, date2, satel
     print(f"  S3 Bucket: {s3_bucket}")
     print(f"\nProcessing Parameters:")
     print(f"  Satellite: {satellite}")
-    print(f"  Regions: {regions}")
+    print(f"  Region: {region}")
     print(f"  Date Range: {date1} to {date2}")
     print(f"  Job Name: {jobname}")
     
@@ -383,7 +392,7 @@ def load_aws_config(aws_config_file="../config/aws_config.ini"):
             
             # Lambda settings
             'lambda_function_name': config.get("LAMBDA", "function_name", fallback='glacier-sentinel2-processor'),
-            'lambda_memory_size': config.getint("LAMBDA", "memory_size", fallback=5120),
+            'lambda_memory_size': config.getint("LAMBDA", "memory_size", fallback=8192),
             'lambda_timeout': config.getint("LAMBDA", "timeout", fallback=900),
             'lambda_ephemeral_storage': config.getint("LAMBDA", "ephemeral_storage", fallback=10240),
             
@@ -400,13 +409,36 @@ def load_aws_config(aws_config_file="../config/aws_config.ini"):
             's3_base_path': '1_download_merge_and_clip',
             'aws_region': 'us-west-2',
             'lambda_function_name': 'glacier-sentinel2-processor',
-            'lambda_memory_size': 5120,
+            'lambda_memory_size': 8192,
             'lambda_timeout': 900,
             'lambda_ephemeral_storage': 10240,
             'instance_type': 'c5.large',
             'spot_instances': False,
             'max_vcpus': 256
         }
+
+
+def get_full_region_list():
+    """Get the full list of glacier regions from the geopackage file.
+    
+    Returns:
+        list: Sorted list of region names (e.g., ['001_region1', '002_region2', ...])
+    """
+    try:
+        import geopandas as gpd
+        # Path relative to the AWS script location
+        script_dir = Path(__file__).resolve().parent
+        glacier_regions_path = script_dir.parent.parent / '1_download_merge_and_clip' / 'ancillary' / 'glacier_roi_v2' / 'glaciers_roi_proj_v3_300m.gpkg'
+        
+        regions_gdf = gpd.read_file(glacier_regions_path)
+        regions_gdf.index = regions_gdf.region
+        regions_gdf = regions_gdf.sort_index()
+        
+        return regions_gdf.index.tolist()
+    except Exception as e:
+        print(f"Error loading region list: {e}")
+        # Fallback: return empty list or raise error
+        raise RuntimeError("Could not load glacier regions list. Ensure the geopackage file exists.")
 
 
 def load_shared_config(config_file="../../config.ini", cli_args=None):
@@ -449,6 +481,8 @@ def load_shared_config(config_file="../../config.ini", cli_args=None):
             config_dict['satellite'] = cli_args.satellite
         if cli_args.regions:
             config_dict['regions'] = cli_args.regions
+        if hasattr(cli_args, 'region') and cli_args.region:
+            config_dict['region'] = cli_args.region
         if hasattr(cli_args, 'start_end_index') and cli_args.start_end_index:
             config_dict['start_end_index'] = cli_args.start_end_index
         if cli_args.date1:
@@ -460,7 +494,95 @@ def load_shared_config(config_file="../../config.ini", cli_args=None):
         if cli_args.dry_run is not None:
             config_dict['dry_run'] = cli_args.dry_run.lower() == 'true'
     
+    # Process regions into a list
+    regions_str = config_dict.get('regions', '').strip()
+    start_end_index = config_dict.get('start_end_index', '').strip()
+    
+    if regions_str and start_end_index:
+        # Both specified - start_end_index takes precedence (CLI override)
+        print(f"Warning: Both regions and start_end_index specified. Using start_end_index: {start_end_index}")
+        regions_str = ''  # Clear regions to use start_end_index
+    
+    if regions_str:
+        # Parse comma-separated regions
+        regions_list = [r.strip() for r in regions_str.split(',') if r.strip()]
+    elif start_end_index:
+        # Parse start:end index and slice the full region list
+        try:
+            start, end = map(int, start_end_index.split(':'))
+            full_regions = get_full_region_list()
+            regions_list = full_regions[start:end]
+        except ValueError:
+            raise ValueError(f"Invalid start_end_index format: {start_end_index}. Use 'start:end' (e.g., '0:25')")
+    else:
+        # Default: all regions
+        regions_list = get_full_region_list()
+    
+    config_dict['regions_list'] = regions_list
+    
     return config_dict
+
+
+def orchestrate_lambda_jobs(regions_list, date1, date2, satellite, job_kwargs, aws_cfg, dry_run):
+    """Orchestrate multiple Lambda function invocations for multiple regions.
+    
+    This function handles the orchestration of multiple Lambda functions,
+    one for each region, using concurrent execution for efficiency.
+    """
+    print(f"\n{'='*70}")
+    print(f"ORCHESTRATING {len(regions_list)} LAMBDA FUNCTIONS")
+    print(f"{'='*70}")
+    
+    if dry_run:
+        print("DRY RUN MODE - Would invoke the following Lambda functions:")
+        for i, region in enumerate(regions_list):
+            jobname = f"aws-{satellite}-{date1.replace('-', '')}-{region}"
+            print(f"  {i+1:2d}. Region: {region}, Job: {jobname}")
+        print(f"\n💡 To run for real, remove --dry-run true")
+        return
+    
+    # Prepare arguments for each Lambda invocation
+    lambda_invocations = []
+    for region in regions_list:
+        jobname = f"aws-{satellite}-{date1.replace('-', '')}-{region}"
+        args = (jobname, region, date1, date2, satellite)
+        kwargs = job_kwargs.copy()
+        lambda_invocations.append((args, kwargs))
+    
+    print(f"Invoking {len(lambda_invocations)} Lambda functions concurrently...")
+    
+    # Use ThreadPoolExecutor for concurrent invocations
+    results = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:  # Limit to 10 concurrent to avoid overwhelming AWS
+        future_to_region = {
+            executor.submit(create_aws_lambda_job, *args, **kwargs): region 
+            for (args, kwargs), region in zip(lambda_invocations, regions_list)
+        }
+        
+        for future in concurrent.futures.as_completed(future_to_region):
+            region = future_to_region[future]
+            try:
+                result = future.result()
+                results.append((region, result))
+                print(f"✅ Completed: {region}")
+            except Exception as exc:
+                print(f"❌ Failed: {region} - {exc}")
+                results.append((region, None))
+    
+    # Summary
+    successful = sum(1 for _, result in results if result is not None)
+    print(f"\n{'='*70}")
+    print(f"ORCHESTRATION COMPLETE")
+    print(f"{'='*70}")
+    print(f"Total regions: {len(regions_list)}")
+    print(f"Successful invocations: {successful}")
+    print(f"Failed invocations: {len(regions_list) - successful}")
+    
+    if successful < len(regions_list):
+        print("\n❌ Some Lambda invocations failed. Check logs above for details.")
+    else:
+        print("\n✅ All Lambda functions invoked successfully!")
+        print("💡 Functions are running asynchronously. Monitor CloudWatch logs and S3 for results.")
 
 
 def main():
@@ -496,7 +618,9 @@ def main():
     aws_cfg = load_aws_config(args.aws_config)
     
     # Extract commonly used values
-    regions = cfg['regions']
+    regions_list = cfg['regions_list']
+    regions = cfg['regions']  # Keep for backward compatibility
+    region = regions_list[0] if regions_list else None  # For single region fallback
     start_end_index = cfg['start_end_index']
     date1 = cfg['date1']
     date2 = cfg['date2']
@@ -510,7 +634,11 @@ def main():
     
     print(f"Configuration:")
     print(f"  Satellite: {satellite}")
-    print(f"  Regions: {regions}")
+    print(f"  Regions to process: {len(regions_list)} regions")
+    if len(regions_list) <= 5:
+        print(f"    Regions: {regions_list}")
+    else:
+        print(f"    Regions: {regions_list[:3]} ... {regions_list[-2:]}")
     print(f"  Date range: {date1} to {date2}")
     print(f"  AWS Service: {aws_service}")
     print(f"  AWS Region: {aws_region}")
@@ -534,7 +662,7 @@ def main():
         format='%(asctime)s:%(levelname)s:%(message)s'
     )
     logging.info('--------------------------------------AWS Job Submission----------------------------------------------')
-    logging.info(f'AWS Service: {aws_service}, Satellite: {satellite}, Regions: {regions}')
+    logging.info(f'AWS Service: {aws_service}, Satellite: {satellite}, Regions: {len(regions_list)} regions ({regions_list[:3]}...{regions_list[-3:] if len(regions_list) > 3 else regions_list})')
     
     # Route to appropriate AWS service
     job_kwargs = {
@@ -561,7 +689,12 @@ def main():
     elif aws_service == 'ecs':
         create_aws_ecs_job(jobname, regions, date1, date2, satellite, **job_kwargs)
     elif aws_service == 'lambda':
-        create_aws_lambda_job(jobname, regions, start_end_index, date1, date2, satellite, **job_kwargs)
+        if len(regions_list) == 1:
+            # Single region - use existing logic
+            create_aws_lambda_job(jobname, regions_list[0], date1, date2, satellite, **job_kwargs)
+        else:
+            # Multiple regions - orchestrate multiple Lambda functions
+            orchestrate_lambda_jobs(regions_list, date1, date2, satellite, job_kwargs, aws_cfg, dry_run)
     elif aws_service == 'fargate':
         print("Fargate mode: ECS with serverless compute")
         create_aws_ecs_job(jobname, regions, date1, date2, satellite, **job_kwargs)
