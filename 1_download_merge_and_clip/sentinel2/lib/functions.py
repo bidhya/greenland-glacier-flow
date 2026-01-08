@@ -466,6 +466,12 @@ def concat_csv_files(
     csv_files = [f for f in os.listdir(f'{metadata_folder}') if f.endswith('.csv')]
     csv_files = sorted(csv_files, key=lambda x: pd.to_datetime(x.split('_')[2]))
 
+    # Check if any CSV files were found. Otherwise, the processing of remaining glaciers 
+    # fail spectacularly (mostly during testing when small time windows are used).
+    if not csv_files:
+        logging.warning(f"No CSV files found in {metadata_folder}. Skipping CSV concatenation for region {region}.")
+        return
+
     # Get the first .csv file as a dataframe.
     df1 = pd.read_csv(f'{metadata_folder}/{csv_files[0]}', index_col=0, header=None, delimiter=',')
 
