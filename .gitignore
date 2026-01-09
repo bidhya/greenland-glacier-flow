@@ -215,6 +215,8 @@ Sample_code
 AGENTS.md
 *.out
 Archive/
+qaqc/
+sync.ffs_db
 
 # AWS test files and logs
 aws/scripts/*test*.json
