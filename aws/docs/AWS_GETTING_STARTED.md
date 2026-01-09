@@ -1,5 +1,22 @@
 # AWS Getting Started Guide for Glacier Processing
 
+## Service Overview (January 9, 2026)
+
+**Production Service**: AWS Lambda (operational since October 2025)
+- Single-glacier processing with 15-min/10GB limits
+- Validated for both Sentinel-2 and Landsat
+- See `AWS_OPERATIONS_GUIDE.md` for usage
+
+**Attempted Service**: AWS Fargate (January 2026)
+- Blocked on ECR 403 authentication errors
+- Complete troubleshooting documented in `FARGATE_DEPLOYMENT_STATUS_2026-01-09.md`
+
+**Planned Service**: AWS Batch (planning phase)
+- Production-scale processing with unlimited runtime
+- Incremental implementation plan in `AWS_BATCH_IMPLEMENTATION_PLAN.md`
+
+---
+
 ## Phase 1: Basic AWS Setup (Start Here)
 
 ### Step 1: Install Required Tools

@@ -20,6 +20,11 @@
 
 This guide provides complete AWS operations for the Greenland glacier flow processing system:
 
+### **Service Status (January 9, 2026)**
+- ✅ **Lambda**: Production-ready for single-glacier processing (15-min/10GB limits)
+- ❌ **Fargate**: Attempted January 2026, blocked on ECR 403 authentication (see `FARGATE_DEPLOYMENT_STATUS_2026-01-09.md`)
+- 📋 **Batch**: Planned implementation for production-scale processing (see `AWS_BATCH_IMPLEMENTATION_PLAN.md`)
+
 ### **Current Sections:**
 - **Environment Cleanup**: Complete AWS environment reset for fresh testing
 - **Deployment Operations**: Lambda container deployment and configuration
@@ -30,6 +35,7 @@ This guide provides complete AWS operations for the Greenland glacier flow proce
 - **Basic AWS Commands Reference**: Essential CLI commands for all AWS services
 
 ### **Future Additions:**
+- AWS Batch deployment and operations (incremental implementation planned)
 - Automated deployment pipelines
 - Advanced cost optimization strategies
 

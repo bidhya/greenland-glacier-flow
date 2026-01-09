@@ -1,8 +1,17 @@
-# AWS Lambda Manual Deployment Guide for Sentinel-2 Processing
+# AWS Lambda Deployment Guide for Satellite Processing
+
+## Status: ✅ Production-Ready (October 2025)
+
+**Current State**: Lambda successfully processing both Sentinel-2 and Landsat  
+**Limitations**: 15-min runtime, 10GB memory, 10GB storage  
+**Future Plans**: AWS Batch for production-scale processing (see `AWS_BATCH_IMPLEMENTATION_PLAN.md`)  
+**Alternative Attempts**: Fargate blocked on ECR 403 errors (see `FARGATE_DEPLOYMENT_STATUS_2026-01-09.md`)
+
+---
 
 ## 🎯 Step-by-Step Lambda Deployment
 
-Since we don't have IAM/Lambda permissions via AWS CLI, we'll deploy manually through the AWS Console.
+Deploy Lambda function through AWS Console for containerized glacier processing.
 
 ### 📋 What You Need
 - ✅ AWS Console access

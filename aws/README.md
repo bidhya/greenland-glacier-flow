@@ -1,6 +1,12 @@
 # AWS Directory - Cloud Processing Components
 
-## Quick Reference for AWS Test Runs
+## Current Service Status
+
+- ✅ **Lambda**: Production-ready (October 2025) - Single-glacier processing with 15-min/10GB limits
+- ❌ **Fargate**: Blocked on ECR 403 errors (January 2026) - See `docs/FARGATE_DEPLOYMENT_STATUS_2026-01-09.md`
+- 📋 **Batch**: Planned implementation - See `docs/AWS_BATCH_IMPLEMENTATION_PLAN.md`
+
+## Quick Reference for Lambda Test Runs
 
 ### Complete Test Run
 ```bash
@@ -22,9 +28,10 @@ python aws/scripts/submit_aws_job.py --satellite landsat --regions 134_Arsuk --d
 ## Directory Structure
 ```
 aws/
+├── batch/              # AWS Batch implementation (planned)
 ├── config/             # AWS configuration files
 ├── docs/               # AWS documentation
-├── lambda/             # Lambda-specific files
+├── lambda/             # Lambda-specific files (production)
 ├── logs/               # AWS logs
 └── scripts/            # AWS deployment scripts
 ```
