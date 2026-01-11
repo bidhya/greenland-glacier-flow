@@ -240,3 +240,5 @@ config.ini
 
 # Ignore AWS-specific agent documentation
 aws/AWS_AGENTS.md
+# User-specific git strategy notes
+aws/docs/GIT_STRATEGY.md

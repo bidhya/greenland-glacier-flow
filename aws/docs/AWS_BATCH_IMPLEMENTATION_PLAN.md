@@ -56,6 +56,13 @@
    - Individual step limits: 1-6 hours
    - No endless "just one more try" cycles
 
+5. **Config-Driven Workflow (Following Lambda Pattern)** 🔑
+   - Use `config.ini` for regions, dates, processing flags (same as HPC/Lambda)
+   - Use `aws/config/aws_config.ini` for Batch-specific settings
+   - Extend `submit_aws_job.py` with `--service batch` option
+   - Users switch between Lambda/Batch by changing service flag only
+   - Reduces technical debt, maintains consistency across workflows
+
 ---
 
 ## Implementation Steps
@@ -63,6 +70,8 @@
 ### Step 1: Hello-World Container Validation (1 hour)
 
 **Objective**: Validate basic Batch infrastructure and ECR authentication
+
+**Note**: This step focuses on infrastructure validation only. Config-driven workflow (using `config.ini` and `aws_config.ini`) will be implemented in Step 5 to match Lambda/HPC patterns.
 
 **Tasks**:
 1. Create `aws/batch/hello_world/Dockerfile`:
@@ -472,7 +481,13 @@
 
 ### Step 5: Batch Submission Integration (6 hours)
 
-**Objective**: Extend `submit_aws_job.py` to support Batch job submission
+**Objective**: Extend `submit_aws_job.py` to support Batch job submission with config-driven workflow
+
+**Config-Driven Architecture** (Following Lambda Pattern):
+- **`config.ini`**: Regions, dates, flags (shared with HPC/Lambda)
+- **`aws/config/aws_config.ini`**: Batch-specific settings (compute environment, queue, job definition)
+- **`submit_aws_job.py`**: Unified submission script with `--service batch` option
+- **User Experience**: Switch between Lambda/Batch by changing service flag only
 
 **Tasks**:
 1. Add Batch configuration to `aws/config/aws_config.ini`:
