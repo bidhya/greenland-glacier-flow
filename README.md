@@ -19,7 +19,7 @@ This is the **data acquisition and preprocessing stage** of the Greenland glacie
 - ✅ **Multi-Environment**: HPC (SLURM), local (WSL/Ubuntu), and AWS Lambda execution
 - ✅ **Batch Processing**: `--start-end-index` parameter for systematic region batching
 - ✅ **Configuration-Driven**: INI config with CLI override capability
-- ✅ **Cloud Ready**: AWS Lambda containerized deployment (production-ready, de-prioritized for HPC focus)
+- ✅ **Cloud Ready**: AWS Lambda containerized deployment (containerization complete, ready for AWS deployment phases)
 
 ## 🚀 Quick Start
 

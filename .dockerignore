@@ -1,0 +1,80 @@
+# Git repository data
+.git/
+.gitattributes
+.gitignore
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Documentation (not needed in container)
+docs/
+*.md
+CHANGELOG.md
+README.md
+AGENTS.md
+PRODUCTION_WORKFLOW.md
+
+# Archive and sample code
+Archive/
+Sample_code/
+
+# AWS-specific (if not needed in container)
+aws/
+
+# Control and utility scripts
+control/
+qaqc/
+logs/
+
+# Configuration files (container uses its own)
+config.ini
+config.template.ini
+environment.yml
+
+# Sync and utility scripts
+sync_from_s3.sh
+sync.ffs_db
+submit_job.sh
+submit_satellite_job.py
+prototyping_submit_satellite_job.py
+
+# Python cache and build artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+.cache/

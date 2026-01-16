@@ -15,6 +15,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Next Milestone**: Full-year production runs on HPC cluster
 
 ### Added
+- **Container Implementation Complete** (January 14, 2026)
+  - Fixed directory structure to properly nest outputs under `1_download_merge_and_clip/{satellite}/{region}/`
+  - Modified wrapper.py to create satellite-specific base directories
+  - Validated both Landsat and Sentinel-2 processing with correct output locations
+  - Container now mirrors HPC workflow exactly with proper file ownership and AWS integration
+  - Ready for AWS deployment phases (Lambda, Fargate, Batch)
 - **Critical Bug Fix: Configuration Hierarchy** (December 22, 2025)
   - Fixed argparse defaults overriding config.ini production values
   - Removed `default='48G'` and `default='01:00:00'` from `--memory` and `--runtime` arguments

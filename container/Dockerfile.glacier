@@ -1,0 +1,35 @@
+# Multi-stage build: Ubuntu 24.04 + Pixi environment
+FROM ubuntu:24.04
+
+# Install system dependencies for Pixi and satellite processing
+RUN apt-get update && apt-get install -y \
+    curl \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Pixi package manager
+RUN curl -fsSL https://pixi.sh/install.sh | bash && \
+    cp ~/.pixi/bin/pixi /usr/local/bin/ && \
+    chmod +x /usr/local/bin/pixi
+
+# Set working directory
+WORKDIR /app
+
+# Copy Pixi configuration (contains all Python dependencies)
+COPY container/pixi.toml container/pixi.lock* ./
+
+# Install Python environment with exact GDAL 3.10.3
+RUN export PATH="$HOME/.pixi/bin:$PATH" && \
+    pixi install --frozen
+
+# Copy processing scripts
+COPY 1_download_merge_and_clip ./1_download_merge_and_clip/
+
+# Copy container scripts
+COPY container/entrypoint.sh container/wrapper.py ./
+
+# Make entrypoint executable
+RUN chmod +x entrypoint.sh
+
+# Set entrypoint for platform detection
+ENTRYPOINT ["/app/entrypoint.sh"]

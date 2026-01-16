@@ -1,0 +1,28 @@
+[workspace]
+name = "glacier-container"
+version = "0.1.0"
+description = "Greenland glacier flow processing with Sentinel-2 and Landsat"
+channels = ["conda-forge"]
+platforms = ["linux-64"]
+
+[dependencies]
+python = "3.13.*"
+geopandas = "*"
+rioxarray = "*"
+boto3 = "*"
+pystac-client = "*"
+dask = "*"
+gdal = "==3.10.3"  # Fixed version - exact match required
+opencv = "*"
+tqdm = "*"
+netcdf4 = "*"
+# AWS tools for S3 operations
+awscli = "*"
+
+# Note: rasterio and pystac are dependencies of rioxarray and pystac-client
+# They will be installed automatically
+
+[tasks]
+# Task examples for running the processing scripts
+sentinel2 = "python /app/1_download_merge_and_clip/sentinel2/download_merge_clip_sentinel2.py"
+landsat = "python /app/1_download_merge_and_clip/landsat/download_clip_landsat.py"
