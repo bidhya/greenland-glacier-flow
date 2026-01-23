@@ -573,15 +573,6 @@ def main():
         'lambda_memory_size': aws_cfg.get('lambda_memory_size'),
         'lambda_timeout': aws_cfg.get('lambda_timeout'),
         'lambda_ephemeral_storage': aws_cfg.get('lambda_ephemeral_storage'),
-        # Fargate-specific configuration from aws_config.ini
-        'fargate_cluster_name': aws_cfg.get('fargate_cluster_name', 'glacier-processing-cluster'),
-        'fargate_task_definition': aws_cfg.get('fargate_task_definition', 'glacier-task:1'),
-        'fargate_container_name': aws_cfg.get('fargate_container_name', 'glacier-processing'),
-        'fargate_memory': aws_cfg.get('fargate_memory', '4096'),
-        'fargate_cpu': aws_cfg.get('fargate_cpu', '2048'),
-        'fargate_subnets': aws_cfg.get('fargate_subnets', ['subnet-09f06dee4cc5f7056']),
-        'fargate_security_groups': aws_cfg.get('fargate_security_groups', ['sg-12345678']),
-        'fargate_ecr_repository': aws_cfg.get('fargate_ecr_repository', 'glacier-processing'),
         # Processing parameters from config.ini
         'download_flag': cfg.get('download_flag'),
         'post_processing_flag': cfg.get('post_processing_flag'),
