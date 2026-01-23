@@ -312,9 +312,18 @@ def load_aws_config(aws_config_file="../config/aws_config.ini"):
             'lambda_timeout': config.getint("LAMBDA", "timeout", fallback=900),
             'lambda_ephemeral_storage': config.getint("LAMBDA", "ephemeral_storage", fallback=10240)
         }
-
-
-def get_full_region_list():
+    except Exception as e:
+        print(f"Warning: Could not load AWS config file {aws_config_file}: {e}")
+        # Return default values with us-west-2 for satellite data
+        return {
+            's3_bucket': 'greenland-glacier-data',
+            's3_base_path': '1_download_merge_and_clip',
+            'aws_region': 'us-west-2',
+            'lambda_function_name': 'glacier-processing',
+            'lambda_memory_size': 8192,
+            'lambda_timeout': 900,
+            'lambda_ephemeral_storage': 10240
+        }
     """Get the full list of glacier regions from the geopackage file.
     
     Returns:
