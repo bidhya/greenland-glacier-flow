@@ -766,7 +766,7 @@ The system is ready to process the full dataset of 196 glacier regions using an 
 **Institution**: The Ohio State University  
 **Repository**: github.com/bidhya/greenland-glacier-flow  
 **Branch**: develop (main integration work)  
-**AWS Account**: 425980623116  
+**AWS Account**: [REDACTED - Dynamic retrieval used]  
 **S3 Bucket**: greenland-glacier-data  
 
 ---

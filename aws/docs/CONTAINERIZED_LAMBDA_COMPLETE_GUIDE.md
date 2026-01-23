@@ -1,5 +1,5 @@
 # Complete Containerized Lambda Deployment Guide
-## Greenland Glacier Flow Processing - Production Ready (January 22, 2026)
+## Greenland Glacier Flow Processing - Production Ready (January 23, 2026)
 
 **Purpose**: Complete, copy-paste guide to recreate containerized AWS Lambda for satellite processing after all resources are deleted.
 
@@ -16,12 +16,15 @@
 # Verify installations
 aws --version                    # AWS CLI
 docker --version                 # Docker
-python --version                 # Python 3.12+
+python --version                 # Python 3.13+
 pip install boto3                # AWS Python SDK
 
 # Verify AWS access
-aws sts get-caller-identity      # Should show account 425980623116
+aws sts get-caller-identity      # Should show YOUR actual AWS account ID (not 123456789012)
 aws configure list               # Verify us-west-2 region
+
+> **⚠️ IMPORTANT**: The account ID `123456789012` shown in examples is a placeholder.
+> Replace it with your actual AWS account ID in all configuration files and commands.
 ```
 
 ### Required Permissions
@@ -30,6 +33,16 @@ Your IAM user needs these permissions (attach `aws/config/minimal-lambda-policy.
 - IAM role management (create roles, attach policies)
 - ECR repository management
 - S3 bucket access (for results storage)
+
+### ⚠️ Important: Placeholder Values
+This guide contains placeholder AWS account IDs for security reasons:
+- `123456789012` - Replace with your actual AWS account ID
+- `123456789012` - Replace with your actual AWS account ID in IAM role ARNs
+
+**Before running any commands:**
+1. Edit `aws/config/aws_config.ini` and replace placeholder account IDs
+2. Update any hardcoded account IDs in scripts you plan to use
+3. Verify `aws sts get-caller-identity` shows your actual account ID
 
 ---
 
@@ -117,6 +130,23 @@ aws ec2 modify-vpc-endpoint \
 
 ### Phase 2: Container Build & Deployment
 
+**RECOMMENDED: Complete Cleanup and Rebuild** (January 23, 2026 - Production Validated):
+```bash
+cd /home/bny/Github/greenland-glacier-flow
+
+# Single-command complete environment cleanup and rebuild
+./aws/scripts/cleanup_and_rebuild.sh
+```
+
+**What this does:**
+1. Deletes existing Lambda function and ECR repository
+2. Builds fresh Docker container with Python 3.13 and geospatial libraries
+3. Creates new ECR repository and pushes container image
+4. Creates/updates Lambda function with maximum resources (10GB memory, 10GB storage, 15min timeout)
+5. Validates complete deployment
+
+**Alternative: Individual Deployment** (shown below): Step-by-step container deployment after manual cleanup.
+
 #### Step 1: Build and Push Docker Container
 ```bash
 cd /home/bny/Github/greenland-glacier-flow
@@ -158,9 +188,9 @@ cd /home/bny/Github/greenland-glacier-flow
 python aws/scripts/submit_aws_job.py \
   --service lambda \
   --satellite sentinel2 \
-  --regions 134_Arsuk \
-  --date1 2024-07-01 \
-  --date2 2024-07-02 \
+  --regions 140_CentralLindenow \
+  --date1 2025-08-01 \
+  --date2 2025-08-02 \
   --dry-run false
 ```
 
@@ -175,9 +205,9 @@ python aws/scripts/submit_aws_job.py \
 python aws/scripts/submit_aws_job.py \
   --service lambda \
   --satellite landsat \
-  --regions 134_Arsuk \
-  --date1 2024-07-01 \
-  --date2 2024-07-05 \
+  --regions 140_CentralLindenow \
+  --date1 2025-08-01 \
+  --date2 2025-08-05 \
   --dry-run false
 ```
 
@@ -195,6 +225,26 @@ aws s3 ls s3://greenland-glacier-data/1_download_merge_and_clip/sentinel2/134_Ar
 # Check Landsat results
 aws s3 ls s3://greenland-glacier-data/1_download_merge_and_clip/landsat/134_Arsuk/ --recursive
 ```
+
+#### Step 4: Download Results Locally (Optional)
+```bash
+# Download processed results to your local machine
+# This syncs only processed files (skips raw satellite downloads for bandwidth savings)
+./sync_from_s3.sh --exclude-downloads
+
+# Or sync only specific satellites
+./sync_from_s3.sh sentinel2 --exclude-downloads
+./sync_from_s3.sh landsat --exclude-downloads
+
+# Preview what would be downloaded (dry run)
+./sync_from_s3.sh --exclude-downloads --dry-run
+```
+
+**What this does:**
+- Downloads processed satellite data from S3 to your local data directory
+- Automatically detects HPC vs local environment from `config.ini`
+- Skips raw satellite tiles (98% bandwidth savings)
+- Safe for multi-user environments (skips existing files by default)
 
 ---
 
@@ -289,6 +339,7 @@ aws iam delete-role --role-name lambda-glacier-execution-role
 ### Historical ZIP Deployment (for reference only)
 ```bash
 # This approach is deprecated - kept for historical reference
+# NOTE: Replace 123456789012 with your actual AWS account ID
 
 # Upload code to S3
 aws s3 sync . s3://greenland-glacier-data/scripts/greenland-glacier-flow/ \
@@ -297,8 +348,8 @@ aws s3 sync . s3://greenland-glacier-data/scripts/greenland-glacier-flow/ \
 # Create ZIP-based Lambda function
 aws lambda create-function \
   --function-name glacier-processing \
-  --runtime python3.9 \
-  --role arn:aws:iam::425980623116:role/lambda-glacier-execution-role \
+  --runtime python3.13 \
+  --role arn:aws:iam::123456789012:role/lambda-glacier-execution-role \
   --handler lambda_handler.lambda_handler \
   --code S3Bucket=greenland-glacier-data,S3Key=scripts/greenland-glacier-flow/lambda-deployment.zip \
   --timeout 900 \

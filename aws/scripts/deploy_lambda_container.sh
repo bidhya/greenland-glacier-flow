@@ -11,7 +11,8 @@ echo "=================================="
 
 # Configuration
 AWS_REGION="us-west-2"
-AWS_ACCOUNT_ID="425980623116"
+# Get AWS account ID dynamically from credentials
+AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 ECR_REPO_NAME="glacier-lambda"
 LAMBDA_FUNCTION_NAME="glacier-processing"
 IMAGE_TAG="latest"
@@ -97,6 +98,7 @@ if [ "$PACKAGE_TYPE" = "Zip" ]; then
         --role ${ROLE_ARN} \
         --timeout 900 \
         --memory-size 10240 \
+        --ephemeral-storage Size=10240 \
         --region ${AWS_REGION}
     
     echo "✓ Function created with container image"
@@ -122,6 +124,7 @@ else
         --role ${ROLE_ARN} \
         --timeout 900 \
         --memory-size 10240 \
+        --ephemeral-storage Size=10240 \
         --region ${AWS_REGION}
     
     echo "✓ Function created"

@@ -2,7 +2,7 @@
 
 **Purpose**: Comprehensive AWS operations reference for the Greenland glacier flow processing system.
 
-**Last Updated**: January 15, 2026 - Updated Lambda container workflow to remove S3 code sync requirements, validated production-ready containerized processing for both Sentinel-2 and Landsat.
+**Last Updated**: January 23, 2026 - Lambda container environment fully validated with successful Sentinel-2 and Landsat processing. Added consolidated cleanup_and_rebuild.sh deployment workflow. Ephemeral storage configuration fixed in deployment scripts.
 **Scope**: Complete AWS workflow including cleanup, deployment, Lambda operations, data processing, and monitoring.
 **Learning Objective**: Enable independent AWS operations for satellite data processing workflows.
 
@@ -20,13 +20,14 @@
 
 This guide provides complete AWS operations for the Greenland glacier flow processing system:
 
-### **Service Status (January 9, 2026)**
-- ✅ **Lambda**: Production-ready for single-glacier processing (15-min/10GB limits)
+### **Service Status (January 23, 2026)**
+- ✅ **Lambda**: Production-ready for single-glacier processing (15-min/10GB limits) - FULLY VALIDATED
 - ❌ **Fargate**: Attempted January 2026, blocked on ECR 403 authentication (see `FARGATE_DEPLOYMENT_STATUS_2026-01-09.md`)
 - 📋 **Batch**: Planned implementation for production-scale processing (see `AWS_BATCH_IMPLEMENTATION_PLAN.md`)
 
 ### **Current Sections:**
 - **Environment Cleanup**: Complete AWS environment reset for fresh testing
+- **Consolidated Deployment**: Single-command cleanup and rebuild workflow (`cleanup_and_rebuild.sh`)
 - **Deployment Operations**: Lambda container deployment and configuration
 - **Lambda Function Testing**: Sentinel-2 and Landsat data processing with AWS Lambda
 - **Data Processing Workflows**: Satellite data download and processing commands for both satellites
@@ -49,6 +50,9 @@ Before running any AWS commands, ensure you have:
 # Check AWS CLI installation and configuration
 aws --version
 aws sts get-caller-identity
+
+# Verify Python 3.13+ (required for Lambda container)
+python --version  # Should show Python 3.13.x
 
 # Verify you're in the project directory
 pwd  # Should show: /home/bny/Github/greenland-glacier-flow
@@ -368,7 +372,62 @@ find . -name "*.log" -o -name "__pycache__" | wc -l  # Should return 0
 
 ---
 
-## 🚀 Section 6: Deployment Operations
+## � Section 6: Consolidated Cleanup & Deployment (RECOMMENDED)
+
+**Purpose**: Complete environment reset and fresh deployment in a single command.
+
+### Step 1: Complete Cleanup and Rebuild
+
+**Command:**
+```bash
+cd /home/bny/Github/greenland-glacier-flow
+chmod +x aws/scripts/cleanup_and_rebuild.sh
+./aws/scripts/cleanup_and_rebuild.sh
+```
+
+**What it does:**
+1. **Complete AWS Cleanup**: Deletes Lambda function, ECR repository, S3 test data
+2. **Local Cleanup**: Removes Docker images and cached files (frees ~3.2GB)
+3. **Fresh Container Build**: Builds new Docker container with all dependencies
+4. **ECR Deployment**: Creates repository and pushes container image
+5. **Lambda Creation**: Creates function with correct configuration (10GB memory + 10GB ephemeral storage)
+6. **Validation**: Runs automated checks to ensure deployment meets requirements
+
+**Expected Output:**
+```
+==================================
+AWS Lambda Cleanup & Rebuild
+==================================
+
+🧹 CLEANUP PHASE
+✅ Lambda function deleted
+✅ ECR repository deleted
+✅ S3 test data cleaned
+✅ Local Docker cleaned (3.2GB reclaimed)
+
+🏗️  REBUILD PHASE
+✅ Container built successfully
+✅ ECR repository created
+✅ Image pushed (SHA256:xxx...)
+
+🚀 DEPLOYMENT PHASE
+✅ Lambda function created
+✅ Configuration validated
+
+✅ ALL VALIDATIONS PASSED - Safe to deploy/test
+```
+
+**Context/Rationale:**
+- **January 2026 Addition**: Consolidated workflow replaces manual step-by-step process
+- Eliminates configuration drift and ensures consistent deployments
+- Includes ephemeral storage fix (10GB) that was missing in individual scripts
+- Single command for complete environment refresh
+
+**⚠️ Production Note**: This script handles the complete lifecycle and is the recommended approach for both development and production deployments.
+
+---
+
+## 🚀 Section 7: Deployment Operations (Alternative Manual Approach)
 
 **Purpose**: Deploy Lambda container and prepare for satellite data processing.
 
@@ -451,7 +510,7 @@ aws s3 sync . s3://greenland-glacier-data/scripts/greenland-glacier-flow/ --excl
 
 ---
 
-## 📊 Section 7: Lambda Function Testing
+## 📊 Section 8: Lambda Function Testing
 
 **Purpose**: Test Lambda function with Sentinel-2 data processing.
 
@@ -459,12 +518,12 @@ aws s3 sync . s3://greenland-glacier-data/scripts/greenland-glacier-flow/ --excl
 
 **Command for Sentinel-2:**
 ```bash
-python aws/scripts/submit_aws_job.py --satellite sentinel2 --service lambda --regions 134_Arsuk --date1 2024-07-01 --date2 2024-07-02 --dry-run false
+python aws/scripts/submit_aws_job.py --satellite sentinel2 --service lambda --regions 140_CentralLindenow --date1 2025-08-01 --date2 2025-08-02 --dry-run false
 ```
 
 **Command for Landsat:**
 ```bash
-python aws/scripts/submit_aws_job.py --satellite landsat --service lambda --regions 134_Arsuk --date1 2024-07-01 --date2 2024-07-05 --dry-run false
+python aws/scripts/submit_aws_job.py --satellite landsat --service lambda --regions 140_CentralLindenow --date1 2025-08-01 --date2 2025-08-05 --dry-run false
 ```
 
 **What it does:**
@@ -485,9 +544,11 @@ python aws/scripts/submit_aws_job.py --satellite landsat --service lambda --regi
    S3: s3://greenland-glacier-data/1_download_merge_and_clip/{satellite}/{region}/
 ```
 
-**Processing Results (140_CentralLindenow, Aug 1-7, 2025):**
-- **Sentinel-2**: 96.6s, 4.4GB memory, 20 files (6 clipped + 6 downloads + 7 metadata + 1 template)
-- **Landsat**: 38.0s, 415MB memory, 5 orthorectified scenes
+**Processing Results (140_CentralLindenow, August 1-2, 2025 - January 23, 2026 Validation):**
+- **Sentinel-2**: ~4 minutes, 3 scenes processed, 3 clipped TIFFs + metadata CSVs uploaded to S3
+- **Landsat**: ~2 minutes, 2 scenes processed, 2 ortho-corrected TIFFs + reference files uploaded to S3
+
+**Validation Status**: ✅ **FULLY TESTED AND VALIDATED** - Both satellites processing successfully with 10GB ephemeral storage.
 
 **Processing Details:**
 - **Sentinel-2**: Downloads tiles covering the region, merges overlapping tiles into mosaics, clips to glacier boundary
@@ -573,7 +634,7 @@ s3://greenland-glacier-data/1_download_merge_and_clip/
 
 ---
 
-## 📥 Section 8: Data Processing Workflows
+## 📥 Section 9: Data Processing Workflows
 
 **Purpose**: Process satellite data using AWS Lambda for different scenarios.
 
@@ -662,7 +723,7 @@ python aws/scripts/submit_aws_job.py --service lambda --satellite sentinel2 \
 
 ---
 
-## 🔄 Section 9: Data Synchronization (S3 to Local)
+## 🔄 Section 10: Data Synchronization (S3 to Local)
 
 **Purpose**: Download processed satellite data from AWS S3 to your local machine or HPC for analysis.
 
@@ -843,7 +904,7 @@ Unable to locate credentials
 **Complete Workflow Example:**
 ```bash
 # 1. Process data on AWS Lambda
-python aws/scripts/submit_aws_job.py --satellite sentinel2 --service lambda --regions 134_Arsuk --date1 2024-07-01 --date2 2024-07-02
+python aws/scripts/submit_aws_job.py --satellite sentinel2 --service lambda --regions 140_CentralLindenow --date1 2025-08-01 --date2 2025-08-02
 
 # 2. Verify results on S3
 aws s3 ls s3://greenland-glacier-data/1_download_merge_and_clip/sentinel2/ --recursive
@@ -881,7 +942,7 @@ ls -lh ~/greenland_glacier_flow/1_download_merge_and_clip/sentinel2/clipped/
 
 ---
 
-## 📈 Section 10: Monitoring & Cost Management
+## 📈 Section 11: Monitoring & Cost Management
 
 **Purpose**: Monitor Lambda performance and manage AWS costs.
 
@@ -956,7 +1017,7 @@ aws ce get-cost-and-usage --time-period Start=$(date +%Y-%m-01),End=$(date +%Y-%
 
 ---
 
-## 🔧 Section 11: Basic AWS Commands Reference
+## 🔧 Section 12: Basic AWS Commands Reference
 
 **Purpose**: Essential AWS CLI commands for getting started and troubleshooting.
 

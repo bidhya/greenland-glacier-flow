@@ -2,8 +2,8 @@
 # Based on Fargate's proven self-contained architecture
 # Date: January 11, 2026
 
-# Use AWS Lambda Python 3.12 base image (includes Lambda Runtime Interface)
-FROM public.ecr.aws/lambda/python:3.12
+# Use AWS Lambda Python 3.13 base image (includes Lambda Runtime Interface)
+FROM public.ecr.aws/lambda/python:3.13
 
 # Install system dependencies for building Python packages
 RUN dnf install -y \

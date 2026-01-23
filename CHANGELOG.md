@@ -29,7 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Configuration Updates
 - **aws_config.ini**: Updated Lambda config (function: glacier-processing, ECR: glacier-lambda, memory: 10GB, package_type: Image)
 - **submit_aws_job.py**: All function references updated to glacier-processing (4 locations)
-- **Account ID**: Added 425980623116 to config
+- **Account ID**: Dynamic account ID retrieval implemented (no hardcoded values)
 
 #### Validation Results
 - ✅ Sentinel-2: 4 scenes processed (2025-08-01 to 2025-08-06), files uploaded successfully
