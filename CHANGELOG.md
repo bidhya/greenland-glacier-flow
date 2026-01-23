@@ -7,11 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### AWS Lambda Cleanup & Consolidation (January 11, 2026)
+
+**Achievement**: Unified AWS Lambda infrastructure to single function with containerized deployment
+
+#### AWS Resources Consolidated
+- **Lambda Functions**: Unified to `glacier-processing` (deleted `glacier-sentinel2-processor`)
+- **ECR Repositories**: Consolidated to `glacier-lambda` (deleted 4 old repos: glacier-sentinel2-processor, glacier-batch-processor, glacier-batch-hello, glacier-processing)
+- **Technical Debt**: Eliminated confusion from multiple function names
+
+#### Scripts Cleanup (10 obsolete files removed)
+- **Deleted Fargate Scripts**: cleanup_fargate.sh, deploy_fargate_container.sh, rebuild_fargate_clean.sh, rebuild_fargate_full.sh, retry_fargate.sh, test_fargate_hello_world.sh
+- **Deleted Old Lambda Scripts**: build_lambda_layer.sh, deploy_lambda.sh, test_lambda_container.sh, response.json
+- **Deleted Old Handlers**: lambda_handler_simple.py, lambda-deployment.zip
+- **Kept Essential Tools** (4 scripts):
+  - `build_test_lambda.sh` - Build and test Lambda locally
+  - `cleanup_and_rebuild.sh` - Full cleanup and rebuild validation
+  - `deploy_lambda_container.sh` - Deploy container to AWS
+  - `submit_aws_job.py` - Job submission with config system
+
+#### Configuration Updates
+- **aws_config.ini**: Updated Lambda config (function: glacier-processing, ECR: glacier-lambda, memory: 10GB, package_type: Image)
+- **submit_aws_job.py**: All function references updated to glacier-processing (4 locations)
+- **Account ID**: Added 425980623116 to config
+
+#### Validation Results
+- ✅ Sentinel-2: 4 scenes processed (2025-08-01 to 2025-08-06), files uploaded successfully
+- ✅ Landsat: 5 orthoimages processed (2025-08-01 to 2025-08-06), files uploaded successfully
+- ✅ Config System: Working with minimal CLI arguments (`--service lambda` only)
+- ✅ No Technical Debt: Single function, single ECR repo, clean script inventory
+
+#### Impact
+- Simplified deployment: One function serves both Sentinel-2 and Landsat
+- Reduced maintenance: Single ECR repository, 4 essential scripts
+- Config-driven execution: Minimal command-line arguments required
+- Production-ready: Validated with real data processing
+
 ### Current Status (December 2025)
 **Primary Focus**: HPC batch processing for production-scale glacier analysis
 - **Active Development**: Batch processing infrastructure complete and tested
 - **Production Ready**: 192 glacier regions with predictable batch slicing
-- **AWS Status**: Lambda infrastructure complete (October 2025) but de-prioritized
+- **AWS Status**: Lambda infrastructure complete and consolidated (January 2026)
 - **Next Milestone**: Full-year production runs on HPC cluster
 
 ### Added

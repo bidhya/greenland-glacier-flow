@@ -21,8 +21,9 @@ PRODUCTION_WORKFLOW.md
 Archive/
 Sample_code/
 
-# AWS-specific (if not needed in container)
+# AWS-specific (exclude most, but allow Lambda container files)
 aws/
+!aws/lambda_handler_container.py
 
 # Control and utility scripts
 control/

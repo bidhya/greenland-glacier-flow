@@ -1,0 +1,54 @@
+# Lambda Container for Greenland Glacier Processing
+# Based on Fargate's proven self-contained architecture
+# Date: January 11, 2026
+
+# Use AWS Lambda Python 3.12 base image (includes Lambda Runtime Interface)
+FROM public.ecr.aws/lambda/python:3.12
+
+# Install system dependencies for building Python packages
+RUN dnf install -y \
+    gcc \
+    gcc-c++ \
+    make \
+    wget \
+    git \
+    && dnf clean all
+
+# Install Python geospatial dependencies (same as Fargate's proven stack)
+# Using pip packages instead of system GDAL for Lambda compatibility
+RUN pip install --no-cache-dir \
+    boto3 \
+    numpy \
+    pandas \
+    pyproj \
+    shapely \
+    fiona \
+    geopandas \
+    rasterio \
+    rioxarray \
+    pystac-client \
+    dask \
+    opencv-python-headless \
+    tqdm \
+    netcdf4 \
+    xarray \
+    joblib \
+    scikit-learn \
+    scipy \
+    matplotlib \
+    seaborn \
+    requests
+
+# Verify all packages import correctly
+RUN python -c "import geopandas, rioxarray, boto3, pystac_client, rasterio; print('✅ All packages imported')"
+
+# Copy processing code into Lambda task root (self-contained architecture)
+# This eliminates runtime S3 downloads for faster cold starts
+COPY 1_download_merge_and_clip/ ${LAMBDA_TASK_ROOT}/1_download_merge_and_clip/
+
+# Copy Lambda container handler (self-contained version)
+COPY aws/lambda_handler_container.py ${LAMBDA_TASK_ROOT}/lambda_handler.py
+
+# Set Lambda handler as entrypoint
+# Lambda Runtime Interface Client will invoke this handler
+CMD ["lambda_handler.handler"]

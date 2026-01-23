@@ -1,111 +1,175 @@
 #!/bin/bash
-
-# Deploy Lambda Container Image for Sentinel-2 Processing
-# This script builds and deploys a containerized Lambda with conda environment
+# Deploy Lambda Container to AWS
+# Self-contained Lambda based on Fargate's proven architecture
+# Date: January 11, 2026
 
 set -e
 
+echo "=================================="
+echo "Lambda Container AWS Deployment"
+echo "=================================="
+
 # Configuration
 AWS_REGION="us-west-2"
-AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-REPOSITORY_NAME="glacier-sentinel2-processor"
-FUNCTION_NAME="glacier-sentinel2-processor"
+AWS_ACCOUNT_ID="425980623116"
+ECR_REPO_NAME="glacier-lambda"
+LAMBDA_FUNCTION_NAME="glacier-processing"
 IMAGE_TAG="latest"
 
-echo "🐳 Deploying Lambda Container Image"
-echo "AWS Account: $AWS_ACCOUNT_ID"
-echo "Region: $AWS_REGION"
-echo "Repository: $REPOSITORY_NAME"
-echo "Function: $FUNCTION_NAME"
+ECR_URI="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}:${IMAGE_TAG}"
+
+echo ""
+echo "Configuration:"
+echo "  Region: ${AWS_REGION}"
+echo "  Account: ${AWS_ACCOUNT_ID}"
+echo "  ECR Repo: ${ECR_REPO_NAME}"
+echo "  Lambda Function: ${LAMBDA_FUNCTION_NAME}"
+echo "  Image Tag: ${IMAGE_TAG}"
+echo ""
 
 # Step 1: Create ECR repository if it doesn't exist
-echo "📦 Creating ECR repository..."
-aws ecr describe-repositories --repository-names $REPOSITORY_NAME --region $AWS_REGION > /dev/null 2>&1 || \
-aws ecr create-repository --repository-name $REPOSITORY_NAME --region $AWS_REGION
-
-# Step 2: Get ECR login token
-echo "🔐 Logging into ECR..."
-aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
-
-# Step 3: Build Docker image
-echo "🏗️  Building Docker image..."
-docker build -f ../lambda/Dockerfile.lambda -t $REPOSITORY_NAME:$IMAGE_TAG ../..
-
-# Step 4: Tag image for ECR
-ECR_URI="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$REPOSITORY_NAME:$IMAGE_TAG"
-echo "🏷️  Tagging image: $ECR_URI"
-docker tag $REPOSITORY_NAME:$IMAGE_TAG $ECR_URI
-
-# Step 5: Push image to ECR
-echo "☁️  Pushing image to ECR..."
-docker push $ECR_URI
-
-# Step 6: Update Lambda function to use container image
-echo "🔄 Updating Lambda function..."
-
-# Check if function exists
-if aws lambda get-function --function-name $FUNCTION_NAME --region $AWS_REGION > /dev/null 2>&1; then
-    echo "📝 Function exists. Checking package type..."
-    
-    # Get current package type
-    PACKAGE_TYPE=$(aws lambda get-function --function-name $FUNCTION_NAME --region $AWS_REGION --query 'Configuration.PackageType' --output text)
-    
-    if [ "$PACKAGE_TYPE" = "Zip" ]; then
-        echo "🔄 Converting from ZIP to container image - deleting and recreating..."
-        
-        aws lambda delete-function \
-            --function-name $FUNCTION_NAME \
-            --region $AWS_REGION
-        
-        echo "⏳ Waiting for function deletion..."
-        sleep 10
-        
-        echo "🆕 Creating new container-based function..."
-        ROLE_ARN="arn:aws:iam::${AWS_ACCOUNT_ID}:role/lambda-glacier-execution-role"
-        
-        aws lambda create-function \
-            --function-name $FUNCTION_NAME \
-            --package-type Image \
-            --code ImageUri=$ECR_URI \
-            --role $ROLE_ARN \
-            --timeout 900 \
-            --memory-size 2048 \
-            --region $AWS_REGION
-    else
-        echo "📝 Updating container image..."
-        aws lambda update-function-code \
-            --function-name $FUNCTION_NAME \
-            --image-uri $ECR_URI \
-            --region $AWS_REGION
-            
-        echo "⚙️  Updating function configuration..."
-        aws lambda update-function-configuration \
-            --function-name $FUNCTION_NAME \
-            --timeout 900 \
-            --memory-size 2048 \
-            --region $AWS_REGION
-    fi
+echo "Step 1: Checking ECR repository..."
+if aws ecr describe-repositories --repository-names ${ECR_REPO_NAME} --region ${AWS_REGION} 2>/dev/null; then
+    echo "✓ ECR repository exists"
 else
-    echo "🆕 Function doesn't exist, creating new container-based function..."
+    echo "Creating ECR repository..."
+    aws ecr create-repository \
+        --repository-name ${ECR_REPO_NAME} \
+        --region ${AWS_REGION} \
+        --image-scanning-configuration scanOnPush=true
+    echo "✓ ECR repository created"
+fi
+
+# Step 2: Login to ECR
+echo ""
+echo "Step 2: Logging into ECR..."
+aws ecr get-login-password --region ${AWS_REGION} | \
+    docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+echo "✓ Logged into ECR"
+
+# Step 3: Build the image
+echo ""
+echo "Step 3: Building Lambda container..."
+docker build -t ${ECR_REPO_NAME}:${IMAGE_TAG} -f aws/Dockerfile.lambda .
+echo "✓ Build complete"
+
+# Step 4: Tag the image
+echo ""
+echo "Step 4: Tagging image for ECR..."
+docker tag ${ECR_REPO_NAME}:${IMAGE_TAG} ${ECR_URI}
+echo "✓ Image tagged"
+
+# Step 5: Push to ECR
+echo ""
+echo "Step 5: Pushing to ECR..."
+docker push ${ECR_URI}
+echo "✓ Image pushed to ECR"
+
+# Step 6: Update Lambda function
+echo ""
+echo "Step 6: Updating Lambda function..."
+
+# Check current package type
+PACKAGE_TYPE=$(aws lambda get-function-configuration \
+    --function-name ${LAMBDA_FUNCTION_NAME} \
+    --region ${AWS_REGION} \
+    --query 'PackageType' \
+    --output text 2>/dev/null || echo "NOT_FOUND")
+
+if [ "$PACKAGE_TYPE" = "Zip" ]; then
+    echo "Converting from ZIP to container (requires function recreation)..."
+    echo "Deleting existing ZIP-based function..."
     
-    # Get existing execution role ARN (from previous deployment)
+    aws lambda delete-function \
+        --function-name ${LAMBDA_FUNCTION_NAME} \
+        --region ${AWS_REGION}
+    
+    echo "Waiting for deletion to complete..."
+    sleep 10
+    
+    echo "Creating new container-based function..."
     ROLE_ARN="arn:aws:iam::${AWS_ACCOUNT_ID}:role/lambda-glacier-execution-role"
     
     aws lambda create-function \
-        --function-name $FUNCTION_NAME \
+        --function-name ${LAMBDA_FUNCTION_NAME} \
         --package-type Image \
-        --code ImageUri=$ECR_URI \
-        --role $ROLE_ARN \
+        --code ImageUri=${ECR_URI} \
+        --role ${ROLE_ARN} \
         --timeout 900 \
-        --memory-size 2048 \
-        --region $AWS_REGION
+        --memory-size 10240 \
+        --region ${AWS_REGION}
+    
+    echo "✓ Function created with container image"
+    
+elif [ "$PACKAGE_TYPE" = "Image" ]; then
+    echo "Updating existing container-based function..."
+    
+    aws lambda update-function-code \
+        --function-name ${LAMBDA_FUNCTION_NAME} \
+        --image-uri ${ECR_URI} \
+        --region ${AWS_REGION}
+    
+    echo "✓ Function code updated"
+    
+else
+    echo "Function not found, creating new container-based function..."
+    ROLE_ARN="arn:aws:iam::${AWS_ACCOUNT_ID}:role/lambda-glacier-execution-role"
+    
+    aws lambda create-function \
+        --function-name ${LAMBDA_FUNCTION_NAME} \
+        --package-type Image \
+        --code ImageUri=${ECR_URI} \
+        --role ${ROLE_ARN} \
+        --timeout 900 \
+        --memory-size 10240 \
+        --region ${AWS_REGION}
+    
+    echo "✓ Function created"
 fi
 
-echo "✅ Lambda container image deployed successfully!"
-echo "Function: $FUNCTION_NAME"
-echo "Image: $ECR_URI"
-echo "Memory: 2048 MB"
-echo "Timeout: 15 minutes"
 echo ""
-echo "🧪 Test with:"
-echo "python submit_aws_job.py --satellite sentinel2 --service lambda --regions 134_Arsuk --dry-run false"
+echo "Waiting for Lambda function update to complete..."
+aws lambda wait function-updated-v2 \
+    --function-name ${LAMBDA_FUNCTION_NAME} \
+    --region ${AWS_REGION}
+
+echo "✓ Lambda function ready"
+
+# Step 7: Verify deployment
+echo ""
+echo "Step 7: Verifying deployment..."
+LAMBDA_SHA=$(aws lambda get-function-configuration \
+    --function-name ${LAMBDA_FUNCTION_NAME} \
+    --region ${AWS_REGION} \
+    --query 'CodeSha256' \
+    --output text)
+
+echo "✓ Lambda function is using container: SHA256=${LAMBDA_SHA}"
+
+echo ""
+echo "=================================="
+echo "Deployment Complete!"
+echo "=================================="
+echo ""
+echo "Lambda function '${LAMBDA_FUNCTION_NAME}' is now using container:"
+echo "  ${ECR_URI}"
+echo ""
+
+# Automatic configuration validation
+echo "Validating Lambda configuration..."
+if python aws/scripts/validate_lambda_config.py --function-name ${LAMBDA_FUNCTION_NAME}; then
+    echo ""
+    echo "Next Steps:"
+    echo "1. Test Lambda function:"
+    echo "   python aws/scripts/submit_aws_job.py --service lambda --satellite sentinel2 --regions 140_CentralLindenow"
+    echo ""
+    echo "2. Check CloudWatch logs:"
+    echo "   aws logs tail /aws/lambda/${LAMBDA_FUNCTION_NAME} --follow"
+    echo "=================================="
+else
+    echo ""
+    echo "❌ Configuration validation failed!"
+    echo "   Fix configuration issues above before testing."
+    echo "=================================="
+    exit 1
+fi

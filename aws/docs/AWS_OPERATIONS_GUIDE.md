@@ -2,7 +2,7 @@
 
 **Purpose**: Comprehensive AWS operations reference for the Greenland glacier flow processing system.
 
-**Last Updated**: October 17, 2025 - Reorganized document structure, moved reference sections to end, updated future additions list, and improved logical flow from cleanup to deployment to operations to monitoring.
+**Last Updated**: January 15, 2026 - Updated Lambda container workflow to remove S3 code sync requirements, validated production-ready containerized processing for both Sentinel-2 and Landsat.
 **Scope**: Complete AWS workflow including cleanup, deployment, Lambda operations, data processing, and monitoring.
 **Learning Objective**: Enable independent AWS operations for satellite data processing workflows.
 
@@ -429,26 +429,25 @@ aws lambda update-function-configuration \
 
 ---
 
-### Step 3: Upload Project Files to S3
+### Step 3: Test Lambda Container (No S3 Upload Required)
 
-**Command:**
+**Containerized Workflow**: The Lambda function uses a self-contained Docker container with all processing code and dependencies pre-built. No S3 sync is required - the container includes the entire processing pipeline.
+
+**Expected Output:**
+- Container deployment completed successfully in previous step
+- Lambda function ready for satellite processing invocations
+
+**Context/Rationale:**
+- **January 2026 Update**: Containerized approach eliminates S3 code sync requirements
+- All processing scripts and configurations are baked into the Docker image
+- Simplifies deployment and ensures consistent runtime environment
+
+**Alternative: ZIP Deployment with S3 Code Sync (Historical)**
+If pursuing non-containerized Lambda deployment:
 ```bash
 aws s3 sync . s3://greenland-glacier-data/scripts/greenland-glacier-flow/ --exclude ".git/*" --exclude "*.log" --exclude "__pycache__/*" --exclude ".pytest_cache/*"
 ```
-
-**What it does:**
-- Uploads entire project codebase to S3 for Lambda container access
-- Excludes development artifacts (.git, logs, cache files)
-- Creates `scripts/greenland-glacier-flow/` folder in S3 bucket
-
-**Expected Output:**
-- Lists 100+ files being uploaded (Python scripts, configs, documentation)
-- Shows upload progress and completion confirmation
-
-**Context/Rationale:**
-- Lambda container downloads project files at runtime from S3
-- Ensures Lambda has access to all processing scripts and configurations
-- Bandwidth-efficient sync only uploads changed files
+**Notes**: Lambda downloads project files at runtime from S3. Containerized approach eliminates this step by including all code in the Docker image.
 
 ---
 
@@ -477,16 +476,18 @@ python aws/scripts/submit_aws_job.py --satellite landsat --service lambda --regi
 **Expected Output:**
 ```
 ✅ Lambda invocation successful!
-   Status Code: 200
+   Status Code: 202
    Request ID: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+   Invocation Type: Asynchronous (Event)
 
-✅ Processing completed successfully!
-
-Results:
-   Uploaded Files: 5 (Sentinel-2) or 4 (Landsat)
-   S3 Location: s3://greenland-glacier-data/1_download_merge_and_clip/{satellite}/
-   Message: Sentinel-2/Landsat processing completed successfully with geospatial libraries
+💡 Function is running in background. Check CloudWatch logs or S3 for results:
+   Logs: https://us-west-2.console.aws.amazon.com/cloudwatch/...
+   S3: s3://greenland-glacier-data/1_download_merge_and_clip/{satellite}/{region}/
 ```
+
+**Processing Results (140_CentralLindenow, Aug 1-7, 2025):**
+- **Sentinel-2**: 96.6s, 4.4GB memory, 20 files (6 clipped + 6 downloads + 7 metadata + 1 template)
+- **Landsat**: 38.0s, 415MB memory, 5 orthorectified scenes
 
 **Processing Details:**
 - **Sentinel-2**: Downloads tiles covering the region, merges overlapping tiles into mosaics, clips to glacier boundary
@@ -505,36 +506,51 @@ Results:
 
 **Command:**
 ```bash
-aws s3 ls s3://greenland-glacier-data/1_download_merge_and_clip/sentinel2/ --recursive
-# OR for Landsat:
-aws s3 ls s3://greenland-glacier-data/1_download_merge_and_clip/landsat/ --recursive
+# Sentinel-2 (region-based structure)
+aws s3 ls s3://greenland-glacier-data/1_download_merge_and_clip/sentinel2/140_CentralLindenow/ --recursive --human-readable
+
+# Landsat (region-based structure)
+aws s3 ls s3://greenland-glacier-data/1_download_merge_and_clip/landsat/140_CentralLindenow/ --recursive --human-readable
 ```
 
 **What it does:**
-- Lists all files uploaded by the Lambda processing job
+- Lists all files uploaded by the Lambda processing job for a specific region
 - Shows file sizes, timestamps, and S3 paths
 
-**Expected Output for Sentinel-2:**
+**Expected Output for Sentinel-2 (140_CentralLindenow):**
 ```
-2025-10-13 14:28:48    1729933 1_download_merge_and_clip/sentinel2/clipped/134_Arsuk/S2A_MSIL2A_20240704T142751_N0510_R139.tif
-2025-10-13 14:28:48    1729933 1_download_merge_and_clip/sentinel2/clipped/134_Arsuk/S2A_MSIL2A_20240707T144001_N0510_R039.tif
-[2-3 more clipped scenes ~1.7 MB each]
-[4 downloaded tiles in download/2024/ folder ~90-200 MB each]
-[5 metadata CSV files in metadata/ folders]
-[1 template file in template/ folder ~1.7 MB]
-```
-
-**Expected Output for Landsat:**
-```
-2025-10-13 14:43:45     769041 1_download_merge_and_clip/landsat/134_Arsuk/20240704142514_LC80030172024186LGN00_LC08_L1TP_003017_20240704_20240712_02_T1_ortho.tif
-2025-10-13 14:43:45     769041 1_download_merge_and_clip/landsat/134_Arsuk/20240705141901_LC90020172024187LGN00_LC09_L1GT_002017_20240705_20240705_02_T2_ortho.tif
-2025-10-13 14:43:46      66892 1_download_merge_and_clip/landsat/_reference/134_Arsuk.tif
-2025-10-13 14:43:45       3196 1_download_merge_and_clip/landsat/_reference/134_Arsuk_stac_query_results.csv
+2026-01-09 09:45:58    1.2 MiB 1_download_merge_and_clip/sentinel2/140_CentralLindenow/clipped/S2A_MSIL2A_20250804T140751_N0511_R053.tif
+2026-01-09 09:45:58    1.2 MiB 1_download_merge_and_clip/sentinel2/140_CentralLindenow/clipped/S2A_MSIL2A_20250807T142241_N0511_R096.tif
+2026-01-09 09:45:58    1.2 MiB 1_download_merge_and_clip/sentinel2/140_CentralLindenow/clipped/S2B_MSIL2A_20250803T142739_N0511_R139.tif
+[6 clipped scenes total, ~1.2 MB each]
+[6 Band 8 files in download/2025/ folder, 59-204 MB each]
+[7 metadata CSV files: 1 combined + 6 individual]
+[1 template file in template/ folder, 1.2 MB]
+Total: 20 files, ~783 MB
 ```
 
-**File Structure:**
-- **Sentinel-2**: `clipped/` (processed scenes), `download/` (raw tiles), `metadata/` (CSVs), `template/` (reference)
-- **Landsat**: `{region}/` (processed scenes), `_reference/` (template + STAC results)
+**Expected Output for Landsat (140_CentralLindenow):**
+```
+2026-01-09 09:53:07  557.9 KiB 1_download_merge_and_clip/landsat/140_CentralLindenow/20250802141328_LC90010172025214LGN00_LC09_L1TP_001017_20250802_20250802_02_T1_ortho.tif
+2026-01-09 09:53:07  557.9 KiB 1_download_merge_and_clip/landsat/140_CentralLindenow/20250802141351_LC90010182025214LGN00_LC09_L1TP_001018_20250802_20250802_02_T1_ortho.tif
+2026-01-09 09:53:07  560.3 KiB 1_download_merge_and_clip/landsat/140_CentralLindenow/20250803140718_LC82330172025215LGN00_LC08_L1TP_233017_20250803_20250814_02_T1_ortho.tif
+[5 orthorectified scenes total, 557-560 KiB each]
+Total: 5 files, ~2.8 MB
+```
+
+**S3 Structure (Validated January 9, 2026):**
+```
+s3://greenland-glacier-data/1_download_merge_and_clip/
+├── sentinel2/{region}/
+│   ├── clipped/           # Processed scenes clipped to glacier boundary
+│   ├── download/{year}/   # Raw Band 8 tiles from STAC API
+│   ├── metadata/
+│   │   ├── combined_csv/  # Single CSV with all scene metadata
+│   │   └── individual_csv/ # One CSV per scene
+│   └── template/          # Reference template for region
+└── landsat/{region}/
+    └── *.tif              # Orthorectified and clipped scenes
+```
 
 ---
 
@@ -561,48 +577,73 @@ aws s3 ls s3://greenland-glacier-data/1_download_merge_and_clip/landsat/ --recur
 
 **Purpose**: Process satellite data using AWS Lambda for different scenarios.
 
-### Satellite Processing Examples
+**Configuration Priority**: CLI arguments > config.ini > script defaults
 
-**Sentinel-2 (5-day revisit, tile-based):**
+### Workflow Options
+
+**Option 1: Use config.ini parameters (regions, dates, satellite):**
 ```bash
-python aws/scripts/submit_aws_job.py --satellite sentinel2 --service lambda --regions 134_Arsuk --date1 2024-07-01 --date2 2024-07-02
+# Ensure config.ini has: regions=140_CentralLindenow, date1=2025-08-01, date2=2025-08-07, satellite=sentinel2
+python aws/scripts/submit_aws_job.py --service lambda
 ```
 
-**Landsat (16-day revisit, scene-based):**
+**Option 2: Override satellite type only (keep config.ini dates/regions):**
 ```bash
-python aws/scripts/submit_aws_job.py --satellite landsat --service lambda --regions 134_Arsuk --date1 2024-07-01 --date2 2024-07-05
+python aws/scripts/submit_aws_job.py --service lambda --satellite sentinel2
+python aws/scripts/submit_aws_job.py --service lambda --satellite landsat
 ```
 
-**Multiple Regions (both satellites):**
+**Option 3: Complete CLI override (ignore config.ini):**
 ```bash
-python aws/scripts/submit_aws_job.py --satellite sentinel2 --service lambda --regions "134_Arsuk,191_Hagen_Brae" --date1 2024-07-01 --date2 2024-07-02
+# Sentinel-2 (5-day revisit, tile-based)
+python aws/scripts/submit_aws_job.py --service lambda --satellite sentinel2 \
+  --regions 140_CentralLindenow --date1 2025-08-01 --date2 2025-08-07
+
+# Landsat (16-day revisit, scene-based)
+python aws/scripts/submit_aws_job.py --service lambda --satellite landsat \
+  --regions 140_CentralLindenow --date1 2025-08-01 --date2 2025-08-07
+
+# Complete example with all parameters
+python aws/scripts/submit_aws_job.py \
+  --service lambda \
+  --satellite landsat \
+  --regions "140_CentralLindenow,134_Arsuk,191_Hagen_Brae" \
+  --date1 2025-08-01 \
+  --date2 2025-08-14 \
+  --download-flag 1 \
+  --post-processing-flag 1 \
+  --cores 1 \
+  --dry-run false
+
+# Result: Processes 3 regions with Landsat, Aug 1-14 (14 days)
+# Output: s3://greenland-glacier-data/1_download_merge_and_clip/landsat/{region}/
 ```
 
-**Longer Date Ranges:**
+**Multiple Regions:**
 ```bash
-# Sentinel-2: 1 week (more tiles, longer processing)
-python aws/scripts/submit_aws_job.py --satellite sentinel2 --service lambda --regions 134_Arsuk --date1 2024-07-01 --date2 2024-07-08
-
-# Landsat: 2 weeks (better chance of finding scenes)
-python aws/scripts/submit_aws_job.py --satellite landsat --service lambda --regions 134_Arsuk --date1 2024-07-01 --date2 2024-07-15
+python aws/scripts/submit_aws_job.py --service lambda --satellite sentinel2 \
+  --regions "134_Arsuk,191_Hagen_Brae" --date1 2024-07-01 --date2 2024-07-02
 ```
 
 **Dry Run (Test Configuration):**
 ```bash
-python aws/scripts/submit_aws_job.py --satellite sentinel2 --service lambda --regions 134_Arsuk --date1 2024-07-01 --date2 2024-07-02 --dry-run true
+python aws/scripts/submit_aws_job.py --service lambda --satellite sentinel2 \
+  --regions 140_CentralLindenow --date1 2025-08-01 --date2 2025-08-07 --dry-run true
 ```
 
-### Satellite Differences
+### Satellite Differences & Performance (140_CentralLindenow, Jan 9, 2026)
 
 | Aspect | Sentinel-2 | Landsat |
 |--------|------------|---------|
 | **Revisit Time** | 5 days | 16 days |
 | **Data Structure** | Tiles (overlapping) | Scenes (individual) |
 | **Processing** | Merge tiles → clip | Direct clip |
-| **Typical Files** | 4-6 tiles → 4 scenes | 1-2 scenes |
-| **Date Range** | 1-3 days | 5-14 days |
-| **File Size** | ~1.7 MB scenes | ~769 KB scenes |
-| **Lambda Memory** | 5 GB | 5 GB |
+| **Lambda Duration** | 96.6s (~1.6 min) | 38.0s (~38s) |
+| **Lambda Memory** | 4.4 GB | 415 MB |
+| **Output Files** | 20 files | 5 files |
+| **Output Size** | ~783 MB | ~2.8 MB |
+| **Recommended Range** | 3-7 days | 7-14 days |
+| **File Size (clipped)** | ~1.2 MB scenes | ~557 KiB scenes |
 
 **Note**: Both satellites use the same Lambda function and processing pipeline, with satellite-specific parameters handled automatically.
 
