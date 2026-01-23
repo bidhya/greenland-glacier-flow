@@ -17,6 +17,19 @@ Successfully developed and validated a multi-platform satellite data processing 
 
 ## Major Milestones (Reverse Chronological)
 
+### January 23, 2026 - Lambda Role Clarification & Production Status
+**Achievement**: Lambda positioned as gap filling and AWS validation platform
+
+- **Primary Role**: Short-duration gap filling tasks, not primary production processing
+- **Scalability**: ~2000 Lambda runs for one year coverage (one per month × 192 regions)
+- **Complementary**: HPC remains primary workflow, Lambda fills temporal gaps
+- **Development**: Validated AWS services and authentication for further scaling
+- **Status**: Containerized deployment fully validated with Python 3.13
+
+**Impact**: Clear architectural positioning - HPC for systematic processing, Lambda for targeted gap filling and AWS development
+
+---
+
 ### October 17, 2025 - Repository Organization & Cleanup
 **Achievement**: Streamlined repository structure and removed unused files
 

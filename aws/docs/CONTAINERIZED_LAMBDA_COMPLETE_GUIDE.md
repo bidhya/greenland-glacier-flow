@@ -9,6 +9,23 @@
 
 ---
 
+## 🎯 Lambda Role: Gap Filling & AWS Service Validation
+
+### **Primary Purpose: Gap Filling**
+**Lambda is designed for gap filling of satellite data, not primary production processing:**
+- **Short-duration tasks**: Optimized for quick, targeted data acquisition
+- **Gap filling**: Fill temporal gaps in existing datasets (e.g., missing months)
+- **Validation platform**: Test AWS services and authentication for further development
+- **Scalability**: Can run ~2000 Lambda functions for one year coverage (one per month × 192 regions)
+
+### **Complementary to HPC Workflow**
+- **HPC remains primary**: Main production pipeline for systematic processing
+- **Lambda fills gaps**: Targeted acquisition where HPC processing is incomplete
+- **Parallel processing**: One Lambda per month enables massive temporal coverage
+- **Development platform**: Validates AWS architecture for future scaling
+
+---
+
 ## 📋 Prerequisites
 
 ### Required Tools & Accounts

@@ -7,47 +7,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### AWS Lambda Cleanup & Consolidation (January 11, 2026)
+### AWS Lambda Containerization & Gap Filling Platform (January 23, 2026)
 
-**Achievement**: Unified AWS Lambda infrastructure to single function with containerized deployment
+**Achievement**: Complete AWS Lambda containerization with Python 3.13, unified infrastructure, and established gap filling role for satellite data processing
 
-#### AWS Resources Consolidated
-- **Lambda Functions**: Unified to `glacier-processing` (deleted `glacier-sentinel2-processor`)
-- **ECR Repositories**: Consolidated to `glacier-lambda` (deleted 4 old repos: glacier-sentinel2-processor, glacier-batch-processor, glacier-batch-hello, glacier-processing)
-- **Technical Debt**: Eliminated confusion from multiple function names
+#### Lambda Infrastructure Consolidation
+- **Unified Function**: Single `glacier-processing` Lambda function serving both Sentinel-2 and Landsat
+- **Containerized Deployment**: Python 3.13 container with geospatial stack (GDAL, rasterio, geopandas, xarray)
+- **ECR Repository**: Consolidated to `glacier-lambda` (removed 4 obsolete repositories)
+- **Resource Configuration**: 10GB memory, container image packaging, dynamic account ID retrieval
 
-#### Scripts Cleanup (10 obsolete files removed)
-- **Deleted Fargate Scripts**: cleanup_fargate.sh, deploy_fargate_container.sh, rebuild_fargate_clean.sh, rebuild_fargate_full.sh, retry_fargate.sh, test_fargate_hello_world.sh
-- **Deleted Old Lambda Scripts**: build_lambda_layer.sh, deploy_lambda.sh, test_lambda_container.sh, response.json
-- **Deleted Old Handlers**: lambda_handler_simple.py, lambda-deployment.zip
-- **Kept Essential Tools** (4 scripts):
-  - `build_test_lambda.sh` - Build and test Lambda locally
-  - `cleanup_and_rebuild.sh` - Full cleanup and rebuild validation
-  - `deploy_lambda_container.sh` - Deploy container to AWS
-  - `submit_aws_job.py` - Job submission with config system
+#### Scripts & Configuration Cleanup
+- **Removed Obsolete Scripts** (10 files): All Fargate and old Lambda deployment scripts
+- **Kept Essential Tools** (4 scripts): `build_test_lambda.sh`, `cleanup_and_rebuild.sh`, `deploy_lambda_container.sh`, `submit_aws_job.py`
+- **Configuration Updates**: `aws_config.ini` updated, `submit_aws_job.py` function references unified
+- **Security Hardening**: No hardcoded account IDs, dynamic credential retrieval
 
-#### Configuration Updates
-- **aws_config.ini**: Updated Lambda config (function: glacier-processing, ECR: glacier-lambda, memory: 10GB, package_type: Image)
-- **submit_aws_job.py**: All function references updated to glacier-processing (4 locations)
-- **Account ID**: Dynamic account ID retrieval implemented (no hardcoded values)
+#### Lambda Role Definition & Positioning
+- **Primary Purpose**: Gap filling platform for satellite data acquisition, not primary production processing
+- **Short-duration Tasks**: Optimized for quick, targeted data processing (~2000 functions/year for full coverage)
+- **Complementary Architecture**: HPC remains primary workflow, Lambda fills temporal gaps
+- **Scalability**: One function per month × 192 regions = ~2000 Lambda executions annually
 
-#### Validation Results
-- ✅ Sentinel-2: 4 scenes processed (2025-08-01 to 2025-08-06), files uploaded successfully
-- ✅ Landsat: 5 orthoimages processed (2025-08-01 to 2025-08-06), files uploaded successfully
-- ✅ Config System: Working with minimal CLI arguments (`--service lambda` only)
-- ✅ No Technical Debt: Single function, single ECR repo, clean script inventory
+#### Validation & Testing Results
+- **Sentinel-2 Processing**: 4 scenes processed (2025-08-01 to 2025-08-06), files uploaded successfully
+- **Landsat Processing**: 5 orthoimages processed (2025-08-01 to 2025-08-06), files uploaded successfully
+- **Config System**: Working with minimal CLI arguments (`--service lambda`)
+- **AWS Integration**: Validated authentication patterns and service connectivity
 
-#### Impact
-- Simplified deployment: One function serves both Sentinel-2 and Landsat
-- Reduced maintenance: Single ECR repository, 4 essential scripts
-- Config-driven execution: Minimal command-line arguments required
-- Production-ready: Validated with real data processing
+#### Documentation Updates
+- **AGENTS.md**: Updated Lambda status and clarified gap filling role
+- **README.md**: Added execution environment breakdown (HPC primary, Lambda secondary)
+- **AWS Documentation**: Added Lambda role clarification to all AWS-related guides
+- **Project Milestones**: Added current milestone documenting Lambda positioning
 
-### Current Status (December 2025)
+#### Development Platform Value
+- **AWS Service Validation**: Lambda serves as validation platform for further AWS scaling
+- **Authentication Testing**: Validates AWS services and credential patterns
+- **Future Integration**: Ready for expanded AWS service development
+
+#### Impact & Benefits
+- **Simplified Deployment**: One function serves both satellite types
+- **Reduced Maintenance**: Single ECR repository, clean script inventory
+- **Production Ready**: Validated with real satellite data processing
+- **Architectural Clarity**: Clear separation between HPC production and Lambda gap filling
+
+---
+
+### Current Status (January 2026)
 **Primary Focus**: HPC batch processing for production-scale glacier analysis
 - **Active Development**: Batch processing infrastructure complete and tested
 - **Production Ready**: 192 glacier regions with predictable batch slicing
-- **AWS Status**: Lambda infrastructure complete and consolidated (January 2026)
 - **Next Milestone**: Full-year production runs on HPC cluster
 
 ### Added
@@ -56,7 +66,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Modified wrapper.py to create satellite-specific base directories
   - Validated both Landsat and Sentinel-2 processing with correct output locations
   - Container now mirrors HPC workflow exactly with proper file ownership and AWS integration
-  - Ready for AWS deployment phases (Lambda, Fargate, Batch)
 - **Critical Bug Fix: Configuration Hierarchy** (December 22, 2025)
   - Fixed argparse defaults overriding config.ini production values
   - Removed `default='48G'` and `default='01:00:00'` from `--memory` and `--runtime` arguments
@@ -76,18 +85,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Documentation Cleanup** (December 22, 2025)
   - Reduced AGENTS.md from 1717 to 283 lines (83% reduction)
-  - Removed verbose AWS Lambda historical details (moved to summary)
   - Consolidated repetitive command examples
   - Updated Python version references to 3.13
   - Streamlined for AI agent command determination focus
 
 - **AWS Context Restoration** (December 22, 2025)
-  - Added AWS Lambda execution mode back to README capabilities
-  - Created AWS Cloud Processing documentation section
+  - Added AWS Cloud Processing documentation section
   - Added AWS data source context (all imagery on AWS Open Data Registry)
-  - Linked to comprehensive AWS Lambda documentation in `aws/docs/`
   - Referenced `Archive/legacy_README.md` for historical workflow context
-  - Clarified AWS Lambda status: production-ready and maintained for future cloud-scale processing
 
 - **Batch Processing Infrastructure** (December 21, 2025)
   - Implemented `--start-end-index` CLI argument for predictable glacier batching
@@ -125,19 +130,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 50%+ reduction in unnecessary downloads through tile filtering
   - Pre-download UTM grid tile ID filtering using region metadata
   - Centralized download location for future deduplication
-  - AWS Lambda memory constraint validation (5GB sufficient for 1-2 tiles)
 
 - **Multi-Environment Data Synchronization** (October 2025)
   - Bidirectional S3 sync tool (`sync_from_s3.sh`)
   - Environment-aware path resolution (HPC vs local)
   - Safe multi-user defaults with `--force-overwrite` option
   - Bandwidth optimization with `--exclude-downloads` flag
-
-- **AWS Lambda Container Integration** (October 2025)
-  - Complete containerized processing with project context
-  - Multi-satellite support (Sentinel-2 and Landsat)
-  - S3 standardized structure matching local/HPC organization
-  - Production-ready cloud processing pipeline
 
 ### Changed
 - **Documentation Reorganization** (December 2025)
@@ -149,7 +147,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Landsat Pixel Size**: 15m × 15m = 225 m² per pixel
 - **Sentinel-2 Pixel Size**: 10m × 10m = 100 m² per pixel
 - **Coverage Threshold**: 50% minimum glacier coverage for both satellites
-- **Lambda Memory Limits**: 5GB sufficient for small regions (1-2 tiles), 10GB max insufficient for large regions (4+ tiles)
 - **Folder Structures**: Old (region-specific) vs New (shared download pool)
 
 ### Validation Status
@@ -157,4 +154,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ✅ Folder structure automation: Command-line parsing and path generation validated
 - ✅ Sentinel-2 optimizations: 50%+ download reduction confirmed
 - ✅ Multi-environment sync: HPC and local path resolution working
-- ✅ AWS Lambda integration: Production-ready with S3 standardization

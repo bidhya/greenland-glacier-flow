@@ -10,7 +10,7 @@ This is the **data acquisition and preprocessing stage** of the Greenland glacie
 2. **Step 2 (Downstream)**: Calculate surface displacement maps for velocity estimation → Requires Step 1 outputs
 3. **Step 3 (Downstream)**: Orthocorrect and package results into NetCDF files → Requires Steps 1 & 2 outputs
 
-## 🎯 Project Status (December 2025)
+## 🎯 Project Status (January 23, 2026)
 
 **Production Ready**: Batch processing infrastructure complete and validated for HPC deployment.
 
@@ -19,7 +19,7 @@ This is the **data acquisition and preprocessing stage** of the Greenland glacie
 - ✅ **Multi-Environment**: HPC (SLURM), local (WSL/Ubuntu), and AWS Lambda execution
 - ✅ **Batch Processing**: `--start-end-index` parameter for systematic region batching
 - ✅ **Configuration-Driven**: INI config with CLI override capability
-- ✅ **Cloud Ready**: AWS Lambda containerized deployment (containerization complete, ready for AWS deployment phases)
+- ✅ **Cloud Ready**: AWS Lambda containerized deployment available
 
 ## 🚀 Quick Start
 
@@ -34,13 +34,14 @@ This is the **data acquisition and preprocessing stage** of the Greenland glacie
 
 ### Batch Processing (HPC Production)
 ```bash
-# Process first 48 glaciers (batch 1 of 4)
-./submit_job.sh --satellite sentinel2 --start-end-index 0:48 --date1 2025-01-01 --date2 2025-12-31
+# Sentinel-2: Process all 192 regions in 3 batches (65 regions each)
+./submit_job.sh --satellite sentinel2 --start-end-index 0:65 --date1 2025-01-01 --date2 2025-12-31
+./submit_job.sh --satellite sentinel2 --start-end-index 65:130 --date1 2025-01-01 --date2 2025-12-31
+./submit_job.sh --satellite sentinel2 --start-end-index 130:195 --date1 2025-01-01 --date2 2025-12-31
+# Note: 3 batches used due to AWS free account limit of 4 concurrent downloads
 
-# Process next 48 glaciers (batch 2 of 4)
-./submit_job.sh --satellite sentinel2 --start-end-index 48:96 --date1 2025-01-01 --date2 2025-12-31
-
-# Continue with remaining batches: 96:144, 144:192
+# Landsat: 1 batch of 100 regions (faster processing)
+./submit_job.sh --satellite landsat --start-end-index 0:100 --date1 2025-01-01 --date2 2025-12-31
 ```
 
 ### Test Before Production
@@ -60,9 +61,8 @@ This is the **data acquisition and preprocessing stage** of the Greenland glacie
 - **[config.ini](config.ini)** - Configuration file (modify for your environment)
 
 ### AWS Cloud Processing
-- **[aws/README.md](aws/README.md)** - AWS directory structure and component overview
-- **[aws/docs/](aws/docs/)** - Comprehensive AWS Lambda documentation and setup guides
-- **Note**: All satellite data is hosted on AWS. Cloud processing capability is production-ready but currently de-prioritized in favor of HPC batch processing.
+- **[aws/README.md](aws/README.md)** - AWS directory overview
+- **[aws/docs/](aws/docs/)** - Complete AWS Lambda documentation and setup guides
 
 ### Historical Documentation
 - **[Archive/legacy_README.md](Archive/legacy_README.md)** - Pre-2025 workflow documentation
@@ -111,7 +111,7 @@ Edit `config.ini` for your environment, or use CLI overrides:
 ```ini
 [REGIONS]
 regions = 140_CentralLindenow
-start_end_index = 0:48
+start_end_index = 0:65
 
 [DATES]
 date1 = 2025-01-01
@@ -155,16 +155,17 @@ conda activate glacier_velocity
 
 ## 📊 Batch Processing Strategy
 
-**192 Glaciers → 4 Batches** (optimal for HPC resource management):
+**192 Glaciers → 3 Batches** (optimized for AWS free account concurrent download limits):
 
 | Batch | Index Range | Regions | Example Glaciers |
 |-------|-------------|---------|------------------|
-| 1 | 0:48 | 48 | 001_alison → 048_ingia |
-| 2 | 48:96 | 48 | 049_jakobshavn → 096_... |
-| 3 | 96:144 | 48 | 097_... → 144_... |
-| 4 | 144:192 | 48 | 145_... → 192_CH_Ostenfeld |
+| 1 | 0:65 | 65 | 001_alison → 065_... |
+| 2 | 65:130 | 65 | 066_... → 130_... |
+| 3 | 130:195 | 62* | 131_... → 192_CH_Ostenfeld |
 
-**Why this works**: Alphabetical sorting ensures consistent glacier assignment across both satellites.
+**Why 3 batches?** AWS free account allows maximum 4 concurrent downloads. Using 3 batches maximizes parallel processing capacity while staying within limits.
+
+**Why this works**: Alphabetical sorting ensures consistent glacier assignment across both satellites. *Last batch contains remaining 62 regions (code stops at final glacier).
 
 ## 🎓 Usage Tips
 
@@ -194,11 +195,18 @@ Python 3.13
 
 ## 🔬 Development
 
+### Recent Achievements (January 2026)
+- ✅ **January 23**: AWS Lambda containerization complete - Python 3.13 containerized deployment validated
+- ✅ **January 23**: Lambda positioned as gap filling platform for targeted satellite data acquisition
+- ✅ **January 23**: Unified Lambda infrastructure (single function, single ECR repository)
+- ✅ **January 23**: Updated batch processing strategy (3 batches of 65 regions for AWS download limits)
+- ✅ **January 23**: Comprehensive documentation updates across all guides
+
 ### Recent Achievements (December 2025)
 - ✅ **December 22**: Fixed critical config hierarchy bug (runtime/memory now correctly read from config.ini)
 - ✅ **December 22**: Enhanced config.ini with comprehensive batch processing documentation
 - ✅ **December 22**: Streamlined AGENTS.md (83% reduction, optimized for AI agents)
-- ✅ **December 22**: Restored AWS context to documentation (Lambda ready for future cloud processing)
+- ✅ **December 22**: Updated documentation structure and AWS integration
 - ✅ **December 21**: Batch processing infrastructure complete with automatic log/job naming
 - ✅ **December 21**: Consistent region sorting across both satellites
 - ✅ **December 21**: Package version logging added to all job outputs
@@ -232,9 +240,9 @@ For questions or issues, please open a GitHub issue or contact the maintainers.
 ## 🔗 Related Resources
 
 - **AWS Data Source**: Satellite imagery accessed from AWS Open Data Registry (Sentinel-2, Landsat)
-- **AWS Lambda Documentation**: See `aws/docs/` for cloud processing setup and deployment guides
+- **AWS Lambda**: See `aws/docs/` for cloud processing setup and deployment guides
 - **Historical Workflow**: See `Archive/legacy_README.md` for pre-2025 refactoring documentation
 
 ---
 
-**Current Focus**: HPC batch processing for 2025 production data delivery. AWS Lambda capability maintained for future cloud-scale processing when needed.
+**Current Focus**: HPC batch processing for 2025 production data delivery. AWS Lambda capability available for specialized use cases.
