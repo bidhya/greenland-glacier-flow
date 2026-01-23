@@ -1,12 +1,12 @@
 """
 AWS Lambda Handler for Greenland Glacier Flow Satellite Processing - Container Version
 
-Self-contained containerized Lambda handler based on Fargate's proven architecture.
+Self-contained containerized Lambda handler for satellite data processing.
 All processing code baked into container (no S3 downloads).
 
 Key Features:
 - Self-contained: Processing code included in container image
-- Credential fetching: ECS-style boto3 credential handling for GDAL
+- Credential fetching: Optimized boto3 credential handling for GDAL
 - GDAL configuration: Optimized for AWS S3 and requester-pays buckets
 - Single-region processing per Lambda invocation
 - Results uploaded to S3 with consistent directory structure
@@ -44,7 +44,7 @@ def setup_aws_credentials():
     """Fetch AWS credentials from Lambda execution role for GDAL/rasterio.
     
     Lambda functions have credentials available via environment variables by default,
-    but we explicitly fetch and set them for GDAL compatibility (same pattern as Fargate).
+    but we explicitly fetch and set them for GDAL compatibility.
     
     Returns:
         bool: True if credentials successfully set, False otherwise
@@ -126,7 +126,7 @@ def run_sentinel2_processing(region, date1, date2, base_dir):
         
         logger.info(f"Running command: {' '.join(cmd)}")
         
-        # Use Popen to stream output in real-time (critical for Fargate CloudWatch logging)
+        # Use Popen to stream output in real-time (critical for CloudWatch logging)
         # Force unbuffered Python output so print() and logging calls appear on stdout
         env = os.environ.copy()
         env['PYTHONUNBUFFERED'] = '1'
@@ -235,7 +235,7 @@ def run_landsat_processing(region, date1, date2, base_dir):
         
         logger.info(f"Running command: {' '.join(cmd)}")
         
-        # Use Popen to stream output in real-time (critical for Fargate CloudWatch logging)
+        # Use Popen to stream output in real-time (critical for CloudWatch logging)
         # Force unbuffered Python output so print() and logging calls appear on stdout
         env = os.environ.copy()
         env['PYTHONUNBUFFERED'] = '1'
@@ -488,26 +488,14 @@ def handler(event, context):
 
 # Test function for local development
 if __name__ == "__main__":
-    # Check if running in Fargate mode (environment variable set by Fargate task)
-    if os.environ.get('FARGATE_MODE') == '1':
-        # Fargate mode: Read parameters from environment variables
-        test_event = {
-            "satellite": os.environ.get('SATELLITE', 'sentinel2'),
-            "region": os.environ.get('REGION', '134_Arsuk'),
-            "date1": os.environ.get('DATE1', '2024-10-01'),
-            "date2": os.environ.get('DATE2', '2024-10-05'),
-            "s3_bucket": os.environ.get('S3_BUCKET', 'greenland-glacier-data')
-        }
-        logger.info(f"Running in Fargate mode with parameters: {test_event}")
-    else:
-        # Local development mode: Use hardcoded test values
-        test_event = {
-            "satellite": "sentinel2",
-            "region": "134_Arsuk",
-            "date1": "2024-10-01",
-            "date2": "2024-10-05",
-            "s3_bucket": "greenland-glacier-data"
-        }
+    # Local development mode: Use hardcoded test values
+    test_event = {
+        "satellite": "sentinel2",
+        "region": "140_CentralLindenow",
+        "date1": "2025-08-01",
+        "date2": "2025-08-05",
+        "s3_bucket": "greenland-glacier-data"
+    }
     
     # Mock context
     class MockContext:
