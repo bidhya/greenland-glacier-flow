@@ -1,24 +1,21 @@
 #!/usr/bin/env python
 
-""" AWS-focused satellite data processing job submission script
-    - Designed specifically for AWS cloud services
-    - Supports various AWS compute services (Batch, ECS, Lambda, etc.)
-    - Experimental/development version for learning AWS
-    - Lambda service now supports orchestration of multiple regions
+""" AWS Lambda satellite data processing job submission script
+    - Production-ready Lambda containerized processing
+    - Supports Sentinel-2 and Landsat satellite data
+    - Automated deployment and validation pipeline
 
     Lambda Orchestration:
     - Single region: Direct Lambda invocation
     - Multiple regions: Concurrent orchestration of separate Lambda functions
     - Supports both specific regions and start_end_index batching
 
-    Future usage examples:
-    - python submit_aws_job.py --satellite sentinel2 --service batch
-    - python submit_aws_job.py --satellite landsat --service ecs --regions 134_Arsuk
+    Usage examples:
     - python submit_aws_job.py --satellite sentinel2 --service lambda --start-end-index 0:25
     - python submit_aws_job.py --satellite landsat --service lambda --regions 140_CentralLindenow,134_Arsuk
     - python submit_aws_job.py --satellite sentinel2 --service lambda --date1 2024-07-01 --date2 2024-07-15 --dry-run true
 
-    Author: B. Yadav. Jan 2, 2026
+    Author: B. Yadav. Jan 23, 2026
 """
 import os
 import logging
@@ -35,7 +32,7 @@ parser = argparse.ArgumentParser(description='Submit satellite data processing j
 parser.add_argument('--config', help='Path to configuration file', type=str, default='../../config.ini')
 parser.add_argument('--aws-config', help='Path to AWS-specific configuration file', type=str, default='../../aws/config/aws_config.ini')
 parser.add_argument('--satellite', help='Satellite type (sentinel2 or landsat)', type=str, choices=['sentinel2', 'landsat'])
-parser.add_argument('--service', help='AWS service to use', type=str, choices=['batch', 'ecs', 'lambda', 'fargate'], default='lambda')
+parser.add_argument('--service', help='AWS service to use', type=str, choices=['lambda'], default='lambda')
 parser.add_argument('--regions', help='Regions to process (comma-separated, no spaces)', type=str)
 parser.add_argument('--region', help='Single region to process (for Lambda)', type=str)
 parser.add_argument('--start-end-index', help='Start and end index for batch processing (e.g., 0:48)', type=str)
@@ -82,38 +79,29 @@ def check_aws_credentials():
         return False
 
 def check_aws_services(aws_region='us-west-2'):
-    """Check access to basic AWS services needed for processing"""
+    """Check access to AWS Lambda service"""
     try:
         import boto3
         
-        # Check EC2 (needed for Batch)
+        # Check Lambda service access
         try:
-            ec2_client = boto3.client('ec2', region_name=aws_region)
-            ec2_client.describe_regions()
-            print(f"✅ EC2 access available in {aws_region}")
-            ec2_access = True
+            lambda_client = boto3.client('lambda', region_name=aws_region)
+            # Simple check - list functions (will fail if no access)
+            lambda_client.list_functions(MaxItems=1)
+            print(f"✅ AWS Lambda access available in {aws_region}")
+            lambda_access = True
         except Exception as e:
-            print(f"⚠️  EC2 limited access: {e}")
-            ec2_access = False
-        
-        # Check Batch service
-        try:
-            batch_client = boto3.client('batch', region_name=aws_region)
-            batch_client.describe_compute_environments()
-            print(f"✅ AWS Batch access available in {aws_region}")
-            batch_access = True
-        except Exception as e:
-            print(f"⚠️  AWS Batch limited access: {e}")
-            batch_access = False
+            print(f"⚠️  AWS Lambda limited access: {e}")
+            lambda_access = False
             
-        return {'ec2': ec2_access, 'batch': batch_access}
+        return {'lambda': lambda_access}
         
     except ImportError:
         print("❌ boto3 not installed")
-        return {'ec2': False, 'batch': False}
+        return {'lambda': False}
     except Exception as e:
         print(f"❌ AWS service check failed: {e}")
-        return {'ec2': False, 'batch': False}
+        return {'lambda': False}
 
 def setup_aws_resources(s3_bucket, aws_region='us-west-2'):
     """Helper function to set up basic AWS resources"""
@@ -171,82 +159,6 @@ def test_s3_access(s3_bucket, aws_region='us-west-2'):
         print(f"      - Create bucket: {s3_bucket}")
         print(f"      - Grant s3:CreateBucket, s3:GetObject, s3:PutObject permissions")
         return False
-
-
-def create_aws_batch_job(jobname, regions, date1, date2, satellite, **kwargs):
-    """Create and submit AWS Batch job for satellite processing
-    
-    AWS Batch is ideal for:
-    - Large-scale parallel processing
-    - Variable workloads
-    - Cost optimization with spot instances
-    """
-    print(f"AWS BATCH: Creating job for {satellite} processing")
-    print(f"Job name: {jobname}")
-    print(f"Regions: {regions}")
-    print(f"Date range: {date1} to {date2}")
-    
-    s3_bucket = kwargs.get('s3_bucket', 'default-glacier-bucket')
-    aws_region = kwargs.get('aws_region', 'us-west-2')
-    
-    # Test S3 access first
-    if not test_s3_access(s3_bucket, aws_region):
-        print("❌ Cannot proceed without S3 access")
-        return
-    
-    # Basic batch configuration
-    batch_config = {
-        'jobName': jobname,
-        'jobDefinition': f'satellite-processing-{satellite}',
-        'jobQueue': 'glacier-processing-queue',
-        'parameters': {
-            'satellite': satellite,
-            'regions': regions,
-            'startDate': date1,
-            'endDate': date2,
-            's3Bucket': s3_bucket
-        }
-    }
-    
-    print("AWS Batch configuration:")
-    for key, value in batch_config.items():
-        print(f"  {key}: {value}")
-    
-    if kwargs.get('dry_run'):
-        print("DRY RUN: AWS Batch job configuration created but not submitted")
-        print("💡 Next steps to implement:")
-        print("  1. Create job definition in AWS Batch console")
-        print("  2. Set up compute environment")  
-        print("  3. Create job queue")
-        print("  4. Implement boto3 job submission")
-    else:
-        print("🚧 AWS Batch submission not yet implemented")
-        print("💡 Use --dry-run true to test configuration")
-        # boto3 implementation will go here
-
-
-def create_aws_ecs_job(jobname, regions, date1, date2, satellite, **kwargs):
-    """Create and submit AWS ECS task for satellite processing
-    
-    AWS ECS is ideal for:
-    - Containerized applications
-    - Service-oriented architecture
-    - Integration with other AWS services
-    """
-    print(f"AWS ECS: Creating task for {satellite} processing")
-    
-    # TODO: Implement AWS ECS task creation
-    # Steps will include:
-    # 1. Define task definition
-    # 2. Set up ECS cluster
-    # 3. Configure service (if needed)
-    # 4. Run task
-    # 5. Monitor task status
-    
-    if kwargs.get('dry_run'):
-        print("DRY RUN: AWS ECS task configuration created but not submitted")
-    else:
-        print("TODO: Submit to AWS ECS")
 
 
 def create_aws_lambda_job(jobname, region, date1, date2, satellite, **kwargs):
@@ -398,45 +310,7 @@ def load_aws_config(aws_config_file="../config/aws_config.ini"):
             'lambda_function_name': config.get("LAMBDA", "function_name", fallback='glacier-processing'),
             'lambda_memory_size': config.getint("LAMBDA", "memory_size", fallback=8192),
             'lambda_timeout': config.getint("LAMBDA", "timeout", fallback=900),
-            'lambda_ephemeral_storage': config.getint("LAMBDA", "ephemeral_storage", fallback=10240),
-            
-            # Fargate settings
-            'fargate_cluster_name': config.get("FARGATE", "fargate_cluster_name", fallback='glacier-processing-cluster'),
-            'fargate_task_definition': config.get("FARGATE", "fargate_task_definition", fallback='glacier-task'),
-            'fargate_container_name': config.get("FARGATE", "fargate_container_name", fallback='glacier-processing'),
-            'fargate_memory': config.get("FARGATE", "fargate_memory", fallback='4096'),
-            'fargate_cpu': config.get("FARGATE", "fargate_cpu", fallback='2048'),
-            'fargate_subnets': config.get("FARGATE", "fargate_subnets", fallback='subnet-09f06dee4cc5f7056,subnet-01bf0679b5ad5d4cf').split(','),
-            'fargate_security_groups': config.get("FARGATE", "fargate_security_groups", fallback='sg-0bf93d7503503ce92').split(','),
-            'fargate_ecr_repository': config.get("FARGATE", "fargate_ecr_repository", fallback='glacier-processing'),
-            
-            # Compute settings (for Batch/ECS)
-            'instance_type': config.get("COMPUTE", "instance_type", fallback='c5.large'),
-            'spot_instances': config.getboolean("COMPUTE", "spot_instances", fallback=False),
-            'max_vcpus': config.getint("COMPUTE", "max_vcpus", fallback=256)
-        }
-    except Exception as e:
-        print(f"Warning: Could not load AWS config file {aws_config_file}: {e}")
-        # Return default values with us-west-2 for satellite data
-        return {
-            's3_bucket': 'greenland-glacier-data',
-            's3_base_path': '1_download_merge_and_clip',
-            'aws_region': 'us-west-2',
-            'lambda_function_name': 'glacier-processing',
-            'lambda_memory_size': 8192,
-            'lambda_timeout': 900,
-            'lambda_ephemeral_storage': 10240,
-            'fargate_cluster_name': 'glacier-processing-cluster',
-            'fargate_task_definition': 'glacier-task:1',
-            'fargate_container_name': 'glacier-processing',
-            'fargate_memory': '4096',
-            'fargate_cpu': '2048',
-            'fargate_subnets': ['subnet-09f06dee4cc5f7056', 'subnet-01bf0679b5ad5d4cf'],
-            'fargate_security_groups': ['sg-0bf93d7503503ce92'],
-            'fargate_ecr_repository': 'glacier-processing',
-            'instance_type': 'c5.large',
-            'spot_instances': False,
-            'max_vcpus': 256
+            'lambda_ephemeral_storage': config.getint("LAMBDA", "ephemeral_storage", fallback=10240)
         }
 
 
@@ -607,242 +481,6 @@ def orchestrate_lambda_jobs(regions_list, date1, date2, satellite, job_kwargs, a
         print("💡 Functions are running asynchronously. Monitor CloudWatch logs and S3 for results.")
 
 
-def create_fargate_task(jobname, region, date1, date2, satellite, **kwargs):
-    """Create and submit AWS Fargate task for satellite processing
-
-    AWS Fargate is ideal for:
-    - Large datasets requiring extended runtime
-    - Containerized workflows with custom dependencies
-
-    Integration with containerized processing scripts:
-    - Uses Amazon ECR-hosted container image
-    - Configured for memory and CPU allocation
-    - Reads settings from aws/config/aws_config.ini
-    """
-    print(f"\n{'='*60}")
-    print(f"AWS FARGATE TASK SUBMISSION - {satellite.upper()}")
-    print(f"{'='*60}")
-
-    # Get Fargate configuration from aws_config.ini
-    cluster_name = kwargs.get('fargate_cluster_name', 'glacier-processing-cluster')
-    task_definition = kwargs.get('fargate_task_definition', 'glacier-task:1')
-    container_name = kwargs.get('fargate_container_name', 'glacier-processing')
-    s3_bucket = kwargs.get('s3_bucket', 'greenland-glacier-data')
-    s3_base_path = kwargs.get('s3_base_path', '1_download_merge_and_clip')
-    aws_region = kwargs.get('aws_region', 'us-west-2')
-    memory = kwargs.get('fargate_memory', '4096')
-    cpu = kwargs.get('fargate_cpu', '2048')
-
-    # Build container overrides
-    # Override entrypoint to bypass Lambda runtime and run Python directly
-    container_overrides = {
-        'name': container_name,
-        'command': ['python', '/var/task/lambda_handler.py'],
-        'environment': [
-            {'name': 'SATELLITE', 'value': satellite},
-            {'name': 'REGION', 'value': region},
-            {'name': 'DATE1', 'value': date1},
-            {'name': 'DATE2', 'value': date2},
-            {'name': 'S3_BUCKET', 'value': s3_bucket},
-            {'name': 'S3_BASE_PATH', 'value': s3_base_path},
-            {'name': 'FARGATE_MODE', 'value': '1'},  # Signal to handler this is Fargate, not Lambda
-        ]
-    }
-
-    # Handle dry run mode
-    if kwargs.get('dry_run'):
-        print(f"\n{'='*60}")
-        print("DRY RUN MODE - Fargate configuration validated")
-        print(f"{'='*60}")
-        print("Cluster Name:", cluster_name)
-        print("Task Definition:", task_definition)
-        print("Container Overrides:", json.dumps(container_overrides, indent=2))
-        return
-
-    # Submit Fargate task with retry logic for capacity issues
-    try:
-        import boto3
-        import time
-        ecs_client = boto3.client('ecs', region_name=aws_region)
-
-        # Validate ECR connectivity
-        ecr_client = boto3.client('ecr', region_name=aws_region)
-        validate_ecr_connectivity(ecr_client, kwargs.get('fargate_ecr_repository', 'glacier-processing'), kwargs.get('ecr_image_tag', 'latest'))
-
-        # Validate IAM permissions
-        validate_iam_permissions()
-
-        # Validate network configuration
-        validate_network_configuration(kwargs.get('fargate_subnets', ['subnet-09f06dee4cc5f7056']), kwargs.get('fargate_security_groups', ['sg-12345678']))
-
-        max_retries = 5
-        retry_delay = 300  # 5 minutes
-        task_arn = None
-
-        for attempt in range(max_retries):
-            try:
-                response = ecs_client.run_task(
-                    cluster=cluster_name,
-                    launchType='FARGATE',
-                    taskDefinition=task_definition,
-                    overrides={'containerOverrides': [container_overrides]},
-                    networkConfiguration={
-                        'awsvpcConfiguration': {
-                            'subnets': kwargs.get('fargate_subnets', ['subnet-09f06dee4cc5f7056']),
-                            'securityGroups': kwargs.get('fargate_security_groups', ['sg-12345678']),
-                            'assignPublicIp': 'ENABLED'
-                        }
-                    },
-                    count=1
-                )
-
-                task_arn = response['tasks'][0]['taskArn']
-                print("✅ Fargate task submitted successfully!")
-                print("Task ARN:", task_arn)
-                break
-
-            except ecs_client.exceptions.ClientError as e:
-                if 'RESOURCE:MEMORY' in str(e) or 'RESOURCE:CPU' in str(e):
-                    if attempt < max_retries - 1:
-                        print(f"⚠️  Fargate capacity issue (attempt {attempt + 1}/{max_retries}). Retrying in {retry_delay} seconds...")
-                        time.sleep(retry_delay)
-                        continue
-                    else:
-                        print(f"❌ Fargate capacity exhausted after {max_retries} attempts. Consider:")
-                        print("   - Using smaller CPU/memory allocation")
-                        print("   - Switching to AWS Batch for better capacity")
-                        print("   - Trying a different AWS region")
-                        raise e
-                else:
-                    # Re-raise non-capacity related errors immediately
-                    raise e
-
-        # Monitor task progress if submission was successful
-        if task_arn:
-            print("\n🔍 Monitoring task progress...")
-            for monitor_attempt in range(12):  # Monitor for up to 10 minutes
-                time.sleep(50)  # Check every 50 seconds
-                
-                task_response = ecs_client.describe_tasks(
-                    cluster=cluster_name,
-                    tasks=[task_arn]
-                )
-                
-                task = task_response['tasks'][0]
-                last_status = task['lastStatus']
-                desired_status = task['desiredStatus']
-                
-                print(f"   Status: {last_status} (Desired: {desired_status})")
-                
-                if last_status == 'RUNNING':
-                    print("🎉 Task is now RUNNING! Fargate capacity issue resolved.")
-                    break
-                elif last_status == 'STOPPED':
-                    stop_code = task.get('stopCode', 'Unknown')
-                    stop_reason = task.get('stoppedReason', 'Unknown')
-                    print(f"❌ Task stopped: {stop_code} - {stop_reason}")
-                    break
-                elif monitor_attempt == 11:
-                    print("⏰ Task still pending after 10 minutes. Fargate capacity may be limited.")
-                    print("   Task will continue running in background if capacity becomes available.")
-
-    except Exception as e:
-        print("❌ Failed to submit Fargate task:", e)
-
-
-def validate_ecr_connectivity(ecr_client, repository_name, image_tag):
-    """Validate ECR connectivity by checking if the image exists."""
-    try:
-        response = ecr_client.describe_images(
-            repositoryName=repository_name,
-            imageIds=[{'imageTag': image_tag}]
-        )
-        print("✅ ECR connectivity validated. Image exists.")
-    except ecr_client.exceptions.ImageNotFoundException:
-        print("❌ ECR image not found. Check repository name and image tag.")
-        raise
-    except Exception as e:
-        print("❌ Failed to validate ECR connectivity:", str(e))
-        raise
-
-def validate_iam_permissions():
-    """Validate IAM permissions for ECS task execution role."""
-    try:
-        import boto3
-        sts_client = boto3.client('sts')
-        identity = sts_client.get_caller_identity()
-        print("✅ IAM role validated. Role ARN:", identity['Arn'])
-    except Exception as e:
-        print("❌ Failed to validate IAM role permissions:", str(e))
-        raise
-
-def validate_network_configuration(subnets, security_groups):
-    """Validate network configuration for Fargate tasks."""
-    if not subnets or not security_groups:
-        raise ValueError("Subnets and security groups must be specified.")
-    print("✅ Network configuration validated.")
-
-def orchestrate_fargate_tasks(regions_list, date1, date2, satellite, job_kwargs, aws_cfg, dry_run):
-    """Orchestrate multiple Fargate task submissions for multiple regions.
-
-    This function handles the orchestration of multiple Fargate tasks,
-    one for each region, using concurrent execution for efficiency.
-    """
-    print(f"\n{'='*70}")
-    print(f"ORCHESTRATING {len(regions_list)} FARGATE TASKS")
-    print(f"{'='*70}")
-
-    if dry_run:
-        print("DRY RUN MODE - Would submit the following Fargate tasks:")
-        for i, region in enumerate(regions_list):
-            jobname = f"fargate-{satellite}-{date1.replace('-', '')}-{region}"
-            print(f"  {i+1:2d}. Region: {region}, Job: {jobname}")
-        print(f"\n💡 To run for real, remove --dry-run true")
-        return
-
-    # Prepare arguments for each Fargate task submission
-    fargate_submissions = []
-    for region in regions_list:
-        jobname = f"fargate-{satellite}-{date1.replace('-', '')}-{region}"
-        args = (jobname, region, date1, date2, satellite)
-        kwargs = job_kwargs.copy()
-        fargate_submissions.append((args, kwargs))
-
-    print(f"Submitting {len(fargate_submissions)} Fargate tasks concurrently...")
-
-    # Use ThreadPoolExecutor for concurrent submissions
-    results = []
-    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:  # Limit to 10 concurrent to avoid overwhelming AWS
-        future_to_region = {
-            executor.submit(create_fargate_task, *args, **kwargs): region 
-            for (args, kwargs), region in zip(fargate_submissions, regions_list)
-        }
-
-        for future in concurrent.futures.as_completed(future_to_region):
-            region = future_to_region[future]
-            try:
-                result = future.result()
-                results.append((region, result))
-                print(f"✅ Completed: {region}")
-            except Exception as exc:
-                print(f"❌ Failed: {region} - {exc}")
-                results.append((region, None))
-
-    # Summary
-    successful = sum(1 for _, result in results if result is not None)
-    print(f"\n{'='*70}")
-    print(f"ORCHESTRATION COMPLETE")
-    print(f"{'='*70}")
-    print(f"Total regions: {len(regions_list)}")
-    print(f"Successful submissions: {successful}")
-    print(f"Failed submissions: {len(regions_list) - successful}")
-
-    if successful < len(regions_list):
-        print("\n❌ Some Fargate submissions failed. Check logs above for details.")
-    else:
-        print("\n✅ All Fargate tasks submitted successfully!")
-
-
 def main():
     """Main function for AWS job submission"""
     print("=" * 60)
@@ -951,25 +589,13 @@ def main():
         'log_name': cfg.get('log_name')
     }
     
-    if aws_service == 'batch':
-        create_aws_batch_job(jobname, regions, date1, date2, satellite, **job_kwargs)
-    elif aws_service == 'ecs':
-        create_aws_ecs_job(jobname, regions, date1, date2, satellite, **job_kwargs)
-    elif aws_service == 'lambda':
+    if aws_service == 'lambda':
         if len(regions_list) == 1:
             # Single region - use existing logic
             create_aws_lambda_job(jobname, regions_list[0], date1, date2, satellite, **job_kwargs)
         else:
             # Multiple regions - orchestrate multiple Lambda functions
             orchestrate_lambda_jobs(regions_list, date1, date2, satellite, job_kwargs, aws_cfg, dry_run)
-    elif aws_service == 'fargate':
-        print("Fargate mode: ECS with serverless compute")
-        if len(regions_list) == 1:
-            # Single region - direct task submission
-            create_fargate_task(jobname, regions_list[0], date1, date2, satellite, **job_kwargs)
-        else:
-            # Multiple regions - orchestrate multiple Fargate tasks
-            orchestrate_fargate_tasks(regions_list, date1, date2, satellite, job_kwargs, aws_cfg, dry_run)
     else:
         raise ValueError(f"Unsupported AWS service: {aws_service}")
     
