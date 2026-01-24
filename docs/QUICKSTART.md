@@ -10,8 +10,8 @@ Automated satellite imagery processing for glacier velocity analysis. This is **
 3. **Step 3 (Downstream)**: Orthocorrect and package results into NetCDF files → Requires Steps 1 & 2 outputs
 
 **Data Sources:**
-- **Sentinel-2**: High-resolution optical imagery (10-20m resolution) from ESA Copernicus program
-- **Landsat**: Long-term archive (30m resolution) from USGS/NASA
+- **Sentinel-2**: High-resolution optical imagery (10m resolution) from ESA Copernicus program
+- **Landsat**: Long-term archive (15m resolution) from USGS/NASA
 - **Storage**: All data accessed from AWS Open Data Registry (no costs for data transfer)
 
 **Processing Overview:**

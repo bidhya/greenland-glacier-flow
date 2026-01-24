@@ -71,7 +71,7 @@ items = [item for item in items if item.id.split("_")[1] in tile_ids]
 
 ### Potential Landsat Challenges
 - 🔄 Timeout on large glaciers (100 regions in single batch)
-- ❓ Different resolution combinations (15m/30m bands)
+- ❓ Different resolution combinations (10m/20m bands)
 - ❓ Additional processing steps for atmospheric correction
 - ❓ Larger data volumes per scene
 

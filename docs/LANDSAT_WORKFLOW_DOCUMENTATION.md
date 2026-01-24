@@ -37,7 +37,7 @@ gdf["subset_id"] = (
 **Result**: `{timestamp}_{scene_id}_{stac_id}_ortho.tif`
 
 ## Key Specifications
-- **Spatial Resolution**: 30m (NIR band used for velocity calculations)
+- **Spatial Resolution**: 15m (NIR band used for velocity calculations)
 - **Scene Size**: ~185km × 180km (varies by latitude)
 - **Data Type**: Surface Reflectance (not atmospherically corrected)
 - **Format**: Cloud-Optimized GeoTIFF via AWS S3
@@ -67,7 +67,7 @@ The Landsat workflow consists of two main phases: search/download and clip/repro
 - **Download**: Streams scene from AWS S3 using Rasterio.
 - **Clip**: Clips to glacier bounds in source CRS.
 - **Squeeze**: Reduces to single NIR band.
-- **Reproject**: Matches template raster (NSIDC Polar Stereographic, 30m resolution).
+- **Reproject**: Matches template raster (NSIDC Polar Stereographic, 15m resolution).
 - **Save**: Exports as `{subset_id}.tif`.
 
 ### Subset ID Logic
@@ -77,7 +77,7 @@ The Landsat workflow consists of two main phases: search/download and clip/repro
 
 ### Key Differences from Sentinel-2
 - **No Merging**: Each Landsat scene is processed individually (no tile grouping like Sentinel-2's 37-char truncation).
-- **Resolution**: 30m vs 10m (coarser, fewer scenes needed per region).
+- **Resolution**: 15m vs 10m (coarser, fewer scenes needed per region).
 - **Metadata**: Only STAC query CSV; no per-file lineage CSVs like Sentinel-2.
 - **Coverage Check**: Commented out (all qualifying scenes saved).
 - **Download Method**: Direct S3 access vs STAC asset URLs.
