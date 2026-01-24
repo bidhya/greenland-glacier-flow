@@ -164,13 +164,13 @@ dry_run = False
 ### Satellite-Specific Configuration Notes
 
 **Sentinel-2 (Default):**
-- Optimized for high-resolution processing (10m/20m bands)
+- Optimized for high-resolution processing (10m bands)
 - Default runtime: 24:00:00 (24 hours)
 - Default memory: 60G
 - Use 3 batches for full processing: 0:65, 65:130, 130:195
 
 **Landsat:**
-- Lower resolution processing (30m bands)
+- Lower resolution processing (15m bands)
 - Requires longer runtime: override with `--runtime 125:00:00`
 - Same memory allocation (60G) works
 - Single batch processing: 0:192 regions
