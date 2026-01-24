@@ -68,6 +68,13 @@ This workflow requires a conda environment for dependency management. We recomme
    # Override satellite type and Landsat runtime via command line
    ```
 
+5. **AWS IAM & Requester-Pays S3**
+- **Why:** Landsat data is hosted in requester-pays S3 buckets on AWS; downloads will fail if AWS credentials are not correctly configured.
+- **Quick setup:** Run `aws configure` or set environment variables `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `us-west-2` Oregon region for the account that will run the workflow.
+- **Permissions:** Ensure the IAM user has S3 permissions (e.g., `s3:GetObject`, `s3:ListBucket`).
+- **Boto3 behavior:** The workflow uses `boto3`; when accessing requester-pays buckets you may need to pass `RequestPayer='requester'` (the code handles this in the Landsat download functions, but verify access with a short dry-run).
+- **Verify access:** From bash, `aws s3 ls --request-payer requester s3://usgs-landsat/collection02/landsat-c2l1/`.
+
 ## Core Commands
 
 **All commands run from repository root.**
