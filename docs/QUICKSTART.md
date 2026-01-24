@@ -2,95 +2,141 @@
 
 ## Overview
 
-Automated satellite imagery processing for glacier velocity analysis. Supports Sentinel-2 and Landsat across HPC (SLURM), local (WSL/Ubuntu), and AWS Lambda environments.
+Automated satellite imagery processing for glacier velocity analysis. This is **Step 1 of a 3-step workflow** for processing 192 Greenland glaciers using Sentinel-2 and Landsat data.
 
-## Quick Setup
+**Workflow Pipeline:**
+1. **Step 1 (This Repository)**: Download, merge, clip, and organize satellite imagery → `1_download_merge_and_clip/`
+2. **Step 2 (Downstream)**: Calculate surface displacement maps for velocity estimation → Requires Step 1 outputs
+3. **Step 3 (Downstream)**: Orthocorrect and package results into NetCDF files → Requires Steps 1 & 2 outputs
 
-```bash
-# Clone repository
-git clone <repository-url>
-cd greenland-glacier-flow
+**Data Sources:**
+- **Sentinel-2**: High-resolution optical imagery (10-20m resolution) from ESA Copernicus program
+- **Landsat**: Long-term archive (30m resolution) from USGS/NASA
+- **Storage**: All data accessed from AWS Open Data Registry (no costs for data transfer)
 
-# Copy and edit configuration
-cp config.ini.example config.ini
-# Edit config.ini with your paths and settings
-```
+**Processing Overview:**
+- Downloads raw satellite tiles covering glacier regions
+- Merges overlapping tiles into seamless mosaics
+- Clips to glacier boundaries using predefined region masks
+- Organizes outputs by satellite type and region for downstream analysis
 
-```bash
-# Install Miniforge
-wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh
-bash Miniforge3-Linux-x86_64.sh
+**Last Updated: January 23, 2026**
 
-# Create environment
-conda env create -f environment.yml
-conda activate glacier_velocity
-```
+## Installation
 
-```bash
-# Configure AWS
-aws configure
+### Install Miniforge
 
-# Deploy Lambda container
-cd aws/scripts
-./deploy_lambda_container.sh
-```
+This workflow requires a conda environment for dependency management. We recommend using Miniforge (a minimal conda installer) for the best experience.
+
+1. **Download and install Miniforge:**
+   ```bash
+   # Download the installer
+   wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh
+   
+   # Run the installer
+   bash Miniforge3-Linux-x86_64.sh
+   
+   # Follow the prompts, accept defaults
+   ```
+
+2. **Clone the repository and set up the environment:**
+   ```bash
+   git clone https://github.com/bidhya/greenland-glacier-flow.git
+   cd greenland-glacier-flow
+   
+   # Create the conda environment
+   conda env create -f environment.yml
+   
+   # Activate the environment
+   conda activate glacier_velocity
+   ```
+
+3. **Verify installation:**
+   ```bash
+   # Check that key packages are available
+   python -c "import rasterio, geopandas, boto3; print('Dependencies OK')"
+   ```
+
+4. **Configure config.ini:**
+   ```bash
+   # Create config.ini by copying the template
+   cp config.template.ini config.ini
+   
+   # Edit critical paths and settings for your environment
+   # Update: base_dir, local_base_dir, email, runtime, memory, etc.
+   # Most settings are optimized for Sentinel-2 (works for Landsat too)
+   # Override satellite type and Landsat runtime via command line
+   ```
 
 ## Core Commands
 
+**All commands run from repository root.**
+
+**Note:** All commands import default settings from `config.ini`. Command-line arguments override config values where specified.
+
+### HPC Production (Primary Workflow)
+
+**Batch Strategy:** Sentinel-2 uses 3 batches of 65 regions each due to AWS download limits (4 concurrent downloads). Landsat processes all 192 regions in a single batch since it has faster processing and fewer download operations per region.
+
 ```bash
-# Auto-detect environment, use config.ini settings
-python submit_satellite_job.py
+# Sentinel-2: Process all 192 regions in 3 batches
+./submit_job.sh --satellite sentinel2 --start-end-index 0:65
+./submit_job.sh --satellite sentinel2 --start-end-index 65:130
+./submit_job.sh --satellite sentinel2 --start-end-index 130:195
 
-# Process Sentinel-2 data
-python submit_satellite_job.py --satellite sentinel2
+# Landsat: Single batch (all 192 regions, faster processing)
+./submit_job.sh --satellite landsat --start-end-index 0:192 --runtime 125:00:00
+```
 
-# Process Landsat data
-python submit_satellite_job.py --satellite landsat
+### Testing & Development
+```bash
+# Dry-run test (recommended first)
+./submit_job.sh --satellite sentinel2 --start-end-index 0:3 --dry-run true
 
-# Test without submitting jobs
-python submit_satellite_job.py --dry-run true
+# Small production test
+./submit_job.sh --satellite sentinel2 --start-end-index 0:3
+
+# Local execution for debugging
+./submit_job.sh --satellite sentinel2 --regions 134_Arsuk --execution-mode local
 ```
 
 ## Custom Parameters
 
+**Note:** The `--regions` and `--start-end-index` parameters are mutually exclusive. Use `--regions` for specific region selection, or `--start-end-index` for batch processing ranges.
+
+**Region Naming:** Regions are identified by 3-digit codes (e.g., 134_Arsuk) corresponding to Greenland glacier IDs. Use `--regions` with comma-separated values for multiple regions.
+
 ```bash
 # Single region, custom dates
-python submit_satellite_job.py --regions 134_Arsuk --date1 2024-10-01 --date2 2024-10-05 --satellite sentinel2
+./submit_job.sh --satellite sentinel2 --regions 134_Arsuk --date1 2025-01-01 --date2 2025-12-31
 
 # Multiple regions
-python submit_satellite_job.py --regions "134_Arsuk,191_Hagen_Brae" --satellite landsat
+./submit_job.sh --satellite landsat --regions "134_Arsuk,191_Hagen_Brae"
 
-# Force execution mode
-python submit_satellite_job.py --execution-mode local --satellite sentinel2
+# Force local execution
+./submit_job.sh --satellite sentinel2 --execution-mode local
 
-# Override config paths
-python submit_satellite_job.py --base-dir /path/to/your/data --satellite sentinel2
+# Override memory/runtime (HPC only)
+./submit_job.sh --satellite sentinel2 --start-end-index 0:65 --memory 128G --runtime 24:00:00
 ```
 
-## AWS Processing
+## Resource Requirements
 
-```bash
-# Lambda processing
-python aws/scripts/submit_aws_job.py --service lambda --satellite sentinel2 --regions 134_Arsuk
+### Expected Runtime & Storage
+- **Single Region (Sentinel-2)**: 2-4 hours processing time
+- **Batch of 65 Regions (Sentinel-2)**: ~50 hours processing time
+- **Full Landsat Dataset (192 regions)**: ~125 hours processing time
 
-# Batch processing
-python aws/scripts/submit_aws_job.py --service batch --satellite landsat --regions 191_Hagen_Brae
-```
+**Note:** If a job times out, re-running the same SLURM command will process remaining uncompleted regions. However, it's better to set higher time limits initially to avoid timeout errors.
 
-## Data Synchronization (AWS Users)
-
-```bash
-# Sync results from S3 to local/HPC
-./sync_from_s3.sh --exclude-downloads
-
-# Preview sync without downloading
-./sync_from_s3.sh --dry-run
-
-# Force overwrite existing files
-./sync_from_s3.sh --exclude-downloads --force-overwrite
-```
+### HPC Resource Defaults
+- **Memory**: Configurable (default: 60GB)
+- **Runtime**: Configurable (default: 24 hours)
+- **Cores**: 4 (configurable)
 
 ## Configuration
+
+**⚠️ CRITICAL:** The workflow imports all settings from `config.ini`. This file is the single source of truth for paths, memory, runtime, dates, and other parameters. Configure it properly before running any commands.
 
 ### config.ini Structure
 
@@ -99,8 +145,8 @@ python aws/scripts/submit_aws_job.py --service batch --satellite landsat --regio
 regions = 134_Arsuk,191_Hagen_Brae
 
 [DATES]
-date1 = 2024-10-01
-date2 = 2024-10-05
+date1 = 2025-10-01
+date2 = 2025-10-05
 
 [PATHS]
 base_dir = /path/to/your/data
@@ -111,9 +157,29 @@ post_processing_flag = 1
 
 [SETTINGS]
 satellite = sentinel2
-execution_mode = auto
+execution_mode = auto  # auto-detects HPC vs local
 dry_run = False
 ```
+
+### Satellite-Specific Configuration Notes
+
+**Sentinel-2 (Default):**
+- Optimized for high-resolution processing (10m/20m bands)
+- Default runtime: 24:00:00 (24 hours)
+- Default memory: 60G
+- Use 3 batches for full processing: 0:65, 65:130, 130:195
+
+**Landsat:**
+- Lower resolution processing (30m bands)
+- Requires longer runtime: override with `--runtime 125:00:00`
+- Same memory allocation (60G) works
+- Single batch processing: 0:192 regions
+- Command: `./submit_job.sh --satellite landsat --start-end-index 0:192 --runtime 125:00:00`
+
+**Configuration Priority:**
+1. Command-line arguments (highest priority)
+2. config.ini values
+3. Script defaults (lowest priority)
 
 ### AWS Configuration (aws/config/aws_config.ini)
 
@@ -133,13 +199,13 @@ base_path = 1_download_merge_and_clip
 
 ```bash
 # Dry run (recommended first step)
-python submit_satellite_job.py --satellite sentinel2 --dry-run true
+./submit_job.sh --satellite sentinel2 --dry-run true
 
 # Test single region, short date range
-python submit_satellite_job.py --regions 134_Arsuk --date1 2024-10-01 --date2 2024-10-05 --satellite sentinel2 --dry-run true
+./submit_job.sh --satellite sentinel2 --regions 134_Arsuk --date1 2025-10-01 --date2 2025-10-05 --dry-run true
 
 # Test Landsat (longer revisit time)
-python submit_satellite_job.py --regions 134_Arsuk --date1 2024-07-01 --date2 2024-07-08 --satellite landsat --dry-run true
+./submit_job.sh --satellite landsat --regions 134_Arsuk --date1 2025-07-01 --date2 2025-07-08 --dry-run true
 ```
 
 ## Troubleshooting
@@ -155,7 +221,7 @@ conda info --envs
 conda activate glacier_velocity
 
 # Force local mode if auto-detection fails
-python submit_satellite_job.py --execution-mode local
+./submit_job.sh --satellite sentinel2 --execution-mode local
 ```
 
 ### Configuration Issues
@@ -181,6 +247,29 @@ aws lambda get-function --function-name your-function-name
 aws s3 ls s3://your-bucket-name/
 ```
 
+### Job Monitoring (HPC)
+
+```bash
+# Check job status
+squeue -u $USER
+
+# Check job output (replace JOBID)
+cat slurm-JOBID.out
+
+# Monitor disk usage
+du -h /path/to/your/data
+
+# Check for errors in logs
+grep -i error slurm-JOBID.out
+```
+
+### Performance Tips
+
+- **Parallel Processing**: Each region processes independently - more regions = better parallelization
+- **Memory Usage**: Monitor with `htop` or `nvidia-smi` during local testing
+- **Network**: AWS data transfer is fast but can be bottlenecked by concurrent downloads
+- **Storage**: Ensure 2-3x raw data size available for temporary processing files
+
 ## Output Structure
 
 ```
@@ -199,56 +288,25 @@ base_dir/
 
 ## Key Files Reference
 
-- `submit_satellite_job.py` - Main processing script
-- `config.ini` - Configuration file
-- `aws/scripts/submit_aws_job.py` - AWS processing
-- `sync_from_s3.sh` - Data synchronization tool
+- `config.ini` - **CRITICAL configuration file** imported by the workflow. Contains all default settings for paths, memory, runtime, dates, and processing parameters. Must be configured before running any commands.
+- `submit_job.sh` - **Master entry point** that automatically activates the `glacier_velocity` conda environment and calls `submit_satellite_job.py` with all provided arguments. This wrapper ensures consistent environment setup across HPC and local execution modes.
+- `submit_satellite_job.py` - Core processing script that handles satellite data download, processing, and job submission
+- `aws/scripts/submit_aws_job.py` - AWS processing scripts for Lambda and Batch services
+- `sync_from_s3.sh` - Data synchronization tool for AWS S3 integration
 
 ---
 
-*For detailed documentation, see other .md files*
-*Last Updated: October 2025*
+## Advanced Features (Prototype)
 
-### Basic Processing
+**Note:** The following AWS and container features are working prototypes. They provide alternative execution modes but are not the primary production workflow. Future development will enhance these capabilities.
 
-```bash
-# Auto-detect environment, use config.ini settings
-python submit_satellite_job.py
+### AWS Lambda (Gap Filling)
 
-# Process Sentinel-2 data
-python submit_satellite_job.py --satellite sentinel2
-
-# Process Landsat data
-python submit_satellite_job.py --satellite landsat
-
-# Test without submitting jobs
-python submit_satellite_job.py --dry-run true
-```
-
-### Custom Parameters
+AWS Lambda serves as gap filling for targeted data acquisition when HPC resources are unavailable.
 
 ```bash
-# Single region, custom dates
-python submit_satellite_job.py --regions 134_Arsuk --date1 2024-10-01 --date2 2024-10-05 --satellite sentinel2
-
-# Multiple regions
-python submit_satellite_job.py --regions "134_Arsuk,191_Hagen_Brae" --satellite landsat
-
-# Force execution mode
-python submit_satellite_job.py --execution-mode local --satellite sentinel2
-
-# Override config paths
-python submit_satellite_job.py --base-dir /path/to/your/data --satellite sentinel2
-```
-
-### AWS Processing
-
-```bash
-# Lambda processing
-python aws/scripts/submit_aws_job.py --service lambda --satellite sentinel2 --regions 134_Arsuk
-
-# Batch processing
-python aws/scripts/submit_aws_job.py --service batch --satellite landsat --regions 191_Hagen_Brae
+# Lambda processing for specific regions
+./submit_job.sh --satellite sentinel2 --service lambda --regions 134_Arsuk
 ```
 
 ### Data Synchronization (AWS Users)
@@ -264,152 +322,11 @@ python aws/scripts/submit_aws_job.py --service batch --satellite landsat --regio
 ./sync_from_s3.sh --exclude-downloads --force-overwrite
 ```
 
-### AWS Processing
+### Container Deployment
 
-```bash
-# Lambda processing
-python aws/scripts/submit_aws_job.py \
-  --service lambda \
-  --satellite sentinel2 \
-  --regions 134_Arsuk
-
-# Batch processing
-python aws/scripts/submit_aws_job.py \
-  --service batch \
-  --satellite landsat \
-  --regions 191_Hagen_Brae
-```
-
-### Data Synchronization (AWS Users)
-
-```bash
-# Sync results from S3 to local/HPC
-./sync_from_s3.sh --exclude-downloads
-
-# Preview sync without downloading
-./sync_from_s3.sh --dry-run
-
-# Force overwrite existing files
-./sync_from_s3.sh --exclude-downloads --force-overwrite
-```
-
-## Configuration
-
-### config.ini Structure
-
-```ini
-[REGIONS]
-regions = 134_Arsuk,191_Hagen_Brae
-
-[DATES]
-date1 = 2024-10-01
-date2 = 2024-10-05
-
-[PATHS]
-base_dir = /path/to/your/data
-
-[FLAGS]
-download_flag = 1
-post_processing_flag = 1
-
-[SETTINGS]
-satellite = sentinel2
-execution_mode = auto
-dry_run = False
-```
-
-### AWS Configuration (aws/config/aws_config.ini)
-
-```ini
-[LAMBDA]
-function_name = glacier-processor
-memory_size = 5120
-timeout = 900
-ephemeral_storage = 10240
-
-[S3]
-bucket_name = your-glacier-data-bucket
-base_path = 1_download_merge_and_clip
-```
-
-## Testing Commands
-
-```bash
-# Dry run (recommended first step)
-python submit_satellite_job.py --satellite sentinel2 --dry-run true
-
-# Test single region, short date range
-python submit_satellite_job.py --regions 134_Arsuk --date1 2024-10-01 --date2 2024-10-05 --satellite sentinel2 --dry-run true
-
-# Test Landsat (longer revisit time)
-python submit_satellite_job.py --regions 134_Arsuk --date1 2024-07-01 --date2 2024-07-08 --satellite landsat --dry-run true
-```
-
-## Troubleshooting
-
-### Environment Issues
-
-```bash
-# Check SLURM availability (HPC)
-which sbatch
-
-# Check conda environment
-conda info --envs
-conda activate glacier_velocity
-
-# Force local mode if auto-detection fails
-python submit_satellite_job.py --execution-mode local
-```
-
-### Configuration Issues
-
-```bash
-# Validate config.ini syntax
-python -c "import configparser; c=configparser.ConfigParser(); c.read('config.ini'); print('Config OK')"
-
-# Check paths exist
-ls -la /path/to/your/base_dir
-```
-
-### AWS Issues
-
-```bash
-# Check AWS credentials
-aws sts get-caller-identity
-
-# Check Lambda function
-aws lambda get-function --function-name your-function-name
-
-# Check S3 bucket access
-aws s3 ls s3://your-bucket-name/
-```
-
-## Output Structure
-
-After processing, your data will be organized as:
-
-```
-base_dir/
-├── 1_download_merge_and_clip/
-│   ├── sentinel2/
-│   │   └── <region_name>/      # Region-specific processing directory
-│   │       ├── download/        # Raw MGRS tiles (intermediate)
-│   │       ├── clipped/         # Clipped scenes
-│   │       ├── metadata/        # Processing metadata
-│   │       └── template/        # Reference templates
-│   └── landsat/
-│       ├── <region_name>/       # Clipped Landsat scenes
-│       └── _reference/          # STAC metadata and templates
-```
-
-## Key Files Reference
-
-- `submit_satellite_job.py` - Main processing script
-- `config.ini` - Configuration file
-- `aws/scripts/submit_aws_job.py` - AWS processing
-- `sync_from_s3.sh` - Data synchronization tool
+For containerized execution, see `container/README.md`. This provides Docker-based deployment options for isolated environments.
 
 ---
 
 *For detailed documentation, see other .md files*
-*Last Updated: October 2025*
+*Last Updated: January 23, 2026*
