@@ -124,6 +124,23 @@ docker-compose.yml text eol=lf
 *.so binary
 *.dylib binary
 
+# Scientific data files (from Step 3 integration)
+*.tif binary
+*.tiff binary
+*.nc binary
+*.gpkg binary
+*.shp binary
+*.shx binary
+*.dbf binary
+*.prj binary
+*.cpg binary
+*.jpg binary
+*.jpeg binary
+*.png binary
+
+# CSV files (text, but data-dependent)
+*.csv text eol=lf
+
 # Git LFS tracking (if used in future)
 # ==================================================================
 # Uncomment these lines if you decide to use Git LFS for large files:

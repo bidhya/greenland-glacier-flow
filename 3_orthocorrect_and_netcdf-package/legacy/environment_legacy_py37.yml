@@ -1,0 +1,23 @@
+name: greenland_glacier_flow_3
+channels:
+  - conda-forge
+dependencies:
+  # - python=3.7.11  # this did not installed with mamba
+  - python=3.9  # so used this version
+  - gdal
+  - rasterio
+  - shapely
+  - numpy
+  - geopandas
+  - pyproj
+  - pandas
+  - pytz
+  - tqdm
+  - matplotlib
+  - opencv
+  - xarray=0.17.0
+  - rioxarray
+  - netcdf4
+  # - pip
+  # - pip:
+  #   - opencv-python

@@ -1,0 +1,80 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Jupyter notebooks
+.ipynb_checkpoints/
+notebooks/.ipynb_checkpoints/
+*.ipynb
+
+# Project-specific: Old/archived code
+old_scripts/
+old_scripts_202109/
+*_debug.py
+
+# Project-specific: Data directories (user-configured paths)
+data_img
+data_vel
+wd
+output/
+results/
+
+# Active config (user-specific, not tracked - use config_template.py)
+lib/config.py
+
+# Conda/Virtual environments
+env/
+venv/
+ENV/
+greenland_glacier_flow_3/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs (generated at runtime)
+*.log
+errored_glaciers.log
+errored_glaciers.txt
+
+# SLURM output files (generated at runtime)
+slurm_jobs/runs_output/*.out
+slurm_jobs/runs_output/*.err
+*.slurm
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Large geospatial data files (inputs/outputs, not source code)
+*.tif
+*.tiff
+*.nc
+*.h5
+*.hdf5
+
+# OS-specific
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Docs/agent guide (ignore local edits; note: already tracked unless removed from index)
+Agents*.md
+Step3_Agents.md  
+# Documentation folder (intended for local drafts and preview) - can be ignored during incremental commits
+docs/
+# Local HPC sync script (experimental, keep untracked until finalized)
+sync_to_hpc.sh
+processing_chain/4c_netcdf_stack_landsat_sentinel_combined.bak.py
+bak.orthocorrect_netcdf-package.py
