@@ -179,6 +179,55 @@ profile.update({
 
 **Decision**: Defer until step 3 workflow refactoring. Does not affect data quality.
 
+### 3. sys.excepthook Error (GDAL Version Issue)
+
+**Warning Message**:
+```
+Error in sys.excepthook:
+
+Original exception was:
+Error in sys.excepthook:
+
+Original exception was:
+[Repeated multiple times]
+```
+
+**Source**: Step 1 Landsat/Sentinel-2 processing and Step 3 orthocorrection/NetCDF packaging (both use same `glacier_velocity` conda environment with custom exception hook in `lib/utility.py`)  
+**Environment**: GDAL 3.12.1+ in conda glacier_velocity environment  
+**Date Identified**: January 2026
+
+#### Problem Description
+GDAL 3.12.1+ introduces changes that cause the custom `sys.excepthook` (used for logging unhandled exceptions) to fail recursively. This results in repeated "Error in sys.excepthook" messages in SLURM job outputs, even when processing completes successfully. This issue affects both Step 1 and Step 3 workflows due to shared environment dependencies.
+
+#### Root Cause
+- Custom exception hook in `lib/utility.py` calls `logging.error()` during exception handling
+- GDAL 3.12.1+ changes cause logging operations to raise exceptions
+- Hook failure triggers itself recursively, producing the repeated error messages
+- No actual processing errors occur - data download and processing complete normally
+
+#### Impact Assessment
+**Data Quality**: ✅ **No Impact**
+- Processing completes successfully
+- Output files are generated correctly
+- Scientific validity unaffected
+
+**Operational Impact**: ⚠️ **Confusing Logs**
+- SLURM outputs filled with repeated error messages
+- Harder to identify real issues
+- May mask actual errors in verbose logs
+
+#### Solution
+**Immediate Fix**: Downgrade GDAL to 3.10.3
+```bash
+mamba install gdal=3.10.3
+```
+- **Pros**: Eliminates warnings completely, restores clean logs
+- **Cons**: May lose minor bug fixes in newer GDAL versions
+
+**Long-term Fix**: Improve exception hook robustness (already implemented defensively in troubleshooting branch)
+
+**Decision**: Use GDAL 3.10.3 for production. Exception hook improvements can be merged for future resilience.
+
 ## Test Results
 
 **May 4-7, 2025 Test Run (Step 1)**:
@@ -196,5 +245,5 @@ profile.update({
 ---
 
 **Document Created**: December 19, 2025  
-**Last Updated**: December 19, 2025  
+**Last Updated**: January 26, 2026  
 **Author**: B. Yadav

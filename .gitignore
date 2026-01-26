@@ -209,7 +209,7 @@ __marimo__/
 # Custom ignores
 .flake8
 1_download_merge_and_clip/logs/
-1_download_merge_and_clip/logs_101_192_2024/
+1_download_merge_and_clip/docs/
 control/config.sh
 Sample_code
 AGENTS.md
