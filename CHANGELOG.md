@@ -7,50 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### AWS Lambda Containerization & Gap Filling Platform (January 23, 2026)
+---
 
-**Achievement**: Complete AWS Lambda containerization with Python 3.13, unified infrastructure, and established gap filling role for satellite data processing
+### Step 3 Integration: Complete Processing Pipeline (January 25, 2026)
 
-#### Lambda Infrastructure Consolidation
-- **Unified Function**: Single `glacier-processing` Lambda function serving both Sentinel-2 and Landsat
-- **Containerized Deployment**: Python 3.13 container with geospatial stack (GDAL, rasterio, geopandas, xarray)
-- **ECR Repository**: Consolidated to `glacier-lambda` (removed 4 obsolete repositories)
-- **Resource Configuration**: 10GB memory, container image packaging, dynamic account ID retrieval
+**Achievement**: Full integration of Step 3 orthocorrection and NetCDF packaging workflow into main repository, completing the end-to-end Greenland glacier velocity processing pipeline
 
-#### Scripts & Configuration Cleanup
-- **Removed Obsolete Scripts** (10 files): All Fargate and old Lambda deployment scripts
-- **Kept Essential Tools** (4 scripts): `build_test_lambda.sh`, `cleanup_and_rebuild.sh`, `deploy_lambda_container.sh`, `submit_aws_job.py`
-- **Configuration Updates**: `aws_config.ini` updated, `submit_aws_job.py` function references unified
-- **Security Hardening**: No hardcoded account IDs, dynamic credential retrieval
+#### Repository Consolidation
+- **Unified Structure**: Step 3 codebase moved to `3_orthocorrect_and_netcdf-package/` alongside Step 1
+- **Complete Workflow**: End-to-end processing from satellite download to final NetCDF delivery
+- **Branch Merge**: `feature/step3-integration` squashed into main for clean history
 
-#### Lambda Role Definition & Positioning
-- **Primary Purpose**: Gap filling platform for satellite data acquisition, not primary production processing
-- **Short-duration Tasks**: Optimized for quick, targeted data processing (~2000 functions/year for full coverage)
-- **Complementary Architecture**: HPC remains primary workflow, Lambda fills temporal gaps
-- **Scalability**: One function per month × 192 regions = ~2000 Lambda executions annually
-
-#### Validation & Testing Results
-- **Sentinel-2 Processing**: 4 scenes processed (2025-08-01 to 2025-08-06), files uploaded successfully
-- **Landsat Processing**: 5 orthoimages processed (2025-08-01 to 2025-08-06), files uploaded successfully
-- **Config System**: Working with minimal CLI arguments (`--service lambda`)
-- **AWS Integration**: Validated authentication patterns and service connectivity
-
-#### Documentation Updates
-- **AGENTS.md**: Updated Lambda status and clarified gap filling role
-- **README.md**: Added execution environment breakdown (HPC primary, Lambda secondary)
-- **AWS Documentation**: Added Lambda role clarification to all AWS-related guides
-- **Project Milestones**: Added current milestone documenting Lambda positioning
-
-#### Development Platform Value
-- **AWS Service Validation**: Lambda serves as validation platform for further AWS scaling
-- **Authentication Testing**: Validates AWS services and credential patterns
-- **Future Integration**: Ready for expanded AWS service development
-
-#### Impact & Benefits
-- **Simplified Deployment**: One function serves both satellite types
-- **Reduced Maintenance**: Single ECR repository, clean script inventory
-- **Production Ready**: Validated with real satellite data processing
-- **Architectural Clarity**: Clear separation between HPC production and Lambda gap filling
+#### Technical Infrastructure and Pipeline
+- **README.md Overhaul**: Complete rewrite with 5-step quickstart for new users
+- **Legacy Organization**: Deprecated code moved to dedicated `legacy/` folders
+- **Path Standardization**: Removed hardcoded paths, added generic repository references
+- **Graceful Degradation**: 93% success rate with partial outputs for data gaps
+- **Batch Processing**: Parallel glacier processing with SLURM joblib orchestration
+- **HPC Production Ready**: Validated on OSU Unity cluster with 192 glacier regions
+- **Container Support**: Docker containerization for consistent environments
+- **AWS Integration**: Lambda gap filling complement to HPC primary workflow
+- **Complete Pipeline**: Single repository for full Greenland glacier velocity workflow
+- **Improved Maintainability**: Unified codebase reduces duplication and confusion
+- **Enhanced Documentation**: User-friendly guides reduce onboarding time
+- **Production Scale**: Validated infrastructure for annual processing campaigns
 
 ---
 
@@ -58,7 +38,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 **Primary Focus**: HPC batch processing for production-scale glacier analysis
 - **Active Development**: Batch processing infrastructure complete and tested
 - **Production Ready**: 192 glacier regions with predictable batch slicing
-- **Next Milestone**: Full-year production runs on HPC cluster
 
 ### Added
 - **Container Implementation Complete** (January 14, 2026)
@@ -88,11 +67,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Consolidated repetitive command examples
   - Updated Python version references to 3.13
   - Streamlined for AI agent command determination focus
-
-- **AWS Context Restoration** (December 22, 2025)
-  - Added AWS Cloud Processing documentation section
-  - Added AWS data source context (all imagery on AWS Open Data Registry)
-  - Referenced `Archive/legacy_README.md` for historical workflow context
 
 - **Batch Processing Infrastructure** (December 21, 2025)
   - Implemented `--start-end-index` CLI argument for predictable glacier batching
