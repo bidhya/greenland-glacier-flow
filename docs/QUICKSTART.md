@@ -20,7 +20,7 @@ Automated satellite imagery processing for glacier velocity analysis. This is **
 - Clips to glacier boundaries using predefined region masks
 - Organizes outputs by satellite type and region for downstream analysis
 
-**Last Updated: January 23, 2026**
+**Last Updated: January 26, 2026**
 
 ## Installation
 
@@ -107,6 +107,30 @@ This workflow requires a conda environment for dependency management. We recomme
 ./submit_job.sh --satellite sentinel2 --regions 134_Arsuk --execution-mode local
 ```
 
+## Production Workflow
+
+### Job Monitoring (HPC)
+
+```bash
+# View log output (real-time)
+tail -f /path/to/greenland_glacier_flow/slurm_jobs/sentinel2/logs/satellite_glacier_0-65.log
+
+# Check SLURM output files
+ls -lh OUT/sentinel2_*.out
+```
+
+### Validation Checklist
+
+Before running full production:
+
+- [ ] Updated `date1` and `date2` in config.ini
+- [ ] Verified `base_dir` path exists and has space
+- [ ] Confirmed email address is correct
+- [ ] Pulled latest code: `git pull origin main`
+- [ ] Tested with small batch (e.g., `--start-end-index 0:3`)
+- [ ] Verified log files are being created with unique names
+- [ ] Checked output directories are populating
+
 ## Custom Parameters
 
 **Note:** The `--regions` and `--start-end-index` parameters are mutually exclusive. Use `--regions` for specific region selection, or `--start-end-index` for batch processing ranges.
@@ -138,8 +162,19 @@ This workflow requires a conda environment for dependency management. We recomme
 
 ### HPC Resource Defaults
 - **Memory**: Configurable (default: 60GB)
-- **Runtime**: Configurable (default: 24 hours)
+- **Runtime**: Configurable (default: 50 hours)
 - **Cores**: 4 (configurable)
+
+### Production Resource Requirements
+
+| Satellite | Glaciers/Batch | Memory | Runtime | Output Size |
+|-----------|----------------|--------|---------|-------------|
+| Sentinel-2 | 65 | 60 GB | ~50 hours | ~50-100 GB/glacier |
+| Landsat | 192 | 60 GB | ~125 hours | ~1-5 GB/glacier |
+
+**Storage Planning**: 
+- 192 Sentinel-2 glaciers × 75 GB avg = **~14 TB**
+- 192 Landsat glaciers × 5 GB avg = **~960 GB**
 
 ## Configuration
 
@@ -156,7 +191,7 @@ date1 = 2025-10-01
 date2 = 2025-10-05
 
 [PATHS]
-base_dir = /path/to/your/data
+base_dir = /path/to/save/processed/data
 
 [FLAGS]
 download_flag = 1
@@ -188,47 +223,15 @@ dry_run = False
 2. config.ini values
 3. Script defaults (lowest priority)
 
-### AWS Configuration (aws/config/aws_config.ini)
-
-```ini
-[LAMBDA]
-function_name = glacier-processor
-memory_size = 5120
-timeout = 900
-ephemeral_storage = 10240
-
-[S3]
-bucket_name = your-glacier-data-bucket
-base_path = 1_download_merge_and_clip
-```
-
-## Testing Commands
-
-```bash
-# Dry run (recommended first step)
-./submit_job.sh --satellite sentinel2 --dry-run true
-
-# Test single region, short date range
-./submit_job.sh --satellite sentinel2 --regions 134_Arsuk --date1 2025-10-01 --date2 2025-10-05 --dry-run true
-
-# Test Landsat (longer revisit time)
-./submit_job.sh --satellite landsat --regions 134_Arsuk --date1 2025-07-01 --date2 2025-07-08 --dry-run true
-```
-
 ## Troubleshooting
 
 ### Environment Issues
 
 ```bash
-# Check SLURM availability (HPC)
-which sbatch
-
 # Check conda environment
 conda info --envs
 conda activate glacier_velocity
 
-# Force local mode if auto-detection fails
-./submit_job.sh --satellite sentinel2 --execution-mode local
 ```
 
 ### Configuration Issues
@@ -240,42 +243,6 @@ python -c "import configparser; c=configparser.ConfigParser(); c.read('config.in
 # Check paths exist
 ls -la /path/to/your/base_dir
 ```
-
-### AWS Issues
-
-```bash
-# Check AWS credentials
-aws sts get-caller-identity
-
-# Check Lambda function
-aws lambda get-function --function-name your-function-name
-
-# Check S3 bucket access
-aws s3 ls s3://your-bucket-name/
-```
-
-### Job Monitoring (HPC)
-
-```bash
-# Check job status
-squeue -u $USER
-
-# Check job output (replace JOBID)
-cat slurm-JOBID.out
-
-# Monitor disk usage
-du -h /path/to/your/data
-
-# Check for errors in logs
-grep -i error slurm-JOBID.out
-```
-
-### Performance Tips
-
-- **Parallel Processing**: Each region processes independently - more regions = better parallelization
-- **Memory Usage**: Monitor with `htop` or `nvidia-smi` during local testing
-- **Network**: AWS data transfer is fast but can be bottlenecked by concurrent downloads
-- **Storage**: Ensure 2-3x raw data size available for temporary processing files
 
 ## Output Structure
 
@@ -298,42 +265,9 @@ base_dir/
 - `config.ini` - **CRITICAL configuration file** imported by the workflow. Contains all default settings for paths, memory, runtime, dates, and processing parameters. Must be configured before running any commands.
 - `submit_job.sh` - **Master entry point** that automatically activates the `glacier_velocity` conda environment and calls `submit_satellite_job.py` with all provided arguments. This wrapper ensures consistent environment setup across HPC and local execution modes.
 - `submit_satellite_job.py` - Core processing script that handles satellite data download, processing, and job submission
-- `aws/scripts/submit_aws_job.py` - AWS processing scripts for Lambda and Batch services
-- `sync_from_s3.sh` - Data synchronization tool for AWS S3 integration
 
----
-
-## Advanced Features (Prototype)
-
-**Note:** The following AWS and container features are working prototypes. They provide alternative execution modes but are not the primary production workflow. Future development will enhance these capabilities.
-
-### AWS Lambda (Gap Filling)
-
-AWS Lambda serves as gap filling for targeted data acquisition when HPC resources are unavailable.
-
-```bash
-# Lambda processing for specific regions
-./submit_job.sh --satellite sentinel2 --service lambda --regions 134_Arsuk
-```
-
-### Data Synchronization (AWS Users)
-
-```bash
-# Sync results from S3 to local/HPC
-./sync_from_s3.sh --exclude-downloads
-
-# Preview sync without downloading
-./sync_from_s3.sh --dry-run
-
-# Force overwrite existing files
-./sync_from_s3.sh --exclude-downloads --force-overwrite
-```
-
-### Container Deployment
-
-For containerized execution, see `container/README.md`. This provides Docker-based deployment options for isolated environments.
 
 ---
 
 *For detailed documentation, see other .md files*
-*Last Updated: January 23, 2026*
+*Last Updated: January 26, 2026*

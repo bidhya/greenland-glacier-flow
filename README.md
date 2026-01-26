@@ -1,6 +1,6 @@
-# Greenland Glacier Flow Processing
+# Greenland Glacier Flow Velocity Processing
 
-**Automated satellite data acquisition for glacier velocity analysis.**
+**Production ready but heavy refactorization. Expect rapid change to codebase for a few weeks**
 
 ## What It Does
 
