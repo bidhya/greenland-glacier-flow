@@ -236,7 +236,7 @@ aws/logs/*.log
 
 # Keep these AWS config files (use ! to negate ignore)
 !aws/config/*.json
-config.ini
+#config.ini
 
 # Ignore AWS-specific agent documentation
 aws/AWS_AGENTS.md
