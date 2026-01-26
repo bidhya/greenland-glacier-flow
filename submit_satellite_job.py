@@ -172,7 +172,7 @@ def create_slurm_job(jobname, regions, start_end_index, date1, date2, base_dir, 
         else:
             raise ValueError(f"Unsupported satellite type: {satellite}. Supported types are 'sentinel2' and 'landsat'.")
             
-        fh.writelines("tree -L 2 $TMPDIR\n")  # $out_folder
+        # fh.writelines("tree -L 2 $TMPDIR\n")  # $out_folder
         fh.writelines(f"echo Check outputs at base_dir = {base_dir}\n")
         fh.writelines("echo Finished Slurm job \n")
     
