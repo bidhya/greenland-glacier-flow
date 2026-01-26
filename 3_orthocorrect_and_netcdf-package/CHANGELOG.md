@@ -3,6 +3,47 @@
 This file documents changes to the orthocorrect and NetCDF packaging workflow in chronological order.
 Each entry includes the date, affected file, issue description, fix details, and impact.
 
+## Repository Integration & Documentation Updates
+
+### 2026-01-25: Repository Structure Integration Complete
+**Issue**: Step 3 workflow existed in separate repository, causing path confusion and maintenance overhead
+**Root Cause**: Step 1 and Step 3 were developed independently without unified repository structure
+**Solution**: Integrated Step 3 workflow into main repository alongside Step 1
+**Changes Made**:
+- Moved complete Step 3 codebase to `3_orthocorrect_and_netcdf-package/` directory
+- Updated all documentation to reflect unified repository structure
+- Removed hardcoded paths specific to separate repository setup
+- Added shared environment and configuration management
+**Impact**: Eliminates repository confusion, simplifies development workflow
+**Benefits**: Single source of truth for entire Greenland glacier processing pipeline
+
+### 2026-01-25: Documentation Overhaul for New Users
+**Issue**: README.md was written for experienced developers, overwhelming new users with technical details
+**Root Cause**: Documentation assumed familiarity with HPC, scientific workflows, and repository structure
+**Example Problem**: New users struggled with basic setup steps buried in technical explanations
+**Fix**: Complete README.md rewrite with clear 5-step quickstart guide
+**Changes Made**:
+- Restructured as user-friendly quickstart guide
+- Added prominent critical warnings for data integrity
+- Created clear configuration sections with path explanations
+- Added HPC command examples ready for copy-paste
+- Included troubleshooting section with common issues
+- Moved detailed technical architecture to separate sections
+**Location**: README.md complete rewrite
+**Impact**: Reduces onboarding time from days to hours for new team members
+**Benefits**: Enables self-service setup and reduces support burden
+**Scientific Benefit**: Faster research velocity through improved developer experience
+
+### 2026-01-25: Legacy Code Organization
+**Issue**: Deprecated and experimental code mixed with production codebase
+**Root Cause**: No clear separation between stable production code and development artifacts
+**Solution**: Created dedicated `legacy/` folder for deprecated files
+**Changes Made**:
+- Moved old README versions to `legacy/`
+- Organized deprecated environment files
+- Preserved historical reference materials
+- Added clear documentation of legacy vs production code
+
 ## QAQC Framework Integration
 
 ### 2026-01-24: QAQC Framework Merged to Master
