@@ -40,6 +40,12 @@ cp config.template.ini config.ini
 
 **⚠️ Important:** The workflow imports settings from `config.ini`. All production commands rely on this configuration file for paths, memory, runtime, and other critical parameters.
 
+**HPC Setup Note:** After cloning/pulling on HPC, make shell scripts executable:
+```bash
+chmod +x submit_job.sh
+# Add execute permissions to any other .sh files as needed
+```
+
 **Note (Landsat data):** Landsat downloads rely on AWS "requester-pays" S3 buckets. Ensure you have AWS IAM credentials configured locally (e.g., via `aws configure` or environment variables) and that your IAM user/account has S3 access permissions. Workflow uses `boto3` .
 
 ### Production Commands
