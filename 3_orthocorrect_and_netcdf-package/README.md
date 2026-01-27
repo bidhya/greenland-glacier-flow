@@ -103,6 +103,19 @@ nano lib/config.py  # or your preferred editor
 ### 3. Run on HPC
 Designed only for HPC because of TB-scale data volume.
 
+**✅ Automatic Path Detection**: The SLURM script automatically detects your repository location and copies the Step 3 folder to compute nodes. No manual path editing required.
+
+**Manual Path Override (Optional)**: If auto-detection fails or repository structure changes, manually set the path in `orthocorrect_netcdf-package_batch.sh`:
+```bash
+# Find and replace this line in the script:
+# STEP3_DIR="$REPO_DIR/3_orthocorrect_and_netcdf-package"
+# With your specific path:
+STEP3_DIR="/path/to/your/greenland-glacier-flow/3_orthocorrect_and_netcdf-package"
+```
+
+**SLURM Job Configuration**: Edit `orthocorrect_netcdf-package_batch.sh` for HPC account settings (time, memory, email) and optional manual path override.
+
+
 #### HPC Execution Commands
 ```bash
 # Navigate to SLURM scripts (from repository root)
@@ -115,7 +128,6 @@ sbatch orthocorrect_netcdf-package_batch.sh
 sbatch orthocorrect_netcdf-package_batch.sh --glaciers "049_jakobshavn,001_alison"
 ```
 
-**⚠️ CRITICAL**: Edit `orthocorrect_netcdf-package_batch.sh` with your HPC account settings before running.
 
 ## 🚨 Step 3 Core Processing Architecture
 
