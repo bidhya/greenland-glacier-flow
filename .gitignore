@@ -56,7 +56,7 @@ cover/
 *.pot
 
 # Django stuff:
-*.log
+# *.log
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
@@ -74,9 +74,6 @@ docs/_build/
 # PyBuilder
 .pybuilder/
 target/
-
-# Jupyter Notebook
-.ipynb_checkpoints
 
 # IPython
 profile_default/
@@ -194,6 +191,12 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
+# OS-specific files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
 # Cursor
 #  Cursor is an AI-powered code editor. `.cursorignore` specifies files/directories to
 #  exclude from AI features like autocomplete and code analysis. Recommended for sensitive data
@@ -208,14 +211,15 @@ __marimo__/
 
 # Custom ignores
 .flake8
-1_download_merge_and_clip/logs/
 1_download_merge_and_clip/docs/
-control/config.sh
-Sample_code
+# control/config.sh
 AGENTS.md
-*.out
 Archive/
 qaqc/
+# Jupyter notebook checkpoints (avoid even if qaqc gets tracked)
+qaqc/**/.ipynb_checkpoints/
+qaqc/**/*.ipynb
+# config.ini
 sync.ffs_db
 
 # AWS test files and logs
@@ -236,10 +240,10 @@ aws/logs/*.log
 
 # Keep these AWS config files (use ! to negate ignore)
 !aws/config/*.json
-# config.ini
 
 # Ignore AWS-specific agent documentation
 aws/AWS_AGENTS.md
-aws/AWS_AGENTS.md.backup
+# aws/AWS_AGENTS.md.backup
 # User-specific git strategy notes
-aws/docs/GIT_STRATEGY.md
+# aws/docs/GIT_STRATEGY.md
+
