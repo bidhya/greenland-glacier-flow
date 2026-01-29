@@ -22,7 +22,11 @@ from rasterio.enums import Resampling
 from rasterio.errors import RasterioIOError
 
 # Import default config values.
-from lib.config import STAC_URL, DEFAULT_COLLECTION_NAME, EPSG_CODE_STRING
+# from lib.config import STAC_URL, DEFAULT_COLLECTION_NAME, EPSG_CODE_STRING
+# Hardcoded configuration values (from lib.config)
+STAC_URL = 'https://earth-search.aws.element84.com/v1'
+DEFAULT_COLLECTION_NAME = 'sentinel-2-l2a'
+EPSG_CODE_STRING = "EPSG:3413"
 
 
 
@@ -34,8 +38,8 @@ def download_region(
     download_folder,
     geom,
     aoi,
-    start_date='2021-10-01',
-    end_date='2021-02-28',
+    start_date='2025-07-01',
+    end_date='2025-07-10',
     collection_name=DEFAULT_COLLECTION_NAME
 ):
     """ 

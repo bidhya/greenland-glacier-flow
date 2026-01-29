@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Sentinel-2 Workflow Simplification (January 28, 2026)
+
+**Achievement**: Streamlined Sentinel-2 processing pipeline by removing unnecessary config file abstraction and hardcoding essential configuration values directly in scripts
+
+#### Code Simplification
+- **Config File Elimination**: Removed dependency on `lib/config.py` for Sentinel-2 workflow
+- **Hardcoded Values**: Directly embedded `STAC_URL`, `DEFAULT_COLLECTION_NAME`, and `EPSG_CODE_STRING` in relevant scripts
+- **Self-Contained Scripts**: `download_merge_clip_sentinel2.py` and `lib/functions.py` now contain all necessary configuration
+- **Import Cleanup**: Removed config import statements and external dependencies
+
+#### Development Benefits
+- **Faster Prototyping**: Configuration values visible and editable in one place during development
+- **Reduced Complexity**: Eliminated unnecessary abstraction layer for 3 simple variables
+- **Easier Debugging**: No external config file dependencies that could break during testing
+- **Maintained Functionality**: All existing workflow behavior preserved and tested
+
+#### Safety Measures
+- **Backup Preservation**: Original config files renamed with `x_` prefix for potential reversion
+- **Test Validation**: Verified workflow still functions correctly without config imports
+- **Git History**: Changes committed with detailed commit message for traceability
+
+#### Files Modified
+- `1_download_merge_and_clip/sentinel2/download_merge_clip_sentinel2.py`: Added hardcoded `DEFAULT_COLLECTION_NAME`
+- `1_download_merge_and_clip/sentinel2/lib/functions.py`: Added hardcoded `STAC_URL`, `DEFAULT_COLLECTION_NAME`, `EPSG_CODE_STRING`
+- `1_download_merge_and_clip/sentinel2/lib/config.py` → `x_config.py`: Renamed for backup
+- `1_download_merge_and_clip/sentinel2/lib/config_template.py` → `x_config_template.py`: Renamed for backup
+
 ---
 
 ### Step 3 Integration: Complete Processing Pipeline (January 25, 2026)

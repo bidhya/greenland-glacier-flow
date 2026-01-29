@@ -43,8 +43,13 @@ import geopandas as gpd
 from pathlib import Path
 
 
-# Import config values.
-from lib.config import DEFAULT_COLLECTION_NAME
+# # Import config values.
+# from lib.config import DEFAULT_COLLECTION_NAME
+# Hardcoded configuration values (from lib.config)
+# STAC_URL = 'https://earth-search.aws.element84.com/v1'
+DEFAULT_COLLECTION_NAME = 'sentinel-2-l2a'
+# EPSG_CODE_STRING = "EPSG:3413"
+
 # Import subfunctions of main routine.
 from lib.download_and_post_process_region import download_and_post_process_region
 from lib.functions import delete_contents_of_folder
