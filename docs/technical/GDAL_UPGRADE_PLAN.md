@@ -466,6 +466,57 @@ git branch -D feature/gdal-upgrade  # Only if testing complete
 4. Add latest GDAL and retest
 5. Analyze and document findings
 
+## sys.excepthook Error Analysis (January 26, 2026)
+
+### Root Cause Identified
+**sys.excepthook errors in rasterio 1.5.0 are caused by unclosed rasterio file handles during program termination.**
+
+### Detailed Findings
+- **Error Pattern**: `Exception ignored in: <function RasterioIO.__del__ at 0x...> AttributeError: 'NoneType' object has no attribute 'close'`
+- **Trigger Condition**: Occurs during `sys.exit(0)` when rasterio file objects are not explicitly closed
+- **Version Specific**: Only affects rasterio 1.5.0; rasterio 1.4.4 does not exhibit this behavior
+- **Impact**: Errors are cleanup artifacts, not processing failures - workflow completes successfully
+
+### Code Analysis
+**Problematic Pattern** (causes sys.excepthook errors):
+```python
+# In create_template_tif() function
+tif = rioxarray.open_rasterio(template_path)
+# ... processing ...
+# No explicit close() - causes sys.excepthook error on exit
+```
+
+**Solution Pattern** (eliminates sys.excepthook errors):
+```python
+# In create_template_tif() function  
+tif = rioxarray.open_rasterio(template_path)
+# ... processing ...
+tif.close()  # Explicit close prevents sys.excepthook errors
+```
+
+### Validation Results
+- **With explicit close()**: No sys.excepthook errors during `sys.exit(0)`
+- **Without explicit close()**: sys.excepthook errors occur during termination
+- **Processing Success**: Both patterns produce identical correct outputs
+- **Performance Impact**: Negligible - close() operations are fast
+
+### Implementation Status
+- **Fixed**: `create_template_tif()` function now explicitly closes rasterio handles
+- **Validated**: sys.excepthook errors eliminated in Sentinel-2 processing workflow
+- **Scope**: Error affects all rasterio file operations in rasterio 1.5.0
+
+### Recommendations
+1. **Immediate**: Audit all rasterio file operations for explicit close() calls
+2. **Best Practice**: Implement context managers (`with` statements) for all rasterio operations
+3. **Testing**: Include sys.excepthook error checks in regression tests
+4. **Documentation**: Update coding standards to require explicit resource cleanup
+
+### Related Issues
+- **GDAL Warnings**: Separate issue occurring during EPSG:3413 reprojection operations
+- **Version Compatibility**: rasterio 1.4.4 → 1.5.0 introduces stricter resource management requirements
+- **Exception Handling**: sys.excepthook errors are cleanup artifacts, not functional failures
+- **Debugging Locations Identified**: Two key locations in `create_template_tif()` function for resuming sys.excepthook investigation (documented separately for future reference)
+
 ---
 
 **Status**: Planning Phase Complete
