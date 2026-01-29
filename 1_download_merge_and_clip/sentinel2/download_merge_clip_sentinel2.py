@@ -53,7 +53,7 @@ DEFAULT_COLLECTION_NAME = 'sentinel-2-l2a'
 # Import subfunctions of main routine.
 from lib.download_and_post_process_region import download_and_post_process_region
 from lib.functions import delete_contents_of_folder
-from lib.utility import setUpBasicLoggingConfig
+# from lib.utility import setUpBasicLoggingConfig  # Commented out for simplified logging
 
 
 
@@ -180,7 +180,12 @@ log_name = args.log_name
 # log_name = f"{base_dir}/logs/{log_name}"
 Path(log_name).touch()
 # Set up basic logging configuration.
-setUpBasicLoggingConfig(log_name, f"Attempting download/merge/clip of Sentinel-2 imagery for regions in Greenland between {date1} and {date2}, with starting region index {start_end_index}, on {cores} cores, outputting to {base_dir}.")
+# setUpBasicLoggingConfig(log_name, f"Attempting download/merge/clip of Sentinel-2 imagery for regions in Greenland between {date1} and {date2}, with starting region index {start_end_index}, on {cores} cores, outputting to {base_dir}.")
+
+# Simplified logging for prototyping
+import logging
+logging.basicConfig(filename=log_name, level=logging.INFO, format='%(asctime)s:%(levelname)s:%(message)s')
+logging.info(f"Starting Sentinel-2 processing for regions between {date1} and {date2}")
 
 ###############################################################################################
 # Get a list of regions to process.

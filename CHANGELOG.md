@@ -36,6 +36,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+### Sentinel-2 Logging Simplification (January 28, 2026)
+
+**Achievement**: Further streamlined Sentinel-2 processing by eliminating logging utility dependencies and implementing direct logging configuration
+
+#### Logging Simplification
+- **Utility Dependency Removal**: Removed dependency on `lib/utility.py` for Sentinel-2 workflow logging
+- **Direct Logging Setup**: Replaced `setUpBasicLoggingConfig()` with direct `logging.basicConfig()` calls
+- **File Output**: Maintained log file output using the `log_name` argument with proper formatting
+- **Self-Contained Logging**: Script now handles its own logging without external utility functions
+
+#### Development Benefits
+- **Simplified Debugging**: Logging configuration visible and editable directly in main script
+- **Reduced Dependencies**: One less import and utility file to maintain
+- **Faster Iteration**: No utility function abstraction layer during prototyping
+- **Preserved Functionality**: All logging behavior maintained with improved format
+
+#### Safety Measures
+- **Backup Preservation**: `utility.py` renamed to `x_utility.py` for potential reversion
+- **Import Failure Protection**: Renamed file ensures any accidental imports will fail immediately
+- **Test Validation**: Verified logging works correctly and captures GDAL warnings for debugging
+
+#### Files Modified
+- `1_download_merge_and_clip/sentinel2/download_merge_clip_sentinel2.py`: Replaced utility import with direct logging setup
+- `1_download_merge_and_clip/sentinel2/lib/utility.py` → `x_utility.py`: Renamed for backup
+
+---
+
 ### Step 3 Integration: Complete Processing Pipeline (January 25, 2026)
 
 **Achievement**: Full integration of Step 3 orthocorrection and NetCDF packaging workflow into main repository, completing the end-to-end Greenland glacier velocity processing pipeline

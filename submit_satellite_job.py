@@ -86,7 +86,7 @@ def create_bash_job(jobname, regions, start_end_index, date1, date2, base_dir, d
         fh.writelines("conda activate glacier_velocity\n")
         fh.writelines("date; hostname; pwd\n")         # Add host, time, and directory name for later troubleshooting
         fh.writelines("python --version; which python\n")  # Check python version
-        fh.writelines("python -c \"for p in ['rioxarray','rasterio','osgeo','geopandas','xarray']: print(f'\\t{p}: {__import__(p).__version__}')\"\n")  # Check key package versions
+        fh.writelines("python -c \"for p in ['rioxarray','rasterio','geopandas','xarray']: print(f'\\t{p}: {__import__(p).__version__}')\"\n")  # Check key package versions
         fh.writelines("echo ========================================================\n")
         fh.writelines("\n")
         # fh.writelines("cd $TMPDIR\n")
