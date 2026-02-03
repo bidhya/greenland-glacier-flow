@@ -43,6 +43,7 @@ parser.add_argument('--runtime', help='Runtime for the job (e.g., 01:00:00)', ty
 parser.add_argument('--dry-run', help='Generate job file but do not submit (true/false)', type=str, choices=['true', 'false'], default=None)
 parser.add_argument('--email', help='Email for job notifications', type=str)
 parser.add_argument('--execution-mode', help='Execution mode: hpc (SLURM), local (direct), auto (detect)', type=str, choices=['hpc', 'local', 'auto'], default='auto')
+parser.add_argument('--env', help='Conda environment to activate', type=str)
 
 args = parser.parse_args()
 
@@ -72,7 +73,7 @@ def detect_execution_mode():
     return 'local'
 
 
-def create_bash_job(jobname, regions, start_end_index, date1, date2, base_dir, download_flag, post_processing_flag, clear_downloads, cores, memory, runtime, dry_run, email, log_name, satellite):
+def create_bash_job(jobname, regions, start_end_index, date1, date2, base_dir, download_flag, post_processing_flag, clear_downloads, cores, memory, runtime, dry_run, email, log_name, satellite, env):
     """ Generate and call bash script for either Sentinel-2 or Landsat
         This part is mostly for prototyping and testing on local machine
     """
@@ -83,7 +84,7 @@ def create_bash_job(jobname, regions, start_end_index, date1, date2, base_dir, d
         fh.writelines("#!/usr/bin/env bash\n\n")
         fh.writelines("# Activate appropriate conda environment.\n")
         fh.writelines("eval \"$(conda shell.bash hook)\"\n")
-        fh.writelines("conda activate glacier_velocity\n")
+        fh.writelines(f"conda activate {env}\n")
         fh.writelines("date; hostname; pwd\n")         # Add host, time, and directory name for later troubleshooting
         fh.writelines("python --version; which python\n")  # Check python version
         fh.writelines("python -c \"for p in ['rioxarray','rasterio','geopandas','xarray']: print(f'\\t{p}: {__import__(p).__version__}')\"\n")  # Check key package versions
@@ -120,7 +121,7 @@ def create_bash_job(jobname, regions, start_end_index, date1, date2, base_dir, d
         subprocess.run(['bash', job_file], check=True)  # TODO: check best practice
 
 
-def create_slurm_job(jobname, regions, start_end_index, date1, date2, base_dir, download_flag, post_processing_flag, clear_downloads, cores, memory, runtime, dry_run, email, log_name, satellite):
+def create_slurm_job(jobname, regions, start_end_index, date1, date2, base_dir, download_flag, post_processing_flag, clear_downloads, cores, memory, runtime, dry_run, email, log_name, satellite, env):
     """ Generate SLURM job file and submit it for either Sentinel-2 or Landsat """
     logging.info(f'jobname = {jobname}    base_dir = {base_dir}   date1 = {date1}   date2 = {date2}   regions = {regions}   start_end_index = {start_end_index}   satellite = {satellite}\n') 
     job_file = os.path.join(os.getcwd(), f"{jobname}.job")
@@ -146,7 +147,7 @@ def create_slurm_job(jobname, regions, start_end_index, date1, date2, base_dir, 
         fh.writelines("\n")
         fh.writelines("# Activate appropriate conda environment.\n")
         fh.writelines("eval \"$(conda shell.bash hook)\"\n")
-        fh.writelines("conda activate glacier_velocity\n")
+        fh.writelines(f"conda activate {env}\n")
         fh.writelines("date; hostname; pwd\n")         # Add host, time, and directory name for later troubleshooting
         fh.writelines("python --version; which python\n")  # Check python version
         fh.writelines("python -c \"for p in ['rioxarray','rasterio','osgeo','geopandas','xarray']: print(f'\\t{p}: {__import__(p).__version__}')\"\n")  # Check key package versions
@@ -226,7 +227,8 @@ def load_config(config_file="config.ini", cli_args=None):
         'satellite': config.get("SETTINGS", "satellite"),
         # 'which_steps_to_run': config.get("SETTINGS", "which_steps_to_run"),
         'dry_run': config.getboolean("SETTINGS", "dry_run", fallback=False),
-        'execution_mode': config.get("SETTINGS", "execution_mode", fallback="auto")
+        'execution_mode': config.get("SETTINGS", "execution_mode", fallback="auto"),
+        'env': config.get("SETTINGS", "env", fallback="glacier_velocity")
     }
     
     # Override with command line arguments if provided
@@ -255,6 +257,8 @@ def load_config(config_file="config.ini", cli_args=None):
             config_dict['dry_run'] = cli_args.dry_run.lower() == 'true'
         if cli_args.execution_mode:
             config_dict['execution_mode'] = cli_args.execution_mode
+        if cli_args.env:
+            config_dict['env'] = cli_args.env
     
     return config_dict
 
@@ -291,6 +295,7 @@ def main():
     runtime = cfg['runtime']
     dry_run = cfg['dry_run']
     execution_mode = cfg['execution_mode']
+    env = cfg['env']
     
     # Auto-append batch range to log name if using start_end_index
     if start_end_index:
@@ -305,6 +310,7 @@ def main():
         root_dir = cfg['local_base_dir']  # Use local_base_dir from config if available
 
 
+    root_dir = f"{root_dir}_{env}"  # only to test rasterio 1.5.0 upgrade issues
     base_dir = f"{root_dir}/1_download_merge_and_clip/{satellite}"  # This is where files will be downloaded, merged, clipped, and saved
     mkdir_p(f"{base_dir}")  # Create base directory if it doesn't exist
 
@@ -336,11 +342,11 @@ def main():
         logging.info("Execution mode: HPC (SLURM detected)")
         create_slurm_job(jobname=jobname, regions=regions, start_end_index=start_end_index, date1=date1, date2=date2,
                          base_dir=base_dir, download_flag=download_flag, post_processing_flag=post_processing_flag, clear_downloads=clear_downloads,
-                         cores=cores, memory=memory, runtime=runtime, dry_run=dry_run, email=email, log_name=f"{log_dir}/{log_name}", satellite=satellite)
+                         cores=cores, memory=memory, runtime=runtime, dry_run=dry_run, email=email, log_name=f"{log_dir}/{log_name}", satellite=satellite, env=env)
     elif execution_mode == 'local':
         create_bash_job(jobname=jobname, regions=regions, start_end_index=start_end_index, date1=date1, date2=date2,
                         base_dir=base_dir, download_flag=download_flag, post_processing_flag=post_processing_flag, clear_downloads=clear_downloads,
-                        cores=cores, memory=memory, runtime=runtime, dry_run=dry_run, email=email, log_name=f"{log_dir}/{log_name}", satellite=satellite)
+                        cores=cores, memory=memory, runtime=runtime, dry_run=dry_run, email=email, log_name=f"{log_dir}/{log_name}", satellite=satellite, env=env)
         logging.info("Execution mode: Local (direct execution)")
     else:
         raise ValueError(f"Unsupported execution mode: {execution_mode}. Supported modes are 'auto', 'hpc', and 'local'.")

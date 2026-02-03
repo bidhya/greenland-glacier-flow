@@ -1,10 +1,14 @@
 #!/bin/bash
 
+# Wrapper script to run submit_satellite_job.py
+# Environment activation is handled by the generated job files based on config.ini settings
+
+# Legacy approach (commented out for reference):
 # Wrapper script to run submit_satellite_job.py with automatic conda environment activation
 # Handles environment setup for both HPC (SLURM) and local execution modes
 # Edit the environment name below to match your setup
-
-ENV_NAME="glacier_velocity"  # <-- CHANGE THIS TO YOUR ENVIRONMENT NAME
+#
+# ENV_NAME="glacier_velocity"  # <-- CHANGE THIS TO YOUR ENVIRONMENT NAME
 
 # Usage examples:
 # ./submit_job.sh --satellite sentinel2
@@ -17,9 +21,10 @@ ENV_NAME="glacier_velocity"  # <-- CHANGE THIS TO YOUR ENVIRONMENT NAME
 # Get script directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# Legacy conda activation (commented out - now handled by config.ini):
 # Initialize conda and activate environment
-eval "$(conda shell.bash hook)"
-conda activate "$ENV_NAME"
+# eval "$(conda shell.bash hook)"
+# conda activate "$ENV_NAME"
 
 # Run the Python script with all arguments
 python "${SCRIPT_DIR}/submit_satellite_job.py" "$@"
