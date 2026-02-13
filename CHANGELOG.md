@@ -7,6 +7,136 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Infrastructure & Compatibility Refinements (February 13, 2026)
+
+**Achievement**: Refined rasterio 1.5.0 compatibility approach and consolidated Step 3 infrastructure for improved operational clarity
+
+#### Selective Resampling Optimization
+- **Operation-Specific Approach**: Discovered that CPLE warnings are operation-dependent rather than universal
+  - `rio.reproject()` operations (template creation): May trigger warnings with cubic resampling
+  - `rio.reproject_match()` operations (clipping): Safe with cubic resampling
+- **Balanced Solution**: Template operations use `Resampling.bilinear`, clipping operations retain `Resampling.cubic` for data consistency
+- **Impact**: Eliminates CPLE warnings while maintaining historical data compatibility
+
+#### Step 3 Infrastructure Consolidation
+- **Log Directory Unification**: Consolidated SLURM job outputs and processing logs into single `logs/` directory
+- **SLURM Script Updates**: Modified `orthocorrect_netcdf-package.sh` to output to unified logs directory
+- **Git Hygiene**: Added HPC log patterns to `.gitignore` to prevent tracking generated files
+- **Documentation Updates**: Updated README and troubleshooting guides to reference unified logging structure
+
+#### Agent Knowledge Base Updates
+- **AGENTS.md**: Updated with selective resampling findings and operation-specific warning behavior
+- **RASTERIO_TESTING_AGENTS.md**: Revised investigation status and GDAL warning understanding
+- **Local Reference**: Agent files updated as working documentation for future compatibility work
+
+#### Files Modified
+- `1_download_merge_and_clip/sentinel2/lib/functions.py`: Selective resampling implementation
+- `3_orthocorrect_and_netcdf-package/README.md`: Log directory references updated
+- `3_orthocorrect_and_netcdf-package/slurm_jobs/orthocorrect_netcdf-package.sh`: Output directory unified
+- `.gitignore`: Added HPC log patterns
+- Agent documentation files: Updated with current findings
+
+### Rasterio 1.5.0 Compatibility Upgrade (February 3, 2026)
+
+**Achievement**: Targeted resolution of rasterio 1.5.0 compatibility issues for Step 1 Sentinel-2 workflow, establishing patterns for incremental application to other parts of the codebase
+
+#### Scope and Approach
+- **Targeted Fix**: Applied fixes specifically to Step 1 Sentinel-2 processing workflow only
+- **Production Safety**: Incremental approach to avoid disrupting existing production workflows
+- **Documentation for Future**: Comprehensive investigation artifacts preserved for applying similar fixes to Landsat processing, Step 3 workflows, and other components
+- **Experience Capture**: Detailed patterns and methodologies documented for systematic application across the codebase
+
+#### Core Compatibility Fixes (Step 1 Sentinel-2 Only)
+- **Resource Management**: Implemented explicit file handle cleanup with `old_var.close()` patterns for variable reassignment operations
+- **Resampling Optimization**: Changed `Resampling.cubic` to `Resampling.bilinear` to eliminate CPLE_AppDefined warnings during reprojection
+- **Function Restructuring**: Reorganized `create_template_tif()` with early returns and consolidated variable names for better error handling
+- **Data Integrity**: Zero functional impact - all geospatial operations produce identical results between rasterio versions
+
+#### Infrastructure Enhancements
+- **Environment Flexibility**: Added `--env` CLI argument for configurable conda environment switching in job submissions
+- **Configuration Updates**: Enhanced `config.ini` with environment settings and improved submit scripts
+- **Legacy Preservation**: Maintained backward compatibility while preserving legacy code as comments for reference
+
+#### Validation & Testing
+- **Cross-Version Testing**: Comprehensive validation across rasterio 1.4.4 and 1.5.0 environments for Step 1 Sentinel-2
+- **Production Validation**: Full workflow testing confirms identical behavior and data integrity for targeted scope
+- **Documentation**: Complete investigation artifacts preserved in `qaqc/Step1/rasterio-upgrade-testing/` for future incremental fixes
+
+#### Files Modified (Step 1 Sentinel-2 Scope)
+- `1_download_merge_and_clip/sentinel2/lib/functions.py`: Core rasterio compatibility fixes
+- `config.ini`: Environment configuration settings
+- `submit_job.sh`: Simplified wrapper with legacy code preserved
+- `submit_satellite_job.py`: CLI enhancements and config integration
+- `docs/technical/GDAL_UPGRADE_PLAN.md`: Moved to testing directory
+
+#### Future Application Strategy
+- **Incremental Rollout**: Fixes documented here provide templates for applying to Landsat workflows, Step 3 processing, and other components
+- **Production Safety**: Changes applied systematically to avoid disrupting operational workflows
+- **Pattern Reuse**: Established resource management and resampling patterns can be applied consistently across the codebase
+- **Testing Framework**: Investigation methodologies preserved for validating fixes in other workflow components
+
+#### Impact
+- **Stability**: Eliminates sys.excepthook errors and CPLE warnings for Step 1 Sentinel-2 processing
+- **Maintainability**: Cleaner resource management patterns established for future development
+- **Compatibility**: Seamless operation across rasterio versions for targeted workflow
+- **Future-Proofing**: Comprehensive documentation enables systematic application of fixes across the entire codebase
+
+---
+
+### Sentinel-2 Workflow Simplification (January 28, 2026)
+
+**Achievement**: Streamlined Sentinel-2 processing pipeline by removing unnecessary config file abstraction and hardcoding essential configuration values directly in scripts
+
+#### Code Simplification
+- **Config File Elimination**: Removed dependency on `lib/config.py` for Sentinel-2 workflow
+- **Hardcoded Values**: Directly embedded `STAC_URL`, `DEFAULT_COLLECTION_NAME`, and `EPSG_CODE_STRING` in relevant scripts
+- **Self-Contained Scripts**: `download_merge_clip_sentinel2.py` and `lib/functions.py` now contain all necessary configuration
+- **Import Cleanup**: Removed config import statements and external dependencies
+
+#### Development Benefits
+- **Faster Prototyping**: Configuration values visible and editable in one place during development
+- **Reduced Complexity**: Eliminated unnecessary abstraction layer for 3 simple variables
+- **Easier Debugging**: No external config file dependencies that could break during testing
+- **Maintained Functionality**: All existing workflow behavior preserved and tested
+
+#### Safety Measures
+- **Backup Preservation**: Original config files renamed with `x_` prefix for potential reversion
+- **Test Validation**: Verified workflow still functions correctly without config imports
+- **Git History**: Changes committed with detailed commit message for traceability
+
+#### Files Modified
+- `1_download_merge_and_clip/sentinel2/download_merge_clip_sentinel2.py`: Added hardcoded `DEFAULT_COLLECTION_NAME`
+- `1_download_merge_and_clip/sentinel2/lib/functions.py`: Added hardcoded `STAC_URL`, `DEFAULT_COLLECTION_NAME`, `EPSG_CODE_STRING`
+- `1_download_merge_and_clip/sentinel2/lib/config.py` → `x_config.py`: Renamed for backup
+- `1_download_merge_and_clip/sentinel2/lib/config_template.py` → `x_config_template.py`: Renamed for backup
+
+---
+
+### Sentinel-2 Logging Simplification (January 28, 2026)
+
+**Achievement**: Further streamlined Sentinel-2 processing by eliminating logging utility dependencies and implementing direct logging configuration
+
+#### Logging Simplification
+- **Utility Dependency Removal**: Removed dependency on `lib/utility.py` for Sentinel-2 workflow logging
+- **Direct Logging Setup**: Replaced `setUpBasicLoggingConfig()` with direct `logging.basicConfig()` calls
+- **File Output**: Maintained log file output using the `log_name` argument with proper formatting
+- **Self-Contained Logging**: Script now handles its own logging without external utility functions
+
+#### Development Benefits
+- **Simplified Debugging**: Logging configuration visible and editable directly in main script
+- **Reduced Dependencies**: One less import and utility file to maintain
+- **Faster Iteration**: No utility function abstraction layer during prototyping
+- **Preserved Functionality**: All logging behavior maintained with improved format
+
+#### Safety Measures
+- **Backup Preservation**: `utility.py` renamed to `x_utility.py` for potential reversion
+- **Import Failure Protection**: Renamed file ensures any accidental imports will fail immediately
+- **Test Validation**: Verified logging works correctly and captures GDAL warnings for debugging
+
+#### Files Modified
+- `1_download_merge_and_clip/sentinel2/download_merge_clip_sentinel2.py`: Replaced utility import with direct logging setup
+- `1_download_merge_and_clip/sentinel2/lib/utility.py` → `x_utility.py`: Renamed for backup
+
 ---
 
 ### Step 3 Integration: Complete Processing Pipeline (January 25, 2026)

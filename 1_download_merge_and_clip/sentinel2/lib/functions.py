@@ -22,7 +22,11 @@ from rasterio.enums import Resampling
 from rasterio.errors import RasterioIOError
 
 # Import default config values.
-from lib.config import STAC_URL, DEFAULT_COLLECTION_NAME, EPSG_CODE_STRING
+# from lib.config import STAC_URL, DEFAULT_COLLECTION_NAME, EPSG_CODE_STRING
+# Hardcoded configuration values (from lib.config)
+STAC_URL = 'https://earth-search.aws.element84.com/v1'
+DEFAULT_COLLECTION_NAME = 'sentinel-2-l2a'
+EPSG_CODE_STRING = "EPSG:3413"
 
 
 
@@ -34,8 +38,8 @@ def download_region(
     download_folder,
     geom,
     aoi,
-    start_date='2021-10-01',
-    end_date='2021-02-28',
+    start_date='2025-07-01',
+    end_date='2025-07-10',
     collection_name=DEFAULT_COLLECTION_NAME
 ):
     """ 
@@ -355,7 +359,10 @@ def merge_and_clip_tifs(
         # If there is only one UTM zone,
         if len(utm_set) == 1:
             # Merge the arrays into one array.
-            merged = merge_arrays([rioxarray.open_rasterio(f'{download_folder}/{tif}') for tif in subset])
+            rasters = [rioxarray.open_rasterio(f'{download_folder}/{tif}') for tif in subset]
+            merged = merge_arrays(rasters)
+            for raster in rasters:
+                raster.close()  # Explicitly close rasters to prevent sys.excepthook errors in rasterio 1.5.0
 
         # Otherwise, if there are multiple UTM zones (the maximum is 2 for the region we're looking at),
         elif len(utm_set) > 1:
@@ -365,7 +372,10 @@ def merge_and_clip_tifs(
             # If subset 1 has any members,
             if len(subset1) > 0:
                 # Merge the arrays in that subset into one array.
-                merged = merge_arrays([rioxarray.open_rasterio(f'{download_folder}/{tif}') for tif in subset1])
+                rasters1 = [rioxarray.open_rasterio(f'{download_folder}/{tif}') for tif in subset1]
+                merged = merge_arrays(rasters1)
+                for raster in rasters1:
+                    raster.close()  # Explicitly close rasters to prevent sys.excepthook errors in rasterio 1.5.0
 
                 # Reproject the merged array to Polar Stereographic North.
                 merged = merged.rio.reproject(EPSG_CODE_STRING, resolution=10, resampling=Resampling.cubic)
@@ -376,13 +386,17 @@ def merge_and_clip_tifs(
                 # If subset 2 has any members,
                 if len(subset2) > 0:
                     # Merge the arrays in that subset into one array.
-                    merged2 = merge_arrays([rioxarray.open_rasterio(f'{download_folder}/{tif}') for tif in subset2])
+                    rasters2 = [rioxarray.open_rasterio(f'{download_folder}/{tif}') for tif in subset2]
+                    merged2 = merge_arrays(rasters2)
+                    for raster in rasters2:
+                        raster.close()  # Explicitly close rasters to prevent sys.excepthook errors in rasterio 1.5.0
 
                     # Reproject the merged array to Polar Stereographic North.
                     merged2 = merged2.rio.reproject(EPSG_CODE_STRING, resolution=10, resampling=Resampling.cubic)
 
                     # Merge the two UTM zone subset arrays into one array.
                     merged = merge_arrays([merged, merged2])
+                    merged2.close()  # Explicitly close merged2 to prevent sys.excepthook errors in rasterio 1.5.0
 
 
         ###############################################################################################
@@ -391,8 +405,9 @@ def merge_and_clip_tifs(
         ###############################################################################################
 
         # Open the template raster and reproject/clip to it.
-        dst10m = rioxarray.open_rasterio(f'{template_tif}', chunks=True)
-        clipped = merged.rio.reproject_match(dst10m)
+        with rioxarray.open_rasterio(f'{template_tif}') as dst10m:
+            clipped = merged.rio.reproject_match(dst10m)
+            merged.close()  # Explicitly close merged to prevent sys.excepthook errors in rasterio 1.5.0
 
 
         ###############################################################################################
@@ -408,6 +423,7 @@ def merge_and_clip_tifs(
         if coverage_fraction > 0.5:
             # Save the .tif.
             clipped.rio.to_raster(clipped_tif)
+            clipped.close()  # Explicitly close raster to prevent sys.excepthook errors in rasterio 1.5.0
 
             # Save the associated metadata file.
             with open(metadata_file, 'w') as outfile:
@@ -509,9 +525,10 @@ def create_template_tif(
     # Get the file path for this template, based on the region.
     template_tif = f'/{template_folder}/{region}.tif'
 
-    # If the template doesn't exist yet, create it.
-    if not os.path.exists(template_tif):
-
+    # If the template already exists, return its path.
+    if os.path.exists(template_tif):
+        return template_tif
+    else:
         # For the prefix string of every .tif that has been downloaded for the AOI,
         for tif_prefix in tifs_set:
 
@@ -520,7 +537,9 @@ def create_template_tif(
             merged = rioxarray.open_rasterio(f'{download_folder}/{subset[0]}')
             
             # Reproject to the target CRS, generating the template.
-            merged = merged.rio.reproject(EPSG_CODE_STRING, resolution=10, resampling=Resampling.cubic)
+            old_raster = merged
+            merged = merged.rio.reproject(EPSG_CODE_STRING, resolution=10, resampling=Resampling.bilinear)
+            old_raster.close()
 
             # Now if there are any *other* matching files,
             if len(subset) > 1:
@@ -528,11 +547,20 @@ def create_template_tif(
                 # Merge each of the additional files to the template (expanding its area).
                 for tif in subset[1:]:
                     tmp_ds = rioxarray.open_rasterio(f'{download_folder}/{tif}')
-                    tmp_ds = tmp_ds.rio.reproject(EPSG_CODE_STRING, resolution=10, resampling=Resampling.cubic)
-                    merged = merge_arrays([merged, tmp_ds], res = 10)
+                    old_raster = tmp_ds
+                    tmp_ds = tmp_ds.rio.reproject(EPSG_CODE_STRING, resolution=10, resampling=Resampling.bilinear)
+                    old_raster.close()
+                    old_raster = merged
+                    merged = merge_arrays([merged, tmp_ds], res=10)
+                    old_raster.close()
+                    tmp_ds.close()  # Explicitly close tmp_ds to prevent sys.excepthook errors in rasterio 1.5.0
 
             # Clip the merged template to the AOI bounds.
-            clipped = merged.rio.clip(aoi.geometry.apply(mapping), aoi.crs)
+            clipped = merged.rio.clip(aoi.geometry.apply(mapping), aoi.crs, drop=False)
+            # clipped = clipped.load()  # Load data into memory to break file reference chain
+
+            # Close the initial merged object after clipping
+            # merged.close()  # Explicitly close merged to prevent sys.excepthook errors in rasterio 1.5.0
 
             # Get the fraction of the AOI that is covered by the template.
             aoi_area = aoi.Area.item()
@@ -540,9 +568,9 @@ def create_template_tif(
             coverage_fraction = clipped_area/aoi_area
 
             # If the coverage is above the 95% threshold, save the template to file.
-
             if coverage_fraction < 0.95:
                 logging.info(f'Coverage is less than minimum of 95% for {tif_prefix}. Did not create template.')
+                # clipped.close()  # Close clipped when coverage insufficient
             else:
                 # Convert the x and y values to integer type.
                 clipped['x'] = clipped['x'].astype(int)
@@ -559,11 +587,12 @@ def create_template_tif(
                 clipped['y'] = clipped['y'] + yoff
 
                 # Save the template to file.
-                clipped.rio.to_raster(template_tif)
-                break
+                clipped.rio.to_raster(template_tif)  # Sentinel-2 nodata should be 0
+                # clipped.close()  # Explicitly close raster to prevent sys.excepthook errors in rasterio 1.5.0
+                return template_tif
 
-    # Return the file path for the template.
-    return template_tif
+        # If no suitable template was found after checking all tif_prefix, raise an error
+        raise ValueError(f"No suitable template could be created for region {region} - no tif_prefix provided adequate coverage (>=95%)")
 
 
 
