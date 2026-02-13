@@ -247,3 +247,6 @@ aws/AWS_AGENTS.md
 # User-specific git strategy notes
 # aws/docs/GIT_STRATEGY.md
 
+# SLURM job logs (generated on HPC)
+slurm_step3/logs/
+

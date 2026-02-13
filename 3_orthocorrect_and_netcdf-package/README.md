@@ -165,7 +165,7 @@ Pay attention to any `errored_glaciers.log` as it indicates one or more glacier 
 cd slurm_step3
 
 # View output (replace JOBID)
-cat runs_output/ortho_nc_pkg_JOBID.out
+cat logs/ortho_nc_pkg_JOBID.out
 
 # Check for errors
 cat logs/errored_glaciers.log

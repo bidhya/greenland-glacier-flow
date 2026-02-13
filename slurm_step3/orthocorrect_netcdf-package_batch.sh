@@ -7,7 +7,7 @@
 #SBATCH --job-name=ortho_nc_pkg.job
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=yadav.111@osu.edu
-#SBATCH --output=runs_output/ortho_nc_pkg_%j.out
+#SBATCH --output=logs/ortho_nc_pkg_%j.out
 #SBATCH --partition=howat,batch
 #SBATCH --begin=now+0minutes
 
