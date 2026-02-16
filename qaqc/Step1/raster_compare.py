@@ -8,6 +8,10 @@ Usage:
     python raster_compare.py landsat --region 140_CentralLindenow  # Compare specific region
     conda run -n glacier_velocity1 python raster_compare.py landsat
 
+    only on HPC: use srun to allocate resources before running:
+    srun --ntasks=1 --mem=16gb -t 01:00:00 -p howat --pty bash -i
+    mamba run -n glacier_velocity python raster_compare.py landsat --run-mode hpc --region 134_Arsuk
+
 The script verifies that new files in development match the production baseline.
 """
 
@@ -15,9 +19,24 @@ import rioxarray
 import xarray as xr
 from pathlib import Path
 import typer
+import os
+import shutil
 
 # Configuration constants
 app = typer.Typer()
+
+def detect_execution_mode():
+    """Auto-detect whether we're on HPC or local machine"""
+    # Check if we're already in a SLURM job
+    if os.getenv('SLURM_JOB_ID'):
+        return 'hpc'
+    
+    # Check if sbatch command is available
+    if shutil.which('sbatch'):
+        return 'hpc'
+    
+    # Default to local execution
+    return 'local'
 
 def build_paths(satellite: str, region: str, dev_base: str, prod_base: str):
     """
@@ -110,12 +129,16 @@ def compare_raster_files(dev_path: Path, prod_path: Path, region: str):
 def main(
     satellite: str = typer.Argument(..., help="Satellite type: 'sentinel2' or 'landsat'"),
     region: str = typer.Option(None, help="Region to compare (if not specified, compares all regions in development environment)"),
-    run_mode: str = typer.Option("local", help="Run mode: 'local' or 'hpc'")
+    run_mode: str = typer.Option("auto", help="Run mode: 'auto' (detect), 'local', or 'hpc'")
 ):
     """
     CLI entry point: Compare raster files between production and development environments.
     If no region is specified, automatically compares all regions found in development environment.
     """
+    # Auto-detect execution mode if set to 'auto'
+    if run_mode == "auto":
+        run_mode = detect_execution_mode()
+    
     # Set paths based on run mode
     if run_mode == "local":
         prod_base = "/home/bny/greenland_glacier_flow_glacier_velocity"
@@ -124,7 +147,7 @@ def main(
         prod_base = "/fs/project/howat.4/greenland_glacier_flow"
         dev_base = "/fs/project/howat.4/yadav.111/greenland_glacier_flow_glacier_velocity1"
     else:
-        typer.echo(f"Error: Invalid run_mode '{run_mode}'. Use 'local' or 'hpc'", err=True)
+        typer.echo(f"Error: Invalid run_mode '{run_mode}'. Use 'auto', 'local', or 'hpc'", err=True)
         raise typer.Exit(1)
     if region is None:
         # Auto-discover and compare all regions
