@@ -13,43 +13,49 @@ The script verifies that new files in development match the production baseline.
 
 import rioxarray
 import xarray as xr
-import numpy as np
 from pathlib import Path
 import typer
 
 # Configuration constants
-PRODUCTION_BASE = "/home/bny/greenland_glacier_flow_glacier_velocity"
-DEVELOPMENT_BASE = "/home/bny/greenland_glacier_flow_glacier_velocity1"
-
 app = typer.Typer()
 
-def build_paths(satellite: str, region: str):
+def build_paths(satellite: str, region: str, dev_base: str, prod_base: str):
     """
     Build development and production paths for a given satellite and region.
+    
+    Args:
+        satellite: Satellite type ('sentinel2' or 'landsat')
+        region: Region name
+        dev_base: Base path for development environment
+        prod_base: Base path for production environment
     
     Returns:
         tuple: (development_path, production_path)
     """
     if satellite == "sentinel2":
-        dev_path = Path(f'{DEVELOPMENT_BASE}/1_download_merge_and_clip/{satellite}/{region}/clipped')
-        prod_path = Path(f'{PRODUCTION_BASE}/1_download_merge_and_clip/{satellite}/{region}/clipped')
+        dev_path = Path(f'{dev_base}/1_download_merge_and_clip/{satellite}/{region}/clipped')
+        prod_path = Path(f'{prod_base}/1_download_merge_and_clip/{satellite}/{region}/clipped')
     elif satellite == "landsat":
-        dev_path = Path(f'{DEVELOPMENT_BASE}/1_download_merge_and_clip/{satellite}/{region}')
-        prod_path = Path(f'{PRODUCTION_BASE}/1_download_merge_and_clip/{satellite}/{region}')
+        dev_path = Path(f'{dev_base}/1_download_merge_and_clip/{satellite}/{region}')
+        prod_path = Path(f'{prod_base}/1_download_merge_and_clip/{satellite}/{region}')
     else:
         raise ValueError(f"Unsupported satellite type '{satellite}'. Use 'sentinel2' or 'landsat'.")
     
     return dev_path, prod_path
 
-def discover_regions(satellite: str):
+def discover_regions(satellite: str, dev_base: str):
     """
     Discover all available regions in the development environment for a satellite.
+    
+    Args:
+        satellite: Satellite type ('sentinel2' or 'landsat')
+        dev_base: Base path for development environment
     
     Returns:
         list: List of region names
     """
-    dev_base = f"{DEVELOPMENT_BASE}/1_download_merge_and_clip/{satellite}/"
-    dev_path = Path(dev_base)
+    dev_base_path = f"{dev_base}/1_download_merge_and_clip/{satellite}/"
+    dev_path = Path(dev_base_path)
     
     if not dev_path.exists():
         raise FileNotFoundError(f"Development path not found: {dev_path}")
@@ -103,16 +109,27 @@ def compare_raster_files(dev_path: Path, prod_path: Path, region: str):
 @app.command()
 def main(
     satellite: str = typer.Argument(..., help="Satellite type: 'sentinel2' or 'landsat'"),
-    region: str = typer.Option(None, help="Region to compare (if not specified, compares all regions in development environment)")
+    region: str = typer.Option(None, help="Region to compare (if not specified, compares all regions in development environment)"),
+    run_mode: str = typer.Option("local", help="Run mode: 'local' or 'hpc'")
 ):
     """
     CLI entry point: Compare raster files between production and development environments.
     If no region is specified, automatically compares all regions found in development environment.
     """
+    # Set paths based on run mode
+    if run_mode == "local":
+        prod_base = "/home/bny/greenland_glacier_flow_glacier_velocity"
+        dev_base = "/home/bny/greenland_glacier_flow_glacier_velocity1"
+    elif run_mode == "hpc":
+        prod_base = "/fs/project/howat.4/greenland_glacier_flow"
+        dev_base = "/fs/project/howat.4/yadav.111/greenland_glacier_flow_glacier_velocity1"
+    else:
+        typer.echo(f"Error: Invalid run_mode '{run_mode}'. Use 'local' or 'hpc'", err=True)
+        raise typer.Exit(1)
     if region is None:
         # Auto-discover and compare all regions
         try:
-            regions = discover_regions(satellite)
+            regions = discover_regions(satellite, dev_base)
         except FileNotFoundError as e:
             typer.echo(f"Error: {e}", err=True)
             raise typer.Exit(1)
@@ -127,7 +144,7 @@ def main(
         for region_name in regions:
             typer.echo(f"\n--- Comparing region: {region_name} ---")
             try:
-                dev_path, prod_path = build_paths(satellite, region_name)
+                dev_path, prod_path = build_paths(satellite, region_name, dev_base, prod_base)
                 compare_raster_files(dev_path, prod_path, region_name)
                 success_count += 1
             except (ValueError, FileNotFoundError, AssertionError) as e:
@@ -139,7 +156,7 @@ def main(
     else:
         # Compare specific region
         try:
-            dev_path, prod_path = build_paths(satellite, region)
+            dev_path, prod_path = build_paths(satellite, region, dev_base, prod_base)
             compare_raster_files(dev_path, prod_path, region)
         except (ValueError, FileNotFoundError, AssertionError) as e:
             typer.echo(f"Error: {e}", err=True)
