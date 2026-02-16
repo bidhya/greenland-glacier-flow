@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 """
-Satellite Raster Comparison Script - Flat Version
-Compares clipped rasters between glacier_velocity (production) and glacier_velocity1 (Python 3.14) environments
+Satellite Raster Comparison Script
+Compares rasters between glacier_velocity1 (development, new files) and glacier_velocity (production, baseline)
 
 Usage:
-    python raster_compare.py sentinel2
-    python raster_compare.py landsat
+    python raster_compare.py sentinel2  # Auto-compares all regions in development environment
+    python raster_compare.py landsat --region 140_CentralLindenow  # Compare specific region
+    conda run -n glacier_velocity1 python raster_compare.py landsat
+
+The script verifies that new files in development match the production baseline.
 """
 
 import rioxarray
@@ -14,59 +17,133 @@ import numpy as np
 from pathlib import Path
 import typer
 
+# Configuration constants
+PRODUCTION_BASE = "/home/bny/greenland_glacier_flow_glacier_velocity"
+DEVELOPMENT_BASE = "/home/bny/greenland_glacier_flow_glacier_velocity1"
+
 app = typer.Typer()
 
-@app.command()
-def compare_rasters(
-    satellite: str = typer.Argument(..., help="Satellite type: 'sentinel2' or 'landsat'")
-):
+def build_paths(satellite: str, region: str):
     """
-    Compare raster files between production and development environments.
+    Build development and production paths for a given satellite and region.
+    
+    Returns:
+        tuple: (development_path, production_path)
     """
-    # Define the region to compare
-    region = "138_SermiitsiaqInTasermiut"
-
-    # Define paths to the two run directories
-    base_folder = "/home/bny/greenland_glacier_flow_glacier_velocity"
-
-    # Set up paths based on satellite
     if satellite == "sentinel2":
-        path1 = Path(f'{base_folder}/1_download_merge_and_clip/{satellite}/{region}/clipped')
-        path2 = Path(f'{base_folder}1/1_download_merge_and_clip/{satellite}/{region}/clipped')
+        dev_path = Path(f'{DEVELOPMENT_BASE}/1_download_merge_and_clip/{satellite}/{region}/clipped')
+        prod_path = Path(f'{PRODUCTION_BASE}/1_download_merge_and_clip/{satellite}/{region}/clipped')
     elif satellite == "landsat":
-        path1 = Path(f'{base_folder}/1_download_merge_and_clip/{satellite}/{region}')
-        path2 = Path(f'{base_folder}1/1_download_merge_and_clip/{satellite}/{region}')
+        dev_path = Path(f'{DEVELOPMENT_BASE}/1_download_merge_and_clip/{satellite}/{region}')
+        prod_path = Path(f'{PRODUCTION_BASE}/1_download_merge_and_clip/{satellite}/{region}')
     else:
-        typer.echo(f"Error: Unsupported satellite type '{satellite}'. Use 'sentinel2' or 'landsat'.")
-        raise typer.Exit(1)
+        raise ValueError(f"Unsupported satellite type '{satellite}'. Use 'sentinel2' or 'landsat'.")
+    
+    return dev_path, prod_path
 
-    typer.echo(f"Satellite: {satellite}")
-    typer.echo(f"Comparing rasters in:")
-    typer.echo(f"Production: {path1}")
-    typer.echo(f"Development: {path2}")
+def discover_regions(satellite: str):
+    """
+    Discover all available regions in the development environment for a satellite.
+    
+    Returns:
+        list: List of region names
+    """
+    dev_base = f"{DEVELOPMENT_BASE}/1_download_merge_and_clip/{satellite}/"
+    dev_path = Path(dev_base)
+    
+    if not dev_path.exists():
+        raise FileNotFoundError(f"Development path not found: {dev_path}")
+    
+    # Get all subdirectories that look like regions (exclude _reference and other non-region dirs)
+    regions = []
+    for item in dev_path.iterdir():
+        if item.is_dir() and not item.name.startswith('_') and item.name != 'slurm_jobs':
+            regions.append(item.name)
+    
+    return sorted(regions)
 
-    # Find corresponding raster files
-    files1 = list(path1.glob('*.tif'))
-    if not files1:
-        typer.echo(f"Error: No .tif files found in {path1}")
-        raise typer.Exit(1)
+def compare_raster_files(dev_path: Path, prod_path: Path, region: str):
+    """
+    Compare raster files between development and production environments.
+    
+    Args:
+        dev_path: Development environment path (new files, subset of production)
+        prod_path: Production environment path (baseline)
+        region: Region name for logging
+    """
+    print(f"Satellite: {dev_path.parent.parent.name}")  # Extract satellite from path
+    print(f"Region: {region}")
+    print(f"Comparing rasters in:")
+    print(f"Development: {dev_path}")
+    print(f"Production: {prod_path}")
 
-    typer.echo(f"Found {len(files1)} raster files to compare")
+    # Find raster files in development (new files to verify)
+    dev_files = list(dev_path.glob('*.tif'))
+    if not dev_files:
+        raise FileNotFoundError(f"No .tif files found in development: {dev_path}")
 
-    for f1 in files1:
-        f2 = path2 / f1.name
-        typer.echo(f"Comparing: {f1.name}")
+    print(f"Found {len(dev_files)} raster files to compare")
+
+    for dev_file in dev_files:
+        prod_file = prod_path / dev_file.name
+        print(f"Comparing: {dev_file.name}")
 
         # Load rasters
-        da1 = rioxarray.open_rasterio(f1, chunks="auto")
-        da2 = rioxarray.open_rasterio(f2, chunks="auto")
+        da_dev = rioxarray.open_rasterio(dev_file, chunks="auto")
+        da_prod = rioxarray.open_rasterio(prod_file, chunks="auto")
 
         # Compare rasters directly
-        xr.testing.assert_identical(da1, da2)
-        # da1.close()
-        # da2.close()
+        xr.testing.assert_identical(da_dev, da_prod)
+        # da_dev.close()
+        # da_prod.close()
 
-    typer.echo(f"✅ Found and compared {len(files1)} raster pairs - all identical!")
+    print(f"✅ Found and compared {len(dev_files)} raster pairs - all identical!")
+
+
+@app.command()
+def main(
+    satellite: str = typer.Argument(..., help="Satellite type: 'sentinel2' or 'landsat'"),
+    region: str = typer.Option(None, help="Region to compare (if not specified, compares all regions in development environment)")
+):
+    """
+    CLI entry point: Compare raster files between production and development environments.
+    If no region is specified, automatically compares all regions found in development environment.
+    """
+    if region is None:
+        # Auto-discover and compare all regions
+        try:
+            regions = discover_regions(satellite)
+        except FileNotFoundError as e:
+            typer.echo(f"Error: {e}", err=True)
+            raise typer.Exit(1)
+
+        if not regions:
+            typer.echo(f"Error: No regions found in development environment for {satellite}", err=True)
+            raise typer.Exit(1)
+
+        typer.echo(f"Found {len(regions)} regions in development environment: {', '.join(regions)}")
+
+        success_count = 0
+        for region_name in regions:
+            typer.echo(f"\n--- Comparing region: {region_name} ---")
+            try:
+                dev_path, prod_path = build_paths(satellite, region_name)
+                compare_raster_files(dev_path, prod_path, region_name)
+                success_count += 1
+            except (ValueError, FileNotFoundError, AssertionError) as e:
+                typer.echo(f"⚠️  Skipped {region_name}: {e}", err=True)
+                continue
+
+        typer.echo(f"\n🎉 Completed: {success_count}/{len(regions)} regions compared successfully")
+
+    else:
+        # Compare specific region
+        try:
+            dev_path, prod_path = build_paths(satellite, region)
+            compare_raster_files(dev_path, prod_path, region)
+        except (ValueError, FileNotFoundError, AssertionError) as e:
+            typer.echo(f"Error: {e}", err=True)
+            raise typer.Exit(1)
 
 
 if __name__ == "__main__":
