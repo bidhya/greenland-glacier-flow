@@ -4,7 +4,14 @@
 # Handles environment setup for both HPC (SLURM) and local execution modes
 # Edit the environment name below to match your setup
 
+# Conda Environment Activation
+# Note: The following conda activation is optional if your default Python environment
+# contains all required workflow packages. If `python` runs without errors, these lines
+# can be removed. However, the glacier_velocity environment is required for the full
+# workflow anyway, so this setup ensures compatibility across all user environments.
 ENV_NAME="glacier_velocity"  # <-- CHANGE THIS TO YOUR ENVIRONMENT NAME
+eval "$(conda shell.bash hook)"
+conda activate "$ENV_NAME"
 
 # Usage examples:
 # ./submit_job.sh --satellite sentinel2
@@ -16,10 +23,6 @@ ENV_NAME="glacier_velocity"  # <-- CHANGE THIS TO YOUR ENVIRONMENT NAME
 
 # Get script directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
-# Initialize conda and activate environment
-eval "$(conda shell.bash hook)"
-conda activate "$ENV_NAME"
 
 # Run the Python script with all arguments
 python "${SCRIPT_DIR}/submit_satellite_job.py" "$@"
