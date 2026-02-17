@@ -43,7 +43,7 @@ parser.add_argument('--runtime', help='Runtime for the job (e.g., 01:00:00)', ty
 parser.add_argument('--dry-run', help='Generate job file but do not submit (true/false)', type=str, choices=['true', 'false'], default=None)
 parser.add_argument('--email', help='Email for job notifications', type=str)
 parser.add_argument('--execution-mode', help='Execution mode: hpc (SLURM), local (direct), auto (detect)', type=str, choices=['hpc', 'local', 'auto'], default='auto')
-parser.add_argument('--env', help='Conda environment to activate', type=str)
+parser.add_argument('--env', help='Conda environment to activate', type=str, default='glacier_velocity')
 
 args = parser.parse_args()
 
