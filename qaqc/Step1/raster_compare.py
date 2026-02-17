@@ -141,8 +141,8 @@ def main(
     
     # Set paths based on run mode
     if run_mode == "local":
-        prod_base = "/home/bny/greenland_glacier_flow"
-        dev_base =  "/home/bny/greenland_glacier_flow_prod"
+        prod_base = "/home/bny/greenland_glacier_flow_prod"
+        dev_base = "/home/bny/greenland_glacier_flow"
     elif run_mode == "hpc":
         prod_base = "/fs/project/howat.4/greenland_glacier_flow"
         dev_base = "/fs/project/howat.4/yadav.111/greenland_glacier_flow"
