@@ -310,7 +310,7 @@ def main():
         root_dir = cfg['local_base_dir']  # Use local_base_dir from config if available
 
 
-    root_dir = f"{root_dir}_{env}"  # only to test rasterio 1.5.0 upgrade issues
+    # root_dir = f"{root_dir}_{env}"  # use only to test various python environments (rasterio 1.5.0 compability fixes etc.)
     base_dir = f"{root_dir}/1_download_merge_and_clip/{satellite}"  # This is where files will be downloaded, merged, clipped, and saved
     mkdir_p(f"{base_dir}")  # Create base directory if it doesn't exist
 
