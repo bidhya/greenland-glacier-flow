@@ -12,5 +12,6 @@ dependencies:
   - opencv # pip is called opencv-python
   - tqdm
   - netcdf4
+  - typer
   #- rasterio  # dependency of rioxarray
   #- pystac  # dependency of pystac-client

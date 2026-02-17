@@ -141,11 +141,11 @@ def main(
     
     # Set paths based on run mode
     if run_mode == "local":
-        prod_base = "/home/bny/greenland_glacier_flow_glacier_velocity"
-        dev_base = "/home/bny/greenland_glacier_flow_glacier_velocity1"
+        prod_base = "/home/bny/greenland_glacier_flow"
+        dev_base =  "/home/bny/greenland_glacier_flow_prod"
     elif run_mode == "hpc":
         prod_base = "/fs/project/howat.4/greenland_glacier_flow"
-        dev_base = "/fs/project/howat.4/yadav.111/greenland_glacier_flow_glacier_velocity1"
+        dev_base = "/fs/project/howat.4/yadav.111/greenland_glacier_flow"
     else:
         typer.echo(f"Error: Invalid run_mode '{run_mode}'. Use 'auto', 'local', or 'hpc'", err=True)
         raise typer.Exit(1)
