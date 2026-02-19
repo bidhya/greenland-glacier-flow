@@ -33,7 +33,7 @@ parser = argparse.ArgumentParser(description='Create and submit SLURM job for sa
 parser.add_argument('--config', help='Path to configuration file', type=str, default='config.ini')
 parser.add_argument('--satellite', help='Satellite type (sentinel2 or landsat)', type=str, choices=['sentinel2', 'landsat'])
 parser.add_argument('--regions', help='Regions to process (comma-separated, no spaces)', type=str)
-parser.add_argument('--start-end-index', help='Start and end index for batch processing (e.g., 0:48)', type=str)
+parser.add_argument('--start_end_index', help='Start and end index for batch processing (e.g., 0:48)', type=str)
 parser.add_argument('--date1', help='Start date in YYYY-MM-DD format', type=str)
 parser.add_argument('--date2', help='End date in YYYY-MM-DD format', type=str)
 parser.add_argument('--base-dir', help='Base output directory', type=str)

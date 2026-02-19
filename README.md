@@ -1,33 +1,24 @@
 # Greenland Glacier Flow Velocity Processing
 
-**Production ready but heavy refactorization. Expect rapid change to codebase for a few weeks**
+This workflow is used download and subset Landsat and Sentinel-2 imagery for 192 glaciers over Greenland, calculate velocity using SDM algorithms, and finally orthocorrect and packages the results into NetCDF files for distribution through NSIDC DAAC.  
 
-## What It Does
-
-This repository processes satellite imagery to prepare data for glacier velocity analysis across Greenland's 192 major glaciers. It downloads, merges, and clips Sentinel-2 and Landsat satellite data, organizing it for downstream velocity estimation workflows.
+The workflow contains a mix of modern and legacy codes developed over many years by multiple people. This is it important to run the production workflow on HPC exactly as outlined here. 
 
 ## Workflow Pipeline
 
-**Step 1 of 3-Step Workflow**: Download, process, and organize satellite imagery for glacier velocity analysis.
+**Complete 3-Step Workflow**: End-to-end processing from satellite imagery to final NetCDF velocity products.
 
 1. **Step 1 (This Repository)**: Download, merge, clip, and organize satellite imagery → `1_download_merge_and_clip/`
-2. **Step 2 (Downstream)**: Calculate surface displacement maps for velocity estimation → Requires Step 1 outputs
-3. **Step 3 (Downstream)**: Orthocorrect and package results into NetCDF files → Requires Steps 1 & 2 outputs
-
-## 🎯 Project Status (January 23, 2026)
-
-**Production Ready**: Batch processing infrastructure complete and validated for HPC deployment.
-
-- ✅ **192 Glacier Regions**: Full Greenland coverage with predictable batch slicing
-- ✅ **Dual Satellite Support**: Unified workflow for Sentinel-2 and Landsat
-- ✅ **HPC Production**: SLURM-based batch processing operational
-- ✅ **Batch Processing**: `--start-end-index` parameter for systematic region batching
+2. **Step 2 (Downstream)**: Calculate surface displacement maps for velocity estimation → Requires Step 1 data and orchestrated with `matlab` 
+3. **Step 3 (This Repository)**: Orthocorrect and package results into NetCDF files → `3_orthocorrect_and_netcdf-package/`
 
 ## 🚀 Operational Workflow
 
 **All commands run from repository root.**
 
 ### One-Time Setup
+Read Step1 [QUICKSTART.md](docs/QUICKSTART.md) for detailed setup instructions. The same setup is used for Step3 as well.  
+
 ```bash
 # Create conda environment (includes all dependencies)
 conda env create -f environment.yml
@@ -43,7 +34,7 @@ cp config.template.ini config.ini
 **HPC Setup Note:** After cloning/pulling on HPC, make shell scripts executable:
 ```bash
 chmod +x submit_job.sh
-# Add execute permissions to any other .sh files as needed
+# Add execute permissions to any other .sh files as needed, else call with bash ... command.
 ```
 
 **Note (Landsat data):** Landsat downloads rely on AWS "requester-pays" S3 buckets. Ensure you have AWS IAM credentials configured locally (e.g., via `aws configure` or environment variables) and that your IAM user/account has S3 access permissions. Workflow uses `boto3` .
@@ -51,32 +42,21 @@ chmod +x submit_job.sh
 ### Production Commands
 ```bash
 # Sentinel-2: Process all 192 regions in 3 batches
-./submit_job.sh --satellite sentinel2 --start-end-index 0:65
-./submit_job.sh --satellite sentinel2 --start-end-index 65:130
-./submit_job.sh --satellite sentinel2 --start-end-index 130:195
+./submit_job.sh --satellite sentinel2 --start_end_index 0:65
+./submit_job.sh --satellite sentinel2 --start_end_index 65:130
+./submit_job.sh --satellite sentinel2 --start_end_index 130:195
 
 # Landsat: Single batch
-./submit_job.sh --satellite landsat --start-end-index 0:192 --runtime 125:00:00
+./submit_job.sh --satellite landsat --start_end_index 0:192 --runtime 125:00:00
 ```
 
-**How It Works**: The `submit_job.sh` script activates the conda environment and calls the Python script (`submit_satellite_job.py`), which creates and submits SLURM jobs to the HPC cluster. All SLURM job files, logs, and processing outputs will be created in the `base_dir` specified in `config.ini`.
+**How It Works**: The `submit_job.sh` script calls the Python script (`submit_satellite_job.py`), which creates and submits SLURM jobs to the HPC cluster. All SLURM job files, logs, and processing outputs will be created in the `base_dir` specified in `config.ini`.  
 
-### Testing Commands
-```bash
-# Dry-run test (recommended first)
-./submit_job.sh --satellite sentinel2 --start-end-index 0:3 --dry-run true
-
-# Small production test
-./submit_job.sh --satellite sentinel2 --start-end-index 0:3
-```
+Command line argument overwrites provided for many of the args. However, it is strongly recommended to setup these args in `config.ini`. Do overwrite only for `satellite, start_end_index and runtime` as you see in production-level copy/past commands above.  
 
 ## 📖 Documentation
 
-- **[QUICKSTART.md](docs/QUICKSTART.md)** - Detailed setup and troubleshooting
-
-## 🏗️ Overview
-
-- **Satellite Data**: Sentinel-2 and Landsat from AWS Open Data
-- **Regions**: 192 Greenland glaciers
-- **Batch Strategy**: 3 batches of 65 regions (AWS download limits)
-- **Environment**: HPC SLURM jobs with automatic conda activation
+- **[QUICKSTART.md](docs/QUICKSTART.md)** - Step1 detailed setup, operational commands, and troubleshooting
+- **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** - System architecture and design decisions
+- **[SENTINEL2_WORKFLOW_DOCUMENTATION.md](docs/SENTINEL2_WORKFLOW_DOCUMENTATION.md)** - Sentinel-2 processing details
+- **[LANDSAT_WORKFLOW_DOCUMENTATION.md](docs/LANDSAT_WORKFLOW_DOCUMENTATION.md)** - Landsat processing details

@@ -62,7 +62,7 @@ graph TB
 ```mermaid
 flowchart LR
     subgraph "Input"
-        USER[User Command<br/>--start-end-index 0:25]
+        USER[User Command<br/>--start_end_index 0:25]
         CFG[config.ini<br/>Dates, Paths, Flags]
     end
     
@@ -94,7 +94,7 @@ flowchart LR
 ```mermaid
 graph TB
     subgraph "Command Entry Point"
-        CMD[./submit_job.sh --satellite sentinel2 --start-end-index 0:25]
+        CMD[./submit_job.sh --satellite sentinel2 --start_end_index 0:25]
     end
     
     subgraph "Environment Detection"
@@ -230,7 +230,7 @@ flowchart TD
     
     subgraph "Batch Selection Methods"
         METHOD1[Method 1: Specific Regions<br/>--regions 134_Arsuk,191_Hagen_Brae]
-        METHOD2[Method 2: Index Range<br/>--start-end-index 0:25]
+        METHOD2[Method 2: Index Range<br/>--start_end_index 0:25]
     end
     
     subgraph "Processing"

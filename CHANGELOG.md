@@ -112,7 +112,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Streamlined for AI agent command determination focus
 
 - **Batch Processing Infrastructure** (December 21, 2025)
-  - Implemented `--start-end-index` CLI argument for predictable glacier batching
+  - Implemented `--start_end_index` CLI argument for predictable glacier batching
   - Mutual exclusivity between `--regions` and `--start_end_index` parameters
   - Alphabetical region sorting in both Sentinel-2 and Landsat workflows
   - Consistent glacier ordering across both satellite types

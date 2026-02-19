@@ -11,7 +11,7 @@
     - Supports both specific regions and start_end_index batching
 
     Usage examples:
-    - python submit_aws_job.py --satellite sentinel2 --service lambda --start-end-index 0:25
+    - python submit_aws_job.py --satellite sentinel2 --service lambda --start_end_index 0:25
     - python submit_aws_job.py --satellite landsat --service lambda --regions 140_CentralLindenow,134_Arsuk
     - python submit_aws_job.py --satellite sentinel2 --service lambda --date1 2024-07-01 --date2 2024-07-15 --dry-run true
 
@@ -35,7 +35,7 @@ parser.add_argument('--satellite', help='Satellite type (sentinel2 or landsat)',
 parser.add_argument('--service', help='AWS service to use', type=str, choices=['lambda'], default='lambda')
 parser.add_argument('--regions', help='Regions to process (comma-separated, no spaces)', type=str)
 parser.add_argument('--region', help='Single region to process (for Lambda)', type=str)
-parser.add_argument('--start-end-index', help='Start and end index for batch processing (e.g., 0:48)', type=str)
+parser.add_argument('--start_end_index', help='Start and end index for batch processing (e.g., 0:48)', type=str)
 parser.add_argument('--date1', help='Start date in YYYY-MM-DD format', type=str)
 parser.add_argument('--date2', help='End date in YYYY-MM-DD format', type=str)
 parser.add_argument('--s3-bucket', help='S3 bucket for data storage', type=str)

@@ -7,7 +7,7 @@ Automated satellite imagery processing for glacier velocity analysis. This is **
 **Workflow Pipeline:**
 1. **Step 1 (This Repository)**: Download, merge, clip, and organize satellite imagery → `1_download_merge_and_clip/`
 2. **Step 2 (Downstream)**: Calculate surface displacement maps for velocity estimation → Requires Step 1 outputs
-3. **Step 3 (Downstream)**: Orthocorrect and package results into NetCDF files → Requires Steps 1 & 2 outputs
+3. **Step 3 (This Repository)**: Orthocorrect and package results into NetCDF files → `3_orthocorrect_and_netcdf-package/`
 
 **Data Sources:**
 - **Sentinel-2**: High-resolution optical imagery (10m resolution) from ESA Copernicus program
@@ -20,7 +20,7 @@ Automated satellite imagery processing for glacier velocity analysis. This is **
 - Clips to glacier boundaries using predefined region masks
 - Organizes outputs by satellite type and region for downstream analysis
 
-**Last Updated: January 26, 2026**
+**Last Updated: February 18, 2026**
 
 ## Installation
 
@@ -87,21 +87,21 @@ This workflow requires a conda environment for dependency management. We recomme
 
 ```bash
 # Sentinel-2: Process all 192 regions in 3 batches
-./submit_job.sh --satellite sentinel2 --start-end-index 0:65
-./submit_job.sh --satellite sentinel2 --start-end-index 65:130
-./submit_job.sh --satellite sentinel2 --start-end-index 130:195
+./submit_job.sh --satellite sentinel2 --start_end_index 0:65
+./submit_job.sh --satellite sentinel2 --start_end_index 65:130
+./submit_job.sh --satellite sentinel2 --start_end_index 130:195
 
 # Landsat: Single batch (all 192 regions, faster processing)
-./submit_job.sh --satellite landsat --start-end-index 0:192 --runtime 125:00:00
+./submit_job.sh --satellite landsat --start_end_index 0:192 --runtime 125:00:00
 ```
 
 ### Testing & Development
 ```bash
 # Dry-run test (recommended first)
-./submit_job.sh --satellite sentinel2 --start-end-index 0:3 --dry-run true
+./submit_job.sh --satellite sentinel2 --start_end_index 0:3 --dry-run true
 
 # Small production test
-./submit_job.sh --satellite sentinel2 --start-end-index 0:3
+./submit_job.sh --satellite sentinel2 --start_end_index 0:3
 
 # Local execution for debugging
 ./submit_job.sh --satellite sentinel2 --regions 134_Arsuk --execution-mode local
@@ -127,13 +127,13 @@ Before running full production:
 - [ ] Verified `base_dir` path exists and has space
 - [ ] Confirmed email address is correct
 - [ ] Pulled latest code: `git pull origin main`
-- [ ] Tested with small batch (e.g., `--start-end-index 0:3`)
+- [ ] Tested with small batch (e.g., `--start_end_index 0:3`)
 - [ ] Verified log files are being created with unique names
 - [ ] Checked output directories are populating
 
 ## Custom Parameters
 
-**Note:** The `--regions` and `--start-end-index` parameters are mutually exclusive. Use `--regions` for specific region selection, or `--start-end-index` for batch processing ranges.
+**Note:** The `--regions` and `--start_end_index` parameters are mutually exclusive. Use `--regions` for specific region selection, or `--start_end_index` for batch processing ranges.
 
 **Region Naming:** Regions are identified by 3-digit codes (e.g., 134_Arsuk) corresponding to Greenland glacier IDs. Use `--regions` with comma-separated values for multiple regions.
 
@@ -148,7 +148,7 @@ Before running full production:
 ./submit_job.sh --satellite sentinel2 --execution-mode local
 
 # Override memory/runtime (HPC only)
-./submit_job.sh --satellite sentinel2 --start-end-index 0:65 --memory 128G --runtime 24:00:00
+./submit_job.sh --satellite sentinel2 --start_end_index 0:65 --memory 128G --runtime 24:00:00
 ```
 
 ## Resource Requirements
@@ -169,12 +169,12 @@ Before running full production:
 
 | Satellite | Glaciers/Batch | Memory | Runtime | Output Size |
 |-----------|----------------|--------|---------|-------------|
-| Sentinel-2 | 65 | 60 GB | ~50 hours | ~50-100 GB/glacier |
-| Landsat | 192 | 60 GB | ~125 hours | ~1-5 GB/glacier |
+| Sentinel-2 | 65 | 60 GB | ~50 hours | ~75 GB/glacier |
+| Landsat | 192 | 60 GB | ~125 hours | ~5 GB/glacier |
 
 **Storage Planning**: 
 - 192 Sentinel-2 glaciers × 75 GB avg = **~14 TB**
-- 192 Landsat glaciers × 5 GB avg = **~960 GB**
+- 192 Landsat glaciers × 5 GB avg = **~1 TB**
 
 ## Configuration
 
@@ -216,7 +216,7 @@ dry_run = False
 - Requires longer runtime: override with `--runtime 125:00:00`
 - Same memory allocation (60G) works
 - Single batch processing: 0:192 regions
-- Command: `./submit_job.sh --satellite landsat --start-end-index 0:192 --runtime 125:00:00`
+- Command: `./submit_job.sh --satellite landsat --start_end_index 0:192 --runtime 125:00:00`
 
 **Configuration Priority:**
 1. Command-line arguments (highest priority)
@@ -270,4 +270,4 @@ base_dir/
 ---
 
 *For detailed documentation, see other .md files*
-*Last Updated: January 26, 2026*
+*Last Updated: February 18, 2026*
