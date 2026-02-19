@@ -119,7 +119,7 @@ log_to_stdout_and_file(f"Sentinel-2 NetCDF exists: {s2_exists}")
 datasets_to_merge = []
 if s2_exists:
     log_to_stdout_and_file("Opening Sentinel-2 NetCDF...")
-    s2_ds = xr.open_dataset(s2_netcdf_fpath, engine="netcdf4")
+    s2_ds = xr.open_dataset(s2_netcdf_fpath, engine="netcdf4", decode_timedelta=True)
     datasets_to_merge.append(s2_ds)
 else:
     log_to_stdout_and_file("Sentinel-2 NetCDF not found, skipping...")
@@ -127,7 +127,7 @@ else:
 
 if l8_exists:
     log_to_stdout_and_file("Opening Landsat 8 NetCDF...")
-    l8_ds = xr.open_dataset(l8_netcdf_fpath, engine="netcdf4")
+    l8_ds = xr.open_dataset(l8_netcdf_fpath, engine="netcdf4", decode_timedelta=True)
     datasets_to_merge.append(l8_ds)
 else:
     log_to_stdout_and_file("Landsat NetCDF not found, skipping...")
