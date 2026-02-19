@@ -520,7 +520,7 @@ def create_template_tif(
             merged = rioxarray.open_rasterio(f'{download_folder}/{subset[0]}')
             
             # Reproject to the target CRS, generating the template.
-            merged = merged.rio.reproject(EPSG_CODE_STRING, resolution=10, resampling=Resampling.cubic)
+            merged = merged.rio.reproject(EPSG_CODE_STRING, resolution=10, resampling=Resampling.bilinear)
 
             # Now if there are any *other* matching files,
             if len(subset) > 1:
@@ -528,7 +528,7 @@ def create_template_tif(
                 # Merge each of the additional files to the template (expanding its area).
                 for tif in subset[1:]:
                     tmp_ds = rioxarray.open_rasterio(f'{download_folder}/{tif}')
-                    tmp_ds = tmp_ds.rio.reproject(EPSG_CODE_STRING, resolution=10, resampling=Resampling.cubic)
+                    tmp_ds = tmp_ds.rio.reproject(EPSG_CODE_STRING, resolution=10, resampling=Resampling.bilinear)
                     merged = merge_arrays([merged, tmp_ds], res = 10)
 
             # Clip the merged template to the AOI bounds.
