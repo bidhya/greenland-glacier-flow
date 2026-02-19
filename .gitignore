@@ -219,7 +219,7 @@ Archive/
 qaqc/**
 !qaqc/Step1/
 qaqc/Step1/**
-!qaqc/Step1/raster_compare.py
+#!qaqc/Step1/raster_compare.py
 # Jupyter notebook checkpoints (avoid even if qaqc gets tracked)
 qaqc/**/.ipynb_checkpoints/
 qaqc/**/*.ipynb
