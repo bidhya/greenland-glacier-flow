@@ -478,10 +478,11 @@ log_to_stdout_and_file(f"Exporting... (Landsat-8 memory size: {ds.nbytes / (1024
 # Get encoding information.
 comp = dict(zlib=True, complevel=1)
 encoding_comp = {var: comp for var in ds}
+# Feb 19, 2026 (BNY): appending , "dtype": "float64" to prevent user warning (see issue 3)
 encoding_time = {
-    "scene_1_datetime": {"units": "seconds since 1970-01-01 00:00:00"},
-    "scene_2_datetime": {"units": "seconds since 1970-01-01 00:00:00"},
-    "midpoint_datetime": {"units": "seconds since 1970-01-01 00:00:00"},
+    "scene_1_datetime": {"units": "seconds since 1970-01-01 00:00:00", "dtype": "float64"},
+    "scene_2_datetime": {"units": "seconds since 1970-01-01 00:00:00", "dtype": "float64"},
+    "midpoint_datetime": {"units": "seconds since 1970-01-01 00:00:00", "dtype": "float64"},
 }
 encoding = {**encoding_comp, **encoding_time}
 

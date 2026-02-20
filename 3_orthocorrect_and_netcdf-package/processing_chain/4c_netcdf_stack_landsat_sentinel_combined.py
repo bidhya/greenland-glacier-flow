@@ -234,10 +234,11 @@ for year in years:
 
     comp = dict(zlib=True, complevel=5)
     encoding_comp = {var: comp for var in year_ds}
+    # Feb 19, 2026 (BNY): appending , "dtype": "float64" to prevent user warning (see issue 3)
     encoding_time = {
-        "scene_1_datetime": {"units": "seconds since 1970-01-01 00:00:00"},
-        "scene_2_datetime": {"units": "seconds since 1970-01-01 00:00:00"},
-        "midpoint_datetime": {"units": "seconds since 1970-01-01 00:00:00"},
+        "scene_1_datetime": {"units": "seconds since 1970-01-01 00:00:00", "dtype": "float64"},
+        "scene_2_datetime": {"units": "seconds since 1970-01-01 00:00:00", "dtype": "float64"},
+        "midpoint_datetime": {"units": "seconds since 1970-01-01 00:00:00", "dtype": "float64"},
     }
     encoding = {**encoding_comp, **encoding_time}
 
