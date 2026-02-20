@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Solution**: Explicitly set `decode_timedelta=True` in all `xr.open_dataset()` calls
 - **Files Updated**: Step 3 processing scripts and NetCDF comparison tool
 - **Impact**: Eliminates warnings while preserving legacy timedelta decoding behavior
+- **Concat FutureWarning**: Suppressed xarray `xr.concat` FutureWarning by passing `data_vars='all'` to `xr.concat()` in Step‑3 processing (files: `processing_chain/4b_netcdf_stack_landsat.py`, `processing_chain/4c_netcdf_stack_landsat_sentinel_combined.py`) — fixes Issue #2
 
 #### NetCDF Comparison Tool Enhancement
 - **Output Formatting**: Improved alignment of success/error messages for better readability
