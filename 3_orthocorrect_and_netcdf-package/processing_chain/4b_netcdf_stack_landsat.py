@@ -324,7 +324,7 @@ for fdir in tqdm(df["dir"].values):
 if len(ds_list) == 0:
     log_to_stdout_and_file(f"Error: No Landsat data found to concatenate for {glacier}. Exiting script.")
     sys.exit(1)
-ds = xr.concat(ds_list, dim="index")
+ds = xr.concat(ds_list, dim="index", data_vars="all")
 
 
 ###################################################################################################

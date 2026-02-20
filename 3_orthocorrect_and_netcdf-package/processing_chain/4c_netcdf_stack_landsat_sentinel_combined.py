@@ -143,7 +143,7 @@ if len(datasets_to_merge) == 1:
     merge = datasets_to_merge[0]
 else:
     log_to_stdout_and_file("Merging datasets...")
-    merge = xr.concat(datasets_to_merge, dim="index")
+    merge = xr.concat(datasets_to_merge, dim="index", data_vars="all")
 
     # Fix quibbles that have emerged from concat function for some reason.
     # Only apply to concatenated datasets
