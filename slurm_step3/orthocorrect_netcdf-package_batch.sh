@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
-#SBATCH --time=04:00:00  # 4 hours to process ~192 glaciers with 40 cpus
-#SBATCH --cpus-per-task=40  # 90
-## with 48 cores and 120Gb, got following: "slurmstepd: error: Detected 1 oom_kill event in StepId=9347559.batch. Some of the step tasks have been OOM Killed"
-#SBATCH --mem=140G  # 140G (for 48 cpus), 280G for 90 cpus etc.
+#SBATCH --time=04:00:00  # 6 hours to process ~192 glaciers with 40 cpus
+#SBATCH --cpus-per-task=90  # 90
+## with 40 cores and 160Gb, got following: "slurmstepd: error: Detected 1 oom_kill event in StepId=9347559.batch. Some of the step tasks have been OOM Killed"
+#SBATCH --mem=290G  # 140G (for 48 cpus), 280G for 90 cpus etc.
 #SBATCH --job-name=ortho_nc_pkg.job
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=yadav.111@osu.edu
