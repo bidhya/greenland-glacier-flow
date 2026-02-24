@@ -49,7 +49,8 @@ VELDIR_LS = "/fs/project/howat.4-3/howat-data/VelocityResults/Greenland/SETSM_SD
 # Previously not used due to sourced from top level config.sh
 # WD = "/fs/project/howat.4/gravina.2/sentinel2vel"
 # WD = "/fs/project/howat.4/gravina.2/greenland_glacier_flow/3_orthocorrect_and_netcdf-package"  # Gravina's
-WD = "/fs/project/howat.4/yadav.111/greenland_glacier_flow/3_orthocorrect_and_netcdf-package"  # BNY 
+# WD = "/fs/project/howat.4/yadav.111/greenland_glacier_flow/3_orthocorrect_and_netcdf-package"  # for test runs 
+WD = "/fs/project/howat.4-3/greenland_glacier_flow/3_orthocorrect_and_netcdf-package"  # BNY 
 
 # Directory for logging batch glacier processing output (New change BNY).
 LOG_DIR = '/home/yadav.111/Github/greenland-glacier-flow/slurm_step3/logs'
