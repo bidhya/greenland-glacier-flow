@@ -119,7 +119,7 @@ log_to_stdout_and_file(f"Sentinel-2 NetCDF exists: {s2_exists}")
 datasets_to_merge = []
 if s2_exists:
     log_to_stdout_and_file("Opening Sentinel-2 NetCDF...")
-    s2_ds = xr.open_dataset(s2_netcdf_fpath, engine="netcdf4")
+    s2_ds = xr.open_dataset(s2_netcdf_fpath, engine="netcdf4", decode_timedelta=True)
     datasets_to_merge.append(s2_ds)
 else:
     log_to_stdout_and_file("Sentinel-2 NetCDF not found, skipping...")
@@ -127,7 +127,7 @@ else:
 
 if l8_exists:
     log_to_stdout_and_file("Opening Landsat 8 NetCDF...")
-    l8_ds = xr.open_dataset(l8_netcdf_fpath, engine="netcdf4")
+    l8_ds = xr.open_dataset(l8_netcdf_fpath, engine="netcdf4", decode_timedelta=True)
     datasets_to_merge.append(l8_ds)
 else:
     log_to_stdout_and_file("Landsat NetCDF not found, skipping...")
@@ -143,7 +143,7 @@ if len(datasets_to_merge) == 1:
     merge = datasets_to_merge[0]
 else:
     log_to_stdout_and_file("Merging datasets...")
-    merge = xr.concat(datasets_to_merge, dim="index")
+    merge = xr.concat(datasets_to_merge, dim="index", data_vars="all")
 
     # Fix quibbles that have emerged from concat function for some reason.
     # Only apply to concatenated datasets
@@ -234,10 +234,11 @@ for year in years:
 
     comp = dict(zlib=True, complevel=5)
     encoding_comp = {var: comp for var in year_ds}
+    # Feb 19, 2026 (BNY): appending , "dtype": "float64" to prevent user warning (see issue 3)
     encoding_time = {
-        "scene_1_datetime": {"units": "seconds since 1970-01-01 00:00:00"},
-        "scene_2_datetime": {"units": "seconds since 1970-01-01 00:00:00"},
-        "midpoint_datetime": {"units": "seconds since 1970-01-01 00:00:00"},
+        "scene_1_datetime": {"units": "seconds since 1970-01-01 00:00:00", "dtype": "float64"},
+        "scene_2_datetime": {"units": "seconds since 1970-01-01 00:00:00", "dtype": "float64"},
+        "midpoint_datetime": {"units": "seconds since 1970-01-01 00:00:00", "dtype": "float64"},
     }
     encoding = {**encoding_comp, **encoding_time}
 

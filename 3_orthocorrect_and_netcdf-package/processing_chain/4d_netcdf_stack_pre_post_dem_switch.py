@@ -144,10 +144,10 @@ for year in years:
 
     # Import NetCDFs.
     log_to_stdout_and_file("Opening pre-DEM-switch NetCDF...")
-    pre_dem_switch_ds = xr.open_dataset(pre_dem_switch_fpath)
+    pre_dem_switch_ds = xr.open_dataset(pre_dem_switch_fpath, decode_timedelta=True)
 
     log_to_stdout_and_file("Opening post-DEM-switch NetCDF...")
-    post_dem_switch_ds = xr.open_dataset(post_dem_switch_fpath)
+    post_dem_switch_ds = xr.open_dataset(post_dem_switch_fpath, decode_timedelta=True)
 
 
 
