@@ -19,7 +19,7 @@ from lib.functions import download_region, post_process_region, concat_csv_files
 
 def download_and_post_process_region(
     region,
-    regions,
+    gdf,
     start_date,
     end_date,
     collection_name,
@@ -36,7 +36,7 @@ def download_and_post_process_region(
     Parameters
     ----------
     region: AOI region name as string (e.g. `049_jakobshavn`).\
-    regions: Full list of regions that are being processed along with this one.
+    gdf: GeoDataFrame containing full list of regions that are being processed along with this one.
     start_date: The start date for the search, as a string.
     end_date: The end date for the search, as a string.
     collection_name: The name of which cloud data collection to search.
@@ -73,7 +73,7 @@ def download_and_post_process_region(
     ###########################################################################################
 
     # Get the geometry of the region (this will be passed to sat-search).
-    aoi = regions[regions.region == region].copy() # `aoi` is used for clipping the merged TIFFs.
+    aoi = gdf[gdf.region == region].copy() # `aoi` is used for clipping the merged TIFFs.
     aoi_lat_lon = aoi.to_crs('EPSG:4326') # This is necessary if `aoi` is not in lat/lon geographic coordinates.
     shp_json = aoi_lat_lon.to_json()
     geom = json.loads(shp_json)['features'][0]['geometry']

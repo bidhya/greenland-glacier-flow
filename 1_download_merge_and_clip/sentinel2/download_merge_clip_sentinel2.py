@@ -191,17 +191,17 @@ setUpBasicLoggingConfig(log_name, f"Attempting download/merge/clip of Sentinel-2
 # Use script location to determine ancillary folder path (sibling to sentinel2 directory)
 script_dir = Path(__file__).resolve().parent
 glacier_regions_path = script_dir.parent / 'ancillary' / 'glacier_roi_v2' / 'glaciers_roi_proj_v3_300m.gpkg'
-regions = gpd.read_file(glacier_regions_path)
-regions.index = regions.region
+gdf = gpd.read_file(glacier_regions_path)
+gdf.index = gdf.region
 # Sort regions alphabetically by index to ensure predictable numeric order (001→192)
-regions = regions.sort_index()
+gdf = gdf.sort_index()
 
 # Subset the regions based on minimum and maximum area parameters.
 if min_area:
-    regions = regions[regions.Area>=min_area]
+    gdf = gdf[gdf.Area>=min_area]
     logging.info(f'min_area: {min_area}  ')
 if max_area:
-    regions = regions[regions.Area < max_area]
+    gdf = gdf[gdf.Area < max_area]
     logging.info(f'max_area: {max_area}  ')
 
 # Sort regions by "Area" column (so parallel job fails towards end rather than beginning of script).
@@ -217,9 +217,9 @@ if start_end_index:
     start, end = start_end_index.split(':')
     start = int(start)
     if end == '':
-        end = len(regions)
+        end = len(gdf)
     end = int(end)
-    regions = regions.iloc[start:end]  # orginal lines. commented to process only 101-192 BY
+    gdf = gdf.iloc[start:end]  # orginal lines. commented to process only 101-192 BY
     # regions_list = regions_list[start:end]  # BY: only temporary solution for to speed up processing 101-192
     logging.info(f'Processing regions index from {start} to {end}  ')
 
@@ -228,7 +228,7 @@ if args.regions:
     regions_list = args.regions.split(",")
 # Otherwise get the regions-to-process list from the AOI template geopackage.
 else:
-    regions_list = list(regions.region)
+    regions_list = list(gdf.region)
 
 # Remove any "ignored" regions from the list.
 if args.ignore_regions:
@@ -258,7 +258,7 @@ for region in regions_list:
     try:
         download_and_post_process_region(
             region,
-            regions,
+            gdf,
             date1,
             date2,
             collection_name,
