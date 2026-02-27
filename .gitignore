@@ -198,6 +198,11 @@ Thumbs.db
 ehthumbs.db
 Desktop.ini
 
+# local sample output used for testing comparisons
+sample/
+
+# local helper scripts not meant for version control
+sync_to_hpc.sh
 # Cursor
 #  Cursor is an AI-powered code editor. `.cursorignore` specifies files/directories to
 #  exclude from AI features like autocomplete and code analysis. Recommended for sensitive data
@@ -252,5 +257,5 @@ aws/AWS_AGENTS.md
 # aws/docs/GIT_STRATEGY.md
 
 # SLURM job logs (generated on HPC)
-slurm_step3/logs/
+**/*logs*/
 
