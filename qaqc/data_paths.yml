@@ -1,0 +1,76 @@
+# Data Paths for Greenland Glacier Flow QAQC
+# ============================================
+# HPC: yadav.111@unity.asc.ohio-state.edu
+#
+# Fill in placeholder values (null) as paths are confirmed.
+# This file is intentionally inside qaqc/ which is gitignored —
+# it is for local/HPC exploration only, not production config.
+#
+# Structure notes:
+#   - step1 and step3 roots differ per year (data spread across storage allocations)
+#   - step2 (MATLAB velocity outputs) uses a FIXED root across all years — see shared.step2
+#   - step2 has two resolutions: 300m and 100m (subdirectory details TBD)
+#
+# Usage in Python:
+#   import yaml
+#   from pathlib import Path
+#   with open("qaqc/data_paths.yml") as f:
+#       paths = yaml.safe_load(f)
+#   p = paths["2025"]
+#   delivery = Path(p["root"]) / p["step3"]["subfolder"] / p["step3"]["delivery"]
+#   veldir_s2 = Path(paths["shared"]["step2"]["sentinel2"])
+
+# HPC output paths — written by run_qaqc_job.sh; rsync'd to local after each run
+hpc:
+  results_root: /home/yadav.111/QAQC_Results
+  # Structure mirrors qaqc/ step folders:
+  #   {results_root}/Step1/   ← Step 1 CSV outputs
+  #   {results_root}/Step3/   ← Step 3 CSV outputs
+
+# ---------------------------------------------------------------------------
+# Shared paths (same across all years)
+# ---------------------------------------------------------------------------
+shared:
+  step2:
+    # MATLAB velocity outputs — same location regardless of processing year
+    sentinel2: /fs/project/howat.4-3/howat-data/VelocityResults/Greenland/SETSM_SDM/sentinel2
+    landsat: /fs/project/howat.4-3/howat-data/VelocityResults/Greenland/SETSM_SDM/landsat
+    # Two resolutions available; actual data nested under {sentinel2|landsat}/{glacier}/
+    #   100m: SETSM_SDM_100_new  (Sentinel-2),  SETSM_SDM_100  (Landsat)
+    #   300m: details TBD
+    resolutions: [100m, 300m]
+
+# ---------------------------------------------------------------------------
+# Year-specific paths
+# ---------------------------------------------------------------------------
+"2025":
+  root: /fs/project/howat.4-3/greenland_glacier_flow
+  step1:
+    subfolder: 1_download_merge_and_clip
+    sentinel2: sentinel2
+    landsat: landsat
+  step2: see shared.step2  # year-independent; actual velocity data subset by date range
+  step3:
+    subfolder: 2025_3_orthocorrect_and_netcdf-package
+    intermediate: nsidic_v01.1
+    # Structure: {root}/{subfolder}/{intermediate}/{glacier}/  (one subfolder per glacier/region)
+    #   Files are nested inside each glacier subfolder.
+    #   "glacier" and "region" are used interchangeably throughout the project.
+    #   Example: nsidic_v01.1/014_Courtauld/netcdf/S2_014_Courtauld_v01.1.nc
+    delivery: nsidic_v01.1_delivery
+    # Structure: {root}/{subfolder}/{delivery}/  (flat — all .nc files in one directory)
+    #   Filename pattern: {3-digit-id}_{GlacierName}_{year}_v{version}.nc
+    #   The 3-digit prefix (e.g. 001_, 022_, 180_) is the common glacier identifier across steps.
+    #   Example: 014_Courtauld_2025_v01.1.nc
+
+"2024":
+  root: /fs/project/howat.4/greenland_glacier_flow
+  step1:
+    subfolder: 1_download_merge_and_clip
+    sentinel2: sentinel2
+    landsat: landsat
+  step2: see shared.step2  # year-independent; actual velocity data subset by date range
+  step3:
+    subfolder: 2024_3_orthocorrect_and_netcdf-package
+    intermediate: nsidic_v01.1  # same nested glacier-subfolder structure as 2025
+    delivery: nsidic_v01.1_delivery  # same flat .nc structure as 2025; year in filename = 2024
