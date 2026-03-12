@@ -19,8 +19,8 @@ import typer
 app = typer.Typer()
 
 
-# CSVs live in ~/Github/QAQC_Results/Step1/ after rsync from HPC
-DEFAULT_OUT_DIR = Path.home() / "Github" / "QAQC_Results" / "Step1"
+# CSVs live in ~/QAQC_Results/Step1/ after rsync from HPC
+DEFAULT_OUT_DIR = Path.home() / "QAQC_Results" / "Step1"
 
 
 def load_csv(out_dir: Path, year: str) -> pd.DataFrame:

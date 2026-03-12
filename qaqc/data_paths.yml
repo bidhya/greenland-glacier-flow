@@ -20,9 +20,12 @@
 #   delivery = Path(p["root"]) / p["step3"]["subfolder"] / p["step3"]["delivery"]
 #   veldir_s2 = Path(paths["shared"]["step2"]["sentinel2"])
 
-# HPC output paths — written by run_qaqc_job.sh; rsync'd to local after each run
+# QAQC output paths — written by run_qaqc_job.sh; rsync'd to local after each run
+# Both HPC and local use ~/QAQC_Results (outside the git repo) to keep results separate from code.
 hpc:
   results_root: /home/yadav.111/QAQC_Results
+local:
+  results_root: ~/QAQC_Results
   # Structure mirrors qaqc/ step folders:
   #   {results_root}/Step1/   ← Step 1 CSV outputs
   #   {results_root}/Step3/   ← Step 3 CSV outputs
@@ -62,6 +65,14 @@ shared:
     #   Filename pattern: {3-digit-id}_{GlacierName}_{year}_v{version}.nc
     #   The 3-digit prefix (e.g. 001_, 022_, 180_) is the common glacier identifier across steps.
     #   Example: 014_Courtauld_2025_v01.1.nc
+
+"2025_old":
+  # Old 2025 delivery — pre-S2C run (incomplete, used as comparison baseline)
+  root: /fs/project/howat.4-3/greenland_glacier_flow
+  step3:
+    subfolder: x1_2025_3_orthocorrect_and_netcdf-package
+    intermediate: nsidic_v01.1
+    delivery: nsidic_v01.1_delivery
 
 "2024":
   root: /fs/project/howat.4/greenland_glacier_flow
