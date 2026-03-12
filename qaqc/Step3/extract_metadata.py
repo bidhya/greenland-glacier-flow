@@ -32,7 +32,9 @@ Metadata currently recorded per file:
 - dimensions (`index_size`, `y_size`, `x_size`)
 - mean velocities (`mean_vx`, `mean_vy`)
 - mean ice coverage (`mean_ice_pct`)
-- `creation_date` attribute
+- satellite field counts (`S2A_fields`, `S2B_fields`, `S2C_fields`, `LC08_fields`, `LC09_fields`)
+  — number of velocity fields where that satellite appears in scene_1 OR scene_2
+  — counts overlap (an S2A/S2C pair increments both S2A and S2C)
 
 Additional fields and statistics can be added later as the QAQC workflow
 matures.
@@ -87,8 +89,11 @@ def file_to_record(path: Path) -> dict:
     rec["mean_vy"] = float(ds["vy"].mean().item())
     rec["mean_ice_pct"] = float(ds["percent_ice_area_notnull"].mean().item())
 
-    # capture creation_date attribute if present
-    rec["creation_date"] = ds.attrs.get("creation_date", "")
+    # per-satellite velocity field counts (scene_1 OR scene_2 contains the satellite)
+    s1 = ds["scene_1_satellite"].values.astype(str)
+    s2 = ds["scene_2_satellite"].values.astype(str)
+    for sat in ("S2A", "S2B", "S2C", "LC08", "LC09"):
+        rec[f"{sat}_fields"] = sum(a == sat or b == sat for a, b in zip(s1, s2))
 
     ds.close()
     return rec
@@ -121,6 +126,8 @@ def main(
     """Extract metadata from each NetCDF file and append to yearly CSV."""
 
     # resolve delivery directory: explicit dirs take priority, then --year via data_paths.yml
+    # year_tag drives the output filename when --year is given (e.g. "2025_old" → metadata_2025_old.csv)
+    year_tag: Optional[str] = None
     if not dirs:
         if not year:
             typer.echo("ERROR: provide either a directory argument or --year.", err=True)
@@ -128,6 +135,7 @@ def main(
         delivery_dir = _resolve_delivery_dir(year)
         typer.echo(f"Resolved delivery dir for {year}: {delivery_dir}")
         dirs = [delivery_dir]
+        year_tag = year  # use the key as output tag, not the year parsed from filenames
 
     # compute default output directory relative to repository root
     if out_dir is None:
@@ -167,7 +175,9 @@ def main(
 
     for yr, paths in by_year.items():
         year_start = time.time()
-        csv_path = out_dir / f"{prefix}_{yr}.csv"
+        # if --year was provided, use it as the output tag (e.g. "2025_old" instead of "2025")
+        out_tag = year_tag if year_tag is not None else yr
+        csv_path = out_dir / f"{prefix}_{out_tag}.csv"
         cols = [
             "glacier",
             "year",
@@ -177,7 +187,11 @@ def main(
             "mean_vx",
             "mean_vy",
             "mean_ice_pct",
-            "creation_date",
+            "S2A_fields",
+            "S2B_fields",
+            "S2C_fields",
+            "LC08_fields",
+            "LC09_fields",
         ]
 
         # always overwrite existing file with fresh data
