@@ -211,6 +211,14 @@ for fdir in tqdm(df["dir"].values):
         (df["date2"] - df["date1"]) / np.timedelta64(1, "D"),  # downcast="integer"
     )
     df["year"] = pd.DatetimeIndex(df["date1"]).year
+    # midpoint_datetime encoded as float64 to match 2024 NSIDC-accepted delivery format.
+    # currently exist as follows: 'dtype': dtype('float64'), '_FillValue': np.float64(nan).
+    # when changed to int64, _FillValue will disappear from encoding
+    # int64 is better but will be different from 2024 delivery, hence, won't be accepted by NSIDC.
+    # TODO: if NSIDC approves int64 for midpoint_datetime, two changes needed:
+    #   1. Uncomment line below (rounds to second; fine since scene dates are days apart)
+    #   2. In encoding_time (end of file), change midpoint_datetime dtype from "float64" to "int64"
+    # df["midpoint"] = (df["date1"] + (df["date2"] - df["date1"]) / 2).dt.round("s")  # rounding may work for both float64 and int64 (need verification)
     df["midpoint"] = df["date1"] + (df["date2"] - df["date1"]) / 2
     df["baseline"] = df["date2"] - df["date1"]
     df["baseline"] = df["baseline"] / np.timedelta64(1, "D")

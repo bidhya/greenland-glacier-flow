@@ -29,6 +29,10 @@ local:
   # Structure mirrors qaqc/ step folders:
   #   {results_root}/Step1/   ← Step 1 CSV outputs
   #   {results_root}/Step3/   ← Step 3 CSV outputs
+  # Step 3 NetCDF delivery files (local mirror of HPC):
+  step3_data_root: /home/bny/GlacierFlow_Data/greenland_glacier_flow
+  # Same subfolder/delivery structure as HPC year keys below.
+  # Example: /home/bny/GlacierFlow_Data/greenland_glacier_flow/2025_3_orthocorrect_and_netcdf-package/nsidic_v01.1_delivery/
 
 # ---------------------------------------------------------------------------
 # Shared paths (same across all years)
