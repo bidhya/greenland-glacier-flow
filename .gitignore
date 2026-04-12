@@ -178,6 +178,7 @@ qaqc/**/*.ipynb
 qaqc/Step3/**
 !qaqc/Step3/extract_metadata.py
 !qaqc/Step3/compare_netcdf.py
+!qaqc/Step3/validate_netcdf.py
 # config.ini
 sync.ffs_db
 

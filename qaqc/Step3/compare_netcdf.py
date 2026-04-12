@@ -7,14 +7,20 @@ from data_paths.yml using year keys (e.g. "2025", "2025_old", "2024"),
 so no hardcoded paths are needed.
 
 Usage:
-    # structure comparison (default — use for routine QAQC):
+    # structure comparison (default — dims + index count):
     python compare_netcdf.py --year1 2025 --year2 2025_old
+
+    # encoding comparison (NSIDC compliance — dtypes, encodings, attrs vs 2024 accepted):
+    # All values read from reference file — no hardcoded specs.
+    # NaN _FillValue values are treated as equal (not flagged as differences).
+    # creation_date and data_acknowledgement attrs excluded (year-specific by design).
+    python compare_netcdf.py --year1 2025 --year2 2024 --mode encoding
 
     # pixel-perfect comparison (use when validating environment changes):
     python compare_netcdf.py --year1 2025 --year2 2025_old --mode pixel-perfect
 
     # single glacier:
-    python compare_netcdf.py --year1 2025 --year2 2024 --glacier 134_Arsuk
+    python compare_netcdf.py --year1 2025 --year2 2024 --glacier 134_Arsuk --mode encoding
 
     # raw paths (escape hatch — skips data_paths.yml):
     python compare_netcdf.py --base1 /path/to/new --base2 /path/to/old
@@ -97,6 +103,102 @@ def compare_structure(path1: Path, path2: Path, label: str):
         ds2.close()
 
 
+# Encoding keys to compare per variable.
+_ENCODING_KEYS = ["dtype", "units", "_FillValue", "calendar", "zlib", "complevel", "shuffle"]
+
+
+def _enc_equal(a, b) -> bool:
+    """Encoding value equality that treats NaN == NaN as True."""
+    import math
+    if a is b:
+        return True
+    try:
+        if math.isnan(a) and math.isnan(b):
+            return True
+    except (TypeError, ValueError):
+        pass
+    return a == b
+
+
+def compare_encoding(path1: Path, path2: Path, label: str) -> bool:
+    """
+    Compare variable dtypes, per-variable encodings, and global attributes between
+    a new file (path1) and the reference file (path2, typically 2024 NSIDC-accepted).
+
+    Checks:
+      1. Same variable set
+      2. Same spatial dimensions
+      3. Per-variable in-memory dtype
+      4. Per-variable encoding (dtype, units, _FillValue, calendar, zlib, complevel, shuffle)
+      5. Global attributes (excluding creation_date and data_acknowledgement)
+
+    All comparisons are read directly from the reference file — no hardcoded specs.
+    Returns True if all checks pass, False otherwise.
+    """
+    try:
+        ds1 = xr.open_dataset(path1, decode_timedelta=True)
+        ds2 = xr.open_dataset(path2, decode_timedelta=True)
+    except Exception as e:
+        print(f"❌ {label:<40} could not open: {e}")
+        return False
+
+    issues = []
+
+    try:
+        # 1. Variable sets
+        all_vars1 = set(ds1.data_vars) | set(ds1.coords)
+        all_vars2 = set(ds2.data_vars) | set(ds2.coords)
+        only_new = sorted(all_vars1 - all_vars2)
+        only_ref = sorted(all_vars2 - all_vars1)
+        if only_new:
+            issues.append(f"  vars only in new   : {only_new}")
+        if only_ref:
+            issues.append(f"  vars only in ref   : {only_ref}")
+
+        # 2. Spatial dimensions
+        for dim in ["x", "y"]:
+            s1, s2 = ds1.sizes.get(dim), ds2.sizes.get(dim)
+            if s1 != s2:
+                issues.append(f"  dim '{dim}'          : new={s1}, ref={s2}")
+
+        # 3 & 4. Per-variable dtype + encoding
+        common_vars = sorted(all_vars1 & all_vars2)
+        for var in common_vars:
+            v1 = ds1[var]
+            v2 = ds2[var]
+            # in-memory dtype
+            if v1.dtype != v2.dtype:
+                issues.append(f"  {var:<35} dtype       : new={v1.dtype}, ref={v2.dtype}")
+            # encoding fields
+            for k in _ENCODING_KEYS:
+                e1 = v1.encoding.get(k)
+                e2 = v2.encoding.get(k)
+                if not _enc_equal(e1, e2):
+                    issues.append(f"  {var:<35} enc[{k!r:<12}]: new={e1!r}, ref={e2!r}")
+
+        # 5. Global attributes
+        skip_attrs = {"creation_date", "data_acknowledgement"}
+        a1 = {k: v for k, v in ds1.attrs.items() if k not in skip_attrs}
+        a2 = {k: v for k, v in ds2.attrs.items() if k not in skip_attrs}
+        for k in sorted(set(a1) | set(a2)):
+            if a1.get(k) != a2.get(k):
+                issues.append(f"  global attr '{k}'   : new={a1.get(k)!r}, ref={a2.get(k)!r}")
+
+    finally:
+        ds1.close()
+        ds2.close()
+
+    # Report
+    if issues:
+        print(f"❌ {label:<40} encoding differs from 2024 reference")
+        for iss in issues:
+            print(iss)
+        return False
+    else:
+        print(f"✅ {label:<40} encoding matches 2024 reference")
+        return True
+
+
 @app.command()
 def main(
     year1: Optional[str] = typer.Option(None, help="Year key for base1, resolved from data_paths.yml (e.g. '2025', '2025_old', '2024')"),
@@ -104,7 +206,7 @@ def main(
     base1: Optional[str] = typer.Option(None, help="Raw path override for base1 (skips data_paths.yml)"),
     base2: Optional[str] = typer.Option(None, help="Raw path override for base2 (skips data_paths.yml)"),
     glacier: Optional[str] = typer.Option(None, help="Compare a single glacier prefix (e.g. '134_Arsuk')"),
-    mode: str = typer.Option("structure", help="'structure' = dims only (default), 'pixel-perfect' = exact value match"),
+    mode: str = typer.Option("structure", help="'structure' = dims/index only (default), 'encoding' = dtype+encoding+attrs vs reference (NSIDC compliance), 'pixel-perfect' = exact value match"),
     reverse: bool = typer.Option(False, help="Swap base1 and base2"),
 ):
     """Compare Step 3 NetCDF delivery files between two runs."""
@@ -167,9 +269,16 @@ def main(
         try:
             if mode == "pixel-perfect":
                 compare_data(p1, p2, label)
+                success += 1
+            elif mode == "encoding":
+                ok = compare_encoding(p1, p2, label)
+                if ok:
+                    success += 1
+                else:
+                    failed += 1
             else:
                 compare_structure(p1, p2, label)
-            success += 1
+                success += 1
         except Exception as e:
             failed += 1
             if glacier:
