@@ -478,11 +478,15 @@ log_to_stdout_and_file(f"Exporting... (Landsat-8 memory size: {ds.nbytes / (1024
 # Get encoding information.
 comp = dict(zlib=True, complevel=1)
 encoding_comp = {var: comp for var in ds}
-# Feb 19, 2026 (BNY): appending , "dtype": "float64" to prevent user warning (see issue 3)
+# Apr 10, 2026 (BNY): scene_1/2_datetime reverted to int64 — this is what 2024 NSIDC-accepted files use.
+# midpoint_datetime intentionally kept as float64 to match the 2024 reference exactly.
+# Note: float64 midpoint may trigger a UserWarning (sub-second precision) — this is acceptable;
+# the 2024 delivery had the same and was accepted. Changing to int64 is a potential future enhancement
+# but requires team discussion with NSIDC before adoption. (see troubleshooting.md issue #2, #2b)
 encoding_time = {
-    "scene_1_datetime": {"units": "seconds since 1970-01-01 00:00:00", "dtype": "float64"},
-    "scene_2_datetime": {"units": "seconds since 1970-01-01 00:00:00", "dtype": "float64"},
-    "midpoint_datetime": {"units": "seconds since 1970-01-01 00:00:00", "dtype": "float64"},
+    "scene_1_datetime": {"units": "seconds since 1970-01-01 00:00:00", "dtype": "int64"},
+    "scene_2_datetime": {"units": "seconds since 1970-01-01 00:00:00", "dtype": "int64"},
+    "midpoint_datetime": {"units": "seconds since 1970-01-01 00:00:00", "dtype": "float64"},  # matches 2024; see note above
 }
 encoding = {**encoding_comp, **encoding_time}
 
