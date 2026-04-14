@@ -330,8 +330,9 @@ def main(
         files = [p]
 
     elif base:
-        # Raw directory override
-        files = _discover(Path(base))
+        # Raw directory override — treat as the delivery directory directly (no subfolder appended)
+        b = Path(base)
+        files = sorted(f for f in b.iterdir() if f.is_file() and f.suffix == ".nc") if b.exists() else []
         if not files:
             typer.echo(f"ERROR: no .nc files found under {base}", err=True)
             raise typer.Exit(1)
