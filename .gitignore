@@ -162,6 +162,7 @@ AGENTS.md
 Archive/
 
 qaqc/**
+!qaqc/run_qaqc_job.sh
 !qaqc/Step1/
 qaqc/Step1/**
 #!qaqc/Step1/raster_compare.py

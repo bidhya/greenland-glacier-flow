@@ -9,6 +9,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+### NetCDF datetime dtype fix, QAQC validation, and dev branch setup (April 12–16, 2026)
+
+**Achievement**: Corrected `scene_1/2_datetime` dtype back to `int64`, confirmed `midpoint_datetime` stays `float64` to match 2024 NSIDC-accepted delivery, validated 184/184 glaciers on HPC, and established `dev` branch as the primary working branch.
+
+#### datetime dtype fix (issue #4)
+- **Root Cause**: `scene_1_datetime` and `scene_2_datetime` were inadvertently changed to `float64` encoding; NSIDC spec requires `int64` with no `_FillValue`
+- **Fix**: Reverted both to `int64`; `midpoint_datetime` intentionally kept as `float64` + `_FillValue=nan` to match 2024 accepted reference
+- **Validation**: 184/184 glaciers PASS on HPC (`validate_netcdf.py`, job `10385692`, April 12, 2026)
+- **Files**: `3_orthocorrect_and_netcdf-package/processing_chain/4b_netcdf_stack_landsat.py`
+
+#### `.dt.round("s")` midpoint rounding test (issue #5)
+- **Test**: Applied `.dt.round("s")` to midpoint computation with float64 encoding
+- **Result**: 184/184 PASS — rounding is safe with float64 (April 13, 2026)
+- **Decision**: Not applied to production; float64 stores midpoint exactly as-is. Rounding + int64 dtype change both require NSIDC approval before adoption.
+- **Code**: Commented-out line left in `4b` for easy toggling; comment updated with verified result
+
+#### NSIDC absolute compliance validator (`validate_netcdf.py`)
+- **New tool**: `qaqc/Step3/validate_netcdf.py` — validates all delivery files against hardcoded spec derived from 2024 NSIDC-accepted reference. No reference file needed on HPC.
+- **Bug fix**: `--base` path was incorrectly having `nsidic_v01.1_delivery` appended again; fixed to use path as-is
+- **Usage**: `sbatch --output=logs/validate_2025.out run_qaqc_job.sh --step Step3 --script validate_netcdf.py --year 2025`
+
+#### Branch and workflow updates
+- **`dev` branch**: Created from `main` (April 12, 2026) as primary working branch; all development work goes here before merging to `main`
+- **Workflow**: `main` ← `dev` ← feature branches (replaces old feature-branch-direct-to-main pattern)
+- **AGENTS.md**: Updated Git Flow section and Active Branches to reflect new `dev`-first workflow
+- **`docs/Scratch.md`**: Added as gitignored scratchpad for draft notes and copy-paste content
+
+---
+
 ### FutureWarning Resolution and QAQC Enhancements (February 19, 2026)
 
 **Achievement**: Resolved xarray FutureWarning in Step 3 processing and improved NetCDF comparison tooling for better QAQC workflow

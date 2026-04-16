@@ -3,6 +3,24 @@
 This file documents changes to the orthocorrect and NetCDF packaging workflow in chronological order.
 Each entry includes the date, affected file, issue description, fix details, and impact.
 
+## datetime dtype fix and midpoint rounding validation (April 12–16, 2026)
+
+### 2026-04-12: scene_1/2_datetime dtype corrected to int64 (issue #4)
+**Issue**: `scene_1_datetime` and `scene_2_datetime` were encoded as `float64`; NSIDC spec requires `int64` with no `_FillValue`
+**Root Cause**: Earlier encoding changes inadvertently switched dtypes away from the 2024 accepted spec
+**Fix**: Reverted `scene_1_datetime` and `scene_2_datetime` to `int64`; `midpoint_datetime` intentionally kept as `float64` + `_FillValue=nan` to match 2024 NSIDC-accepted delivery
+**Files**: `processing_chain/4b_netcdf_stack_landsat.py`
+**Validation**: 184/184 glaciers PASS on HPC (`validate_netcdf.py`, April 12, 2026)
+
+### 2026-04-13: .dt.round("s") midpoint rounding verified (issue #5)
+**Test**: Applied `.dt.round("s")` to midpoint computation with float64 encoding
+**Result**: 184/184 PASS — rounding is safe and lossless with float64
+**Decision**: Not applied to production run. Production uses no rounding (float64 stores midpoint exactly).
+**Future path**: Both `.dt.round("s")` AND dtype change to `int64` needed if NSIDC approves int64 for midpoint. Both changes are pre-marked as comments in `4b` for easy switching.
+**Files**: `processing_chain/4b_netcdf_stack_landsat.py` (comment updated with verified result)
+
+---
+
 ## Repository Integration & Documentation Updates
 
 ### 2026-01-25: Repository Structure Integration Complete
