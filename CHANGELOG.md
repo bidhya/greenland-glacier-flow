@@ -95,8 +95,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Branch Management and Cleanup
 - **Abandoned Branch Removal**: Deleted `develop`, `fargate-migration`, and `a` branches
-- **Repository Hygiene**: Maintained only essential branches (`main`, `stable`, `experimental`)
-- **Historical Preservation**: Experimental branch retained for potential future features despite known issues
+- **Repository Hygiene**: Maintained only essential branches (`main`, `stable`, `experimental`) — note: `stable` and `experimental` subsequently deleted (April 19, 2026); only `main` and `dev` remain
 
 #### Documentation Updates
 - **AGENTS.md Revision**: Streamlined from 280+ to 265 lines, removed historical debugging content
