@@ -26,9 +26,9 @@ GIMPMASKDIR = "/fs/project/howat.4-3/howat-data/gimp/mask2015"
 # The folder where clipped Sentinel-2 data is located. (The script will search the `clipped` and
 # `downloads` directories within this top-level directory to extract the relative orbit numbers for
 # the appropriate Sentinel-2 scenes.)
-# IMGDIR = "/fs/project/howat.4/sentinel2"
 # IMGDIR = "/fs/project/howat.4/gravina.2/greenland_glacier_flow/1_download_merge_and_clip/sentinel2"  # Gravina's
-IMGDIR = "/fs/project/howat.4/greenland_glacier_flow/1_download_merge_and_clip/sentinel2"  # BNY
+# IMGDIR = "/fs/project/howat.4/greenland_glacier_flow/1_download_merge_and_clip/sentinel2"  # BNY (2024. done)
+IMGDIR = "/fs/project/howat.4-3/greenland_glacier_flow/1_download_merge_and_clip/sentinel2"  # BNY (2025)
 
 # 1_match_to_orbits.py (lines 22 and 93): Imported from config and used to construct paths to clipped directories.
 # 2_get_orbital_average_offset.py (lines 31 and 103): Imported from config and used similarly for clipped directory paths.
@@ -49,10 +49,11 @@ VELDIR_LS = "/fs/project/howat.4-3/howat-data/VelocityResults/Greenland/SETSM_SD
 # Previously not used due to sourced from top level config.sh
 # WD = "/fs/project/howat.4/gravina.2/sentinel2vel"
 # WD = "/fs/project/howat.4/gravina.2/greenland_glacier_flow/3_orthocorrect_and_netcdf-package"  # Gravina's
-WD = "/fs/project/howat.4/greenland_glacier_flow/D3_orthocorrect_and_netcdf-package"  # BNY
-# WD = "/home/yadav.111/Github/greenland-glacier-flow1/slurm_step3/debug2/3_orthocorrect_and_netcdf-package"  # debug step 2b
+# WD = "/fs/project/howat.4/yadav.111/greenland_glacier_flow/3_orthocorrect_and_netcdf-package"  # for test runs 
+WD = "/fs/project/howat.4-3/greenland_glacier_flow/3_orthocorrect_and_netcdf-package"  # BNY 
+
 # Directory for logging batch glacier processing output (New change BNY).
-LOG_DIR = '/home/yadav.111/Github/greenland-glacier-flow1/slurm_step3/logsD'
+LOG_DIR = '/home/yadav.111/Github/greenland-glacier-flow/slurm_step3/logs'
 
 
 # Directory that will be created within the working directory to store the output in. This is
@@ -72,8 +73,8 @@ GLAC = "192_CH_Ostenfeld"
 # if the DEM switches (or if ice surface height changes too much). **Do not try and correct
 # fields before and after 2021-08-23 on the same run** (at least until ESA reprocess their
 # entire dataset to the same standard, _à la_ Landsat Collection-2).
-START_DATE = "20240101"
-END_DATE = "20241231"
+START_DATE = "20250101"
+END_DATE = "20251231"
 
 # Minimum amount of velocity fields required to construct an empirical correction field. As the
 # empirical field is constructed based on the median of the existing fields, low sample sizes
