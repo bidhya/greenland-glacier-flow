@@ -3,6 +3,19 @@
 This file documents changes to the orthocorrect and NetCDF packaging workflow in chronological order.
 Each entry includes the date, affected file, issue description, fix details, and impact.
 
+## Code cleanup and config template update (April 19, 2026)
+
+### 2026-04-19: config_template.py updated to 2025 production values
+**Change**: Replaced stale 2024 paths and typos (`howat.4`, `D3_orthocorrect...`, `logsD`, year 2024) with current production values matching `config.py`
+**Files**: `lib/config_template.py`
+**Impact**: Future users copying template to `config.py` require minimal edits
+
+### 2026-04-19: Legacy slurm script moved; unused file deleted
+**Change**: Moved `slurm_jobs/orthocorrect_netcdf-package.sh` to `legacy/slurm_jobs/` (superseded by `slurm_step3/` architecture). Deleted `lib/config_template_original.py` (unreferenced).
+**Files**: `slurm_jobs/orthocorrect_netcdf-package.sh` → `legacy/slurm_jobs/`, `lib/config_template_original.py` (deleted)
+
+---
+
 ## datetime dtype fix and midpoint rounding validation (April 12–16, 2026)
 
 ### 2026-04-12: scene_1/2_datetime dtype corrected to int64 (issue #4)
