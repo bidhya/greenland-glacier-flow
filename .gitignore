@@ -72,6 +72,7 @@ instance/
 docs/_build/
 docs/TODO.md
 docs/Scratch.md
+docs/performance_review_2026.md
 
 # PyBuilder
 .pybuilder/
