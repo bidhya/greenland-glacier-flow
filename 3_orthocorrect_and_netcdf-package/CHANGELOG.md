@@ -83,7 +83,7 @@ Each entry includes the date, affected file, issue description, fix details, and
 **Solution**: Established comprehensive QAQC framework with dedicated prototyping environment
 **Components Added**:
 - `qaqc/Step3/` folder for prototyping work (excluded from git tracking)
-- `qaqc/Step3/QAQC_Agents.md` - specialized agent instructions for QAQC development
+- `qaqc/Step3/AGENTS.md` - specialized agent instructions for QAQC development
 - Interactive Jupyter notebooks for NetCDF metadata analysis
 - Quality metrics tools for velocity field assessment
 **Impact**: Enables rapid prototyping and investigation without affecting production code

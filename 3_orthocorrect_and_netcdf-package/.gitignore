@@ -4,8 +4,8 @@
 # Active config (user-specific, not tracked - use config_template.py)
 # lib/config.py
 
-# Docs/agent guide (ignore local edits; note: already tracked unless removed from index)
-Step3_Agents.md  
+# Agent guide (AGENTS.md, renamed from Step3_Agents.md August 11, 2026) is ignored
+# by the root .gitignore's bare AGENTS.md/CLAUDE.md patterns — no rule needed here.
 
 # Documentation folder (intended for local drafts and preview) - can be ignored during incremental commits
 docs/
