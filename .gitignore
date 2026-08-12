@@ -73,6 +73,7 @@ docs/_build/
 docs/TODO.md
 docs/Scratch.md
 docs/performance_review_2026.md
+docs/GIT_AGENTS.md
 
 # PyBuilder
 .pybuilder/
