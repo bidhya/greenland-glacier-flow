@@ -13,5 +13,7 @@ dependencies:
   - tqdm
   - netcdf4
   - typer
+  - frozendict
+  - pluggy
   #- rasterio  # dependency of rioxarray
   #- pystac  # dependency of pystac-client
