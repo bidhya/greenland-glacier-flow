@@ -10,7 +10,8 @@
 # can be removed. However, the glacier_velocity environment is required for the full
 # workflow anyway, so this setup ensures compatibility across all user environments.
 ENV_NAME="glacier_velocity"  # <-- CHANGE THIS TO YOUR ENVIRONMENT NAME
-eval "$(conda shell.bash hook)"
+eval "$(conda shell.bash hook)"  # For conda only
+# eval "$(mamba shell hook --shell bash)"  # For Mamba only
 conda activate "$ENV_NAME"
 
 # Usage examples:
@@ -24,5 +25,7 @@ conda activate "$ENV_NAME"
 # Get script directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+echo "Running submit_satellite_job.py"
 # Run the Python script with all arguments
 python "${SCRIPT_DIR}/submit_satellite_job.py" "$@"
+# conda run -n "$ENV_NAME" python "${SCRIPT_DIR}/submit_satellite_job.py" "$@"

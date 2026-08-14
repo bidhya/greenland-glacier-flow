@@ -85,6 +85,8 @@ def create_bash_job(jobname, regions, start_end_index, date1, date2, base_dir, d
         fh.writelines("# Activate appropriate conda environment.\n")
         fh.writelines("eval \"$(conda shell.bash hook)\"\n")
         fh.writelines(f"conda activate {env}\n")
+        # fh.writelines("eval \"$(mamba shell hook --shell bash)\"\n")  # Now Mamba has different (modern) way to activate envs
+        # fh.writelines(f"mamba activate {env}\n")
         fh.writelines("date; hostname; pwd\n")         # Add host, time, and directory name for later troubleshooting
         fh.writelines("python --version; which python\n")  # Check python version
         fh.writelines("python -c \"for p in ['rioxarray','rasterio','geopandas','xarray']: print(f'\\t{p}: {__import__(p).__version__}')\"\n")  # Check key package versions
@@ -103,6 +105,7 @@ def create_bash_job(jobname, regions, start_end_index, date1, date2, base_dir, d
         # Choose the appropriate script and parameters based on satellite type
         if satellite.lower() == "sentinel2":
             fh.writelines(f"python sentinel2/download_merge_clip_sentinel2.py {region_param} --date1 {date1} --date2 {date2} --download_flag {download_flag} --post_processing_flag {post_processing_flag} --clear_downloads {clear_downloads} --base_dir {base_dir} --log_name {log_name}\n")
+            # fh.writelines(f"conda run -n {env} python sentinel2/download_merge_clip_sentinel2.py {region_param} --date1 {date1} --date2 {date2} --download_flag {download_flag} --post_processing_flag {post_processing_flag} --clear_downloads {clear_downloads} --base_dir {base_dir} --log_name {log_name}\n")
         elif satellite.lower() == "landsat":
             fh.writelines(f"python landsat/download_clip_landsat.py {region_param} --date1 {date1} --date2 {date2} --base_dir {base_dir} --log_name {log_name}\n")
         else:
