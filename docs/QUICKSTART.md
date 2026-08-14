@@ -51,6 +51,18 @@ This workflow requires a conda environment for dependency management. We recomme
    conda activate glacier_velocity
    ```
 
+   > **Note — using mamba instead of conda?** The two use different, non-interchangeable
+   > activation syntax. Substituting one for the other yields a broken or empty shell hook:
+   >
+   > ```bash
+   > eval "$(conda shell.bash hook)"      # conda only
+   > eval "$(mamba shell hook --shell bash)"  # mamba only
+   > ```
+   >
+   > This project's scripts (`submit_job.sh`, `submit_satellite_job.py`) use the **conda**
+   > form throughout. `mamba` remains useful for inspecting or repairing environments when
+   > the `conda` CLI itself is broken, since it does not depend on conda's Python packages.
+
 3. **Verify installation:**
    ```bash
    # Check that key packages are available

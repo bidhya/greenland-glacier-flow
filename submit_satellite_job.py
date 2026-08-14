@@ -87,6 +87,10 @@ def create_bash_job(jobname, regions, start_end_index, date1, date2, base_dir, d
         fh.writelines(f"conda activate {env}\n")
         # fh.writelines("eval \"$(mamba shell hook --shell bash)\"\n")  # Now Mamba has different (modern) way to activate envs
         # fh.writelines(f"mamba activate {env}\n")
+        # Fail loudly if activation silently failed. Without this the script continues on the ambient
+        # PATH (no `set -e`, and a broken conda hook still evals to 0), producing a job that appears
+        # to succeed while using the wrong interpreter and library versions.
+        fh.writelines(f"if ! python -c \"import sys; sys.exit(0 if sys.prefix.split('/')[-1] == '{env}' else 1)\"; then echo \"FATAL: conda activate failed - expected {env}, got $(command -v python)\"; exit 1; fi\n")
         fh.writelines("date; hostname; pwd\n")         # Add host, time, and directory name for later troubleshooting
         fh.writelines("python --version; which python\n")  # Check python version
         fh.writelines("python -c \"for p in ['rioxarray','rasterio','geopandas','xarray']: print(f'\\t{p}: {__import__(p).__version__}')\"\n")  # Check key package versions
@@ -151,6 +155,9 @@ def create_slurm_job(jobname, regions, start_end_index, date1, date2, base_dir, 
         fh.writelines("# Activate appropriate conda environment.\n")
         fh.writelines("eval \"$(conda shell.bash hook)\"\n")
         fh.writelines(f"conda activate {env}\n")
+        # Fail loudly if activation silently failed (see create_bash_job for rationale). Critical on
+        # HPC: a wrong-interpreter run across 192 regions yields a delivery set that looks valid.
+        fh.writelines(f"if ! python -c \"import sys; sys.exit(0 if sys.prefix.split('/')[-1] == '{env}' else 1)\"; then echo \"FATAL: conda activate failed - expected {env}, got $(command -v python)\"; exit 1; fi\n")
         fh.writelines("date; hostname; pwd\n")         # Add host, time, and directory name for later troubleshooting
         fh.writelines("python --version; which python\n")  # Check python version
         fh.writelines("python -c \"for p in ['rioxarray','rasterio','osgeo','geopandas','xarray']: print(f'\\t{p}: {__import__(p).__version__}')\"\n")  # Check key package versions
