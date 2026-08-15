@@ -2,7 +2,7 @@
 
 **Created**: August 14, 2026
 **Branch**: `feature/step1-tests` (from `dev` at `7a2ac40`)
-**Status**: **Phase 1 complete** (August 14, 2026). Phases 2–5 not started.
+**Status**: ✅ **COMPLETE.** All five phases done, merged into `dev`, verified on HPC. See *Status: complete* near the end for the deferred items the user judged **not critical** — they are recorded, not outstanding.
 
 **Cold start**: read `AGENTS.md` → *Cold Start* first for project-wide orientation. This file covers Step 1 testing only.
 
@@ -293,6 +293,36 @@ Verified — ten scenarios, each fixture isolating one defect:
 | missing tree | `2` ✅ |
 
 Path logic is imported from `compare_raster.py` rather than restated — the Sentinel-2/Landsat depth asymmetry is a known way to get it wrong twice.
+
+---
+
+## Status: complete
+
+**All five phases are done, merged into `dev`, and verified on HPC with captured exit codes** (August 15, 2026). Both satellites, both machines, both production years, every execution mode.
+
+The items below are **deliberately deferred**. The user reviewed them on August 15, 2026 and judged them **not critical for Step 1**. They are recorded so they are not silently lost — **not** because they block anything. Do not treat them as outstanding work, and do not action them unasked.
+
+### Deferred — decisions the user has not made
+
+1. **Should `check_environment.py` run automatically?**
+   Today it is manual, so it protects the `gdal=3.10.3` pin only if someone remembers to run it. Wiring it into the generated job would make it real protection.
+   **Blocked on**: this means modifying `submit_satellite_job.py`, which is core Step 1 logic and off-limits without explicit instruction.
+
+2. **The `--base-dir` local-mode precedence quirk.**
+   `submit_satellite_job.py` applies the CLI `--base-dir`, then overrides `root_dir` with `config.ini`'s `local_base_dir` when `execution_mode == 'local'`. This inverts the documented precedence (*CLI args > config.ini*).
+   **Not a bug until the user says so** — it plausibly exists to stop local runs writing to HPC paths. `check_job_generation.py` works around it with a temporary `--config` that rewrites both keys.
+
+### Deferred — behaviours no test covers
+
+3. **Batch mode** (`--start_end_index`). Production uses it for all three Sentinel-2 batches, but no test exercises it. Region selection is the only thing that differs from `--regions`, which *is* tested.
+
+4. **`cores > 1`.** Production runs `cores = 1`, so **serial is the production path**. This is the least important item here — testing parallel would validate a configuration nobody uses.
+
+### Closed on August 15, 2026 — do not re-add
+
+- ~~S2C scenes untested~~ — 10 S2C rasters verified bit-identical to 2025 production.
+- ~~All-regions mode never run on HPC~~ — run across the full candidate tree; exit 2 behaviour confirmed on real data.
+- ~~Three tools without captured HPC exit codes~~ — all five tools now verified on HPC.
 
 ---
 
