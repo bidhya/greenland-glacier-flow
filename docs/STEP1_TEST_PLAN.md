@@ -96,6 +96,29 @@ What this establishes:
 
 ⚠️ Raster counts were not captured, only exit codes. Exit 0 in single-region mode does mean every raster found was identical.
 
+### Remaining tools verified on HPC (August 15, 2026)
+
+The three tools that had never had HPC exit codes captured, now all confirmed:
+
+| Tool | Result |
+|---|---|
+| `check_environment.py` | ✅ exit 0 — all 7 versions **identical to local**, confirming both machines match by tooling rather than by eye |
+| `check_job_generation.py` | ✅ exit 0 — 4/4 job files. Forcing `--execution-mode local` exercised `create_bash_job` on a machine that would otherwise always use SLURM. The temp-config redirection also works against HPC's `config.ini`, which has entirely different paths |
+| `check_output_structure.py` | ✅ exit 0 — 4/4 regions, run in **all-regions mode** (no `--region`) |
+
+Regions present in the HPC candidate tree at that point, with total `.tif` counts including `download/`:
+
+```
+049_jakobshavn                11
+090_petermann                 94
+138_SermiitsiaqInTasermiut     5
+191_Hagen_Brae               140
+```
+
+**All five tools are now verified on HPC.**
+
+⚠️ **Still not exercised: `compare_raster.py` in all-regions mode on HPC.** Every regression run to date used `--region`. This matters because the original defect — a real mismatch printing "Skipped" and exiting 0 — lived *only* in all-regions mode. It is fixed and proven against synthetic fixtures, but has never run against the real domain. Drop `--region` to close this.
+
 **Hardened-copy verification complete (August 14, 2026)**. Every satellite × geometry combination reproduced its prototype result exactly — 102 of the 104 rasters re-run, all identical, all exit 0:
 
 | | Single-tile (`138`) | Multi-tile (`191`) |
