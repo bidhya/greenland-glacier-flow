@@ -117,7 +117,27 @@ Regions present in the HPC candidate tree at that point, with total `.tif` count
 
 **All five tools are now verified on HPC.**
 
-⚠️ **Still not exercised: `compare_raster.py` in all-regions mode on HPC.** Every regression run to date used `--region`. This matters because the original defect — a real mismatch printing "Skipped" and exiting 0 — lived *only* in all-regions mode. It is fixed and proven against synthetic fixtures, but has never run against the real domain. Drop `--region` to close this.
+### All-regions mode on HPC, and S2C (August 15, 2026)
+
+`compare_raster.py sentinel2 --run-mode hpc --year 2025` across the whole candidate tree — **the last unexercised mode**, and the one where the original defect lived.
+
+```
+Matched:              2/4 regions (22 rasters)
+Skipped (no data):    0
+Baseline unavailable: 2
+MISMATCHED:           0
+  no baseline: 138_SermiitsiaqInTasermiut, 191_Hagen_Brae
+EXIT=2
+```
+
+**Exit 2 is the correct answer here**, not a failure: 22 rasters matched, none mismatched, and two regions could not be compared because they hold 2024-dated output while the baseline is the 2025 tree.
+
+Two things this establishes that fixtures could not:
+
+1. **The Phase 1 fix works on real data.** On `138_SermiitsiaqInTasermiut` the baseline file genuinely does not exist. The `qaqc/` prototype would have crashed with an uncaught `RasterioIOError`; this reports cleanly and exits 2, keeping "could not check" distinct from "checked and fine".
+2. **S2C scenes are verified.** 10 of the 22 matched rasters are S2C — 2 in `049_jakobshavn`, 8 in `090_petermann` — all bit-identical to 2025 production. S2C had been on the untested list since the start.
+
+Satellite mix in the 22 matched rasters: **10 S2C, 8 S2B, 4 S2A** — consistent with S2C having replaced S2A as the primary unit from January 2025.
 
 **Hardened-copy verification complete (August 14, 2026)**. Every satellite × geometry combination reproduced its prototype result exactly — 102 of the 104 rasters re-run, all identical, all exit 0:
 
