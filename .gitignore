@@ -166,6 +166,9 @@ __marimo__/
 AGENTS.md
 CLAUDE.md
 bak.AGENTS.md
+
+# Local-only Claude Code config (permission guardrails). Not shared with the repo.
+.claude/
 Archive/
 
 qaqc/**
