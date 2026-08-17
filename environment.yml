@@ -25,3 +25,9 @@ dependencies:
 # Relaxing the gdal pin would therefore upgrade rasterio too, reopening the
 # rasterio 1.5.0 compatibility work (CPLE warnings, bilinear vs cubic resampling).
 # This is the single point of protection - there is no separate rasterio<1.5 guard.
+
+# Which library versions were actually in use for each processing season, what
+# that pair proves, and what to do if results ever stop matching:
+#     docs/ENVIRONMENT_PROVENANCE.md
+# Kept out of this file deliberately - this file declares the environment; that
+# one records observed history. Do NOT add pins here on the strength of it.
