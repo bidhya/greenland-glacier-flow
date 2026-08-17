@@ -1,7 +1,13 @@
 # Step 3 — Test Formalization Plan
 
 **Status**: 🟢 **All six phases complete** — Phases 1–4 built and pushed, Phase 5 passed 7/7 on HPC (August 16, 2026), Phase 6 closed out. Four items remain open; see *Still open after Phase 6*.
-**Branch**: `feature/step3-tests` (from `dev` at `a3c2a59`) — Phases 1–4 are commits `551867d`, `969564e`, `390d11f`, `6762172`; Phase 5 changed no code
+**Landed on `dev` as a single squashed commit, `0d7fe55`** (August 16, 2026), which folds in nine commits from `feature/step3-tests` (branched from `dev` at `a3c2a59`).
+
+> ⚠️ **Hashes cited in this file are from `feature/step3-tests`, not `dev`.** The squash discarded
+> them, so `git show <hash>` resolves only while that branch exists — it is **kept, not deleted**,
+> exactly as `feature/step1-tests` was, precisely so the granular history survives. On `dev` the
+> whole of this work is `0d7fe55`; the qaqc untracking and the recovered changelog entry are folded
+> into that commit's body rather than being separately findable.
 **Created**: August 15, 2026
 **Tracked** since August 16, 2026 — it was gitignored while it was a moving target, and promoted once all six phases closed, because it holds the only record of the Phase 1–5 verification evidence. Mirrors `docs/STEP1_TEST_PLAN.md`, which is tracked for the same reason.
 
@@ -34,7 +40,7 @@ trustworthy and they sit beside the code they test.
 > used for embedding constants instead of reading `data_paths.yml`.
 >
 > ✅ **Resolved August 16, 2026 by making the claim true.** `qaqc/` was untracked entirely
-> (commit `eaab2fd`) — all 8 exceptions removed. `data_paths.yml` is now genuinely unreachable
+> (commit `eaab2fd` on `feature/step3-tests`, squashed into `0d7fe55` on `dev`) — all 8 exceptions removed. `data_paths.yml` is now genuinely unreachable
 > from tracked code, so the embedded constants are correct *and* correctly justified. This was
 > cleaner than editing the claim across four tracked files.
 >
