@@ -1,222 +1,161 @@
-# Step 1 — Test Formalization Plan
+# Step 1 — Test Suite Reference
 
-**Created**: August 14, 2026
-**Branch**: `feature/step1-tests` (from `dev` at `7a2ac40`)
-**Status**: ✅ **COMPLETE.** All five phases done, merged into `dev`, verified on HPC. See *Status: complete* near the end for the deferred items the user judged **not critical** — they are recorded, not outstanding.
+**Status: stable.** Five tools in `1_download_merge_and_clip/tests/`, git-tracked, verified on HPC
+against both production years and both satellites. Nothing in Step 1 is currently known-broken.
 
-**Cold start**: read `AGENTS.md` → *Cold Start* first for project-wide orientation. This file covers Step 1 testing only.
-
-**Current reality check**:
-
-- `1_download_merge_and_clip/tests/` **exists** and holds `compare_raster.py` + `README.md`
-- that copy is **authoritative**; `qaqc/Step1/compare_raster.py` is the older prototype, left in place untouched
-- the hardened version was verified against synthetic fixtures — mismatch → exit 1, missing baseline → exit 2, subset-download skip preserved. Evidence is in `1_download_merge_and_clip/tests/README.md`
+**This file**: what the tests have established, why they are shaped the way they are, and what they
+do **not** cover. `tests/README.md` says how to run them. `AGENTS.md` → *Testing* covers rotating
+test parameters.
 
 ---
 
-## Goal
+## Exit-code contract
 
-Move Step 1 testing out of the gitignored `qaqc/` prototyping area into **`1_download_merge_and_clip/tests/`**, so tests are git-tracked and travel with the code they test.
-
-`qaqc/` was a prototyping and proof-of-concept area. It is not going away — but it should stop being the place you have to visit to test Step 1.
-
----
-
-## Standing Rules
-
-1. **Copy, never move.** `qaqc/` stays intact. Deleting anything there is the user's decision, at a much later date. Not the agent's call.
-2. **Record provenance on every copy.** In the copied file's header *and* in `tests/README.md`, state the source path and date, and that the `tests/` version is authoritative while the `qaqc/` one is the older prototype.
-3. **Stay inside `tests/`.** `1_download_merge_and_clip/` is otherwise off-limits without explicit instruction. This work is authorized only for the new `tests/` subfolder — do not touch the processing scripts.
-4. **Verify assumptions before changing behaviour.** Existing oddities are frequently deliberate. Reproduce and confirm before "fixing" (see the verified findings below for a case where the first read was wrong).
-5. **Prove failures, not just successes.** A test whose failure mode is untested is not trustworthy. Each behavioural change must be demonstrated with a deliberately broken input.
-
----
-
-## Verified Findings (August 14, 2026)
-
-Empirically confirmed, not assumed. These motivate Phase 1.
-
-### `compare_raster.py` all-regions mode conflates three conditions
-
-```python
-except (ValueError, FileNotFoundError, AssertionError) as e:
-    typer.echo(f"⚠️  Skipped {region_name}: {e}", err=True)
-    continue
-```
-
-| Condition | Exception | Caught? | Current result | Correct? |
-|---|---|---|---|---|
-| Candidate region has no `.tif` files (subset download) | `FileNotFoundError`, raised explicitly in `compare_raster_files` | yes | "Skipped" | ✅ **deliberate — keep** |
-| Values differ (real regression) | `AssertionError` from `xr.testing.assert_identical` | yes | "Skipped", exit 0 | ❌ must fail |
-| Baseline file missing | `RasterioIOError` (an `OSError`, **not** `FileNotFoundError`) | **no** | uncaught crash | ❌ should skip |
-
-**The subset-download skip is real and intentional** — you can download a subset of regions and the rest skip cleanly. Preserve it. `README_raster_compare.md` documents the skip as *"Region skipped (missing data)"*, which supports the reading that catching mismatches there was an oversight.
-
-Single-region mode (`--region`) exits 1 correctly. This is why the August 14 verification runs were trustworthy — all used `--region`.
-
-### Other confirmed issues
-
-- **Hardcoded baselines.** `prod_base` / `dev_base` are fixed in `main()`. The HPC baseline points at the **2024** tree; 2025 (`/fs/project/howat.4-3/greenland_glacier_flow`) is the preferred baseline going forward and is not wired up.
-- **Two-environment model.** The tool assumes concurrent `glacier_velocity` vs `glacier_velocity1` environments. Only one env exists; it works today only because `_prod` is a saved snapshot.
-- **Landsat satellite label wrong.** `dev_path.parent.parent.name` assumes Sentinel-2 path depth (`.../sentinel2/{region}/clipped`); Landsat is one level shallower, printing `Satellite: 1_download_merge_and_clip`.
-
----
-
-## Known-Good Reference Results
-
-Any change must continue to reproduce these (August 14, 2026, current environment):
-
-| Region | Satellite | Rasters | Baseline | Re-verified with hardened `tests/` copy |
-|---|---|---|---|---|
-| `138_SermiitsiaqInTasermiut` | Sentinel-2 | 2 identical | local `_prod` snapshot + HPC 2024 production | ✅ local **and** HPC |
-| `138_SermiitsiaqInTasermiut` | Landsat | 2 identical | same | ✅ local |
-| `191_Hagen_Brae` | Sentinel-2 | 20 identical | HPC 2024 production | ✅ HPC |
-| `191_Hagen_Brae` | Landsat | 76 identical | HPC 2024 production | ✅ HPC |
-
-All dates 2024-08-01 → 2024-08-07. 104 rasters total across both machines.
-
-### 2025 baseline verification (August 15, 2026)
-
-**First real exercise of `--year 2025`.** Two regions not previously used, chosen by `tile_count` from `glaciers_roi_proj_v3_300m.gpkg` rather than from doc examples. Dates 2025-07-10 → 2025-07-15.
-
-| Region | Tiles | Area km² | Sentinel-2 | Landsat |
-|---|---|---|---|---|
-| `049_jakobshavn` | 1 | 2,645 | ✅ exit 0 | ✅ exit 0 |
-| `090_petermann` | **5** | 11,457 | ✅ exit 0 | ✅ exit 0 |
-
-`check_raster_sanity.py` passed on all four combinations as well — **8/8 exit 0**, exit codes captured.
-
-What this establishes:
-
-- the **2025 baseline path is correct** (`/fs/project/howat.4-3/greenland_glacier_flow`) — previously taken from `qaqc/data_paths.yml` and never exercised
-- `--year 2025` resolves and compares correctly against live data
-- Step 1 reproduces 2025 production output for regions it had not been tested on
-- `090_petermann` is the **only 5-tile region in the domain** — the strictest multi-tile geometry available, stricter than `191_Hagen_Brae` (4 tiles)
-- `check_raster_sanity.py` verified on HPC for the first time, on both satellites
-
-⚠️ Raster counts were not captured, only exit codes. Exit 0 in single-region mode does mean every raster found was identical.
-
-### Remaining tools verified on HPC (August 15, 2026)
-
-The three tools that had never had HPC exit codes captured, now all confirmed:
-
-| Tool | Result |
+| Code | Meaning |
 |---|---|
-| `check_environment.py` | ✅ exit 0 — all 7 versions **identical to local**, confirming both machines match by tooling rather than by eye |
-| `check_job_generation.py` | ✅ exit 0 — 4/4 job files. Forcing `--execution-mode local` exercised `create_bash_job` on a machine that would otherwise always use SLURM. The temp-config redirection also works against HPC's `config.ini`, which has entirely different paths |
-| `check_output_structure.py` | ✅ exit 0 — 4/4 regions, run in **all-regions mode** (no `--region`) |
+| `0` | passed |
+| `1` | **failed** — something is wrong |
+| `2` | **could not check** — baseline missing, nothing found. **Not a pass.** |
 
-Regions present in the HPC candidate tree at that point, with total `.tif` counts including `download/`:
+`2` exists because "I couldn't check" and "I checked and it was fine" are different answers.
+Conflating them is how a broken test quietly reports success. **Always check the exit code.**
+
+⚠️ **A Step 1 *run* exiting 0 proves nothing** — job scripts have no `set -e`. The tests are the
+opposite: their exit codes are the contract.
+
+---
+
+## Known-good reference results
+
+Any change must continue to reproduce these.
+
+### 2024 — 104 rasters, both machines
+
+| Region | Satellite | Rasters | Verified |
+|---|---|---|---|
+| `138_SermiitsiaqInTasermiut` | Sentinel-2 | 2 identical | local + HPC |
+| `138_SermiitsiaqInTasermiut` | Landsat | 2 identical | local |
+| `191_Hagen_Brae` | Sentinel-2 | 20 identical | HPC |
+| `191_Hagen_Brae` | Landsat | 76 identical | HPC |
+
+Dates 2024-08-01 → 2024-08-07.
+
+### 2025 — the standing baseline
+
+`/fs/project/howat.4-3/greenland_glacier_flow` (`--year 2025`, the default).
+
+| Region | Tiles | Area km² | Dates | Result |
+|---|---|---|---|---|
+| `049_jakobshavn` | 1 | 2,645 | 2025-07-10 → 07-15 | ✅ both satellites |
+| `090_petermann` | **5** | 11,457 | 2025-07-10 → 07-15 | ✅ both satellites |
+| `140_CentralLindenow` | 1 | — | 2025-05-06 → 05-12 | ✅ both satellites, 10 rasters bit-identical |
+
+`090_petermann` is the **only 5-tile region in the domain** — the strictest multi-tile geometry
+available.
+
+### All-regions mode, and S2C
+
+`compare_raster.py sentinel2 --run-mode hpc --year 2025` across the whole candidate tree:
 
 ```
-049_jakobshavn                11
-090_petermann                 94
-138_SermiitsiaqInTasermiut     5
-191_Hagen_Brae               140
-```
-
-**All five tools are now verified on HPC.**
-
-### All-regions mode on HPC, and S2C (August 15, 2026)
-
-`compare_raster.py sentinel2 --run-mode hpc --year 2025` across the whole candidate tree — **the last unexercised mode**, and the one where the original defect lived.
-
-```
-Matched:              2/4 regions (22 rasters)
-Skipped (no data):    0
-Baseline unavailable: 2
-MISMATCHED:           0
-  no baseline: 138_SermiitsiaqInTasermiut, 191_Hagen_Brae
+Matched: 2/4 regions (22 rasters) | MISMATCHED: 0 | Baseline unavailable: 2
 EXIT=2
 ```
 
-**Exit 2 is the correct answer here**, not a failure: 22 rasters matched, none mismatched, and two regions could not be compared because they hold 2024-dated output while the baseline is the 2025 tree.
+**Exit 2 is correct here**, not a failure — two regions held 2024-dated output against the 2025
+baseline. This is the mode where the original `qaqc/` defect lived; on real data that prototype
+would have crashed.
 
-Two things this establishes that fixtures could not:
+Satellite mix in the 22 matched: **10 S2C, 8 S2B, 4 S2A** — consistent with S2C replacing S2A as
+primary from January 2025. S2C is verified bit-identical to production.
 
-1. **The Phase 1 fix works on real data.** On `138_SermiitsiaqInTasermiut` the baseline file genuinely does not exist. The `qaqc/` prototype would have crashed with an uncaught `RasterioIOError`; this reports cleanly and exits 2, keeping "could not check" distinct from "checked and fine".
-2. **S2C scenes are verified.** 10 of the 22 matched rasters are S2C — 2 in `049_jakobshavn`, 8 in `090_petermann` — all bit-identical to 2025 production. S2C had been on the untested list since the start.
+### Full-suite run, both satellites
 
-Satellite mix in the 22 matched rasters: **10 S2C, 8 S2B, 4 S2A** — consistent with S2C having replaced S2A as the primary unit from January 2025.
+All five tools against one region, both satellites — **8 invocations, 8 × exit 0**:
 
-**Hardened-copy verification complete (August 14, 2026)**. Every satellite × geometry combination reproduced its prototype result exactly — 102 of the 104 rasters re-run, all identical, all exit 0:
-
-| | Single-tile (`138`) | Multi-tile (`191`) |
+| Tool | Sentinel-2 | Landsat |
 |---|---|---|
-| **Sentinel-2** | ✅ 2/2 local + 2/2 HPC | ✅ 20/20 HPC (4 MGRS tiles) |
-| **Landsat** | ✅ 2/2 local | ✅ 76/76 HPC |
+| `check_environment.py` | 7/7 packages match pins (shared) | — |
+| `check_job_generation.py` | 4/4 job files, both satellites × both modes (shared) | — |
+| `check_output_structure.py` | 15 `.tif` in region tree | 3 `.tif`, `_reference/` at satellite level |
+| `check_raster_sanity.py` | 7/7 sane | 3/3 sane |
+| `compare_raster.py` | **7/7 bit-identical** | **3/3 bit-identical** |
 
-The hardening therefore changed **no passing behaviour** — it only changed what happens when something fails.
-
-Not re-run: HPC single-tile Landsat (`138`, 2 rasters), which is redundant with local `138` Landsat (same code path) and HPC `191` Landsat.
-
-Incidental confirmations: `detect_execution_mode()` works — an HPC run with no `--run-mode` flag resolved to HPC paths. The Landsat runs printed `Satellite: 1_download_merge_and_clip`, confirming the known cosmetic label defect scheduled for Phase 2.
+Scene mix `3 S2A / 2 S2B / 2 S2C` and `2 LC09 / 1 LC08` — every member of both constellations.
 
 ---
 
-## Agreed execution order
+## Settled — do not re-open
 
-Phases are numbered by original planning order, but agreed on August 14, 2026 to be **worked in this order**, one at a time:
+- **`date2` is inclusive.** The STAC interval `datetime=f'{start}/{end}'` made this ambiguous;
+  observed on real scenes, both boundary dates produced.
+- **A test run cannot overwrite production.** Candidate resolves to
+  `/fs/project/howat.4/yadav.111/...`, baseline to `howat.4-3` — separate trees by construction.
+  ⚠️ `config.ini:74` holds the baseline tree as a commented-out `base_dir`; **leave it commented.**
+- **Landsat paths and labels are handled correctly.** `compare_raster.py` labels the satellite
+  correctly against Landsat's shallower layout, and `check_raster_sanity.py` is satellite-aware
+  (15 m for Landsat, 10 m for Sentinel-2).
+- **All five tools work on HPC**, including all-regions mode and the local-mode job builder HPC
+  would never otherwise exercise.
 
-**Phase 1 ✅ → Phase 3 → Phase 2 → Phase 5 → Phase 4**
-
-Rationale: Phase 3 is the cheapest remaining win and guards the GDAL pin. Phase 2 unblocks testing against the 2025 baseline. Phase 5 is the only class of test that works on data with no baseline at all — the 2026 season — so it closes the largest real gap. Phase 4 is useful but catches the least severe failures.
+**Method worth reusing**: choose date windows by listing the baseline first —
+`ls {baseline}/1_download_merge_and_clip/{satellite}/{region}/` — rather than guessing. Scenes are
+then guaranteed to exist on both sides, and nothing returns exit 2.
 
 ---
 
-## Phases
+## Why the tools are shaped this way
 
-### Phase 1 — Harden the regression test ✅ *(complete, August 14, 2026)*
+### `compare_raster.py` — the defect that justified hardening
 
-- [x] Create `1_download_merge_and_clip/tests/`; copy `qaqc/Step1/compare_raster.py` with a provenance header
-- [x] Separate `AssertionError` from the missing-data handler so a real mismatch **fails**
-- [x] Catch `RasterioIOError` so a missing baseline file **skips** instead of crashing
-- [x] Distinct exit codes: `0` all matched · `1` mismatch · `2` baseline missing. Non-zero on mismatch in all-regions mode
-- [x] Preserve the subset-download skip (`FileNotFoundError`) unchanged
-- [x] Write `tests/README.md` — provenance, exit codes, `tests/` is authoritative over `qaqc/`
-- [x] Verify `138_SermiitsiaqInTasermiut` still reports 4/4 identical
-- [x] Deliberately construct a mismatch; confirm it **fails with exit 1** rather than skipping
-- [x] Confirm a missing baseline file **skips with exit 2** rather than crashing
+The `qaqc/` prototype caught three conditions in one `except`:
 
-**Proof the defect was real** — same fixtures, one genuine mismatch, all-regions mode:
+| Condition | Exception | Prototype result | Correct |
+|---|---|---|---|
+| Candidate has no `.tif` (subset download) | `FileNotFoundError` | "Skipped" | ✅ **deliberate — keep** |
+| Values differ (real regression) | `AssertionError` | "Skipped", **exit 0** | ❌ must fail |
+| Baseline file missing | `RasterioIOError` | uncaught crash | ❌ should exit 2 |
 
-```
-PROTOTYPE EXIT=0    ⚠️  Skipped 002_mismatch: ...not identical
-                    🎉 Completed: 1/3 regions compared successfully
-HARDENED  EXIT=1    ❌ MISMATCH 002_mismatch: ...not identical
-                    ❌ FAILED - output differs from baseline
-```
+**The subset-download skip is intentional** — you can download a subset and the rest skip cleanly.
+The other two were fixed. ⚠️ **Do not fall back to `qaqc/Step1/compare_raster.py`**: in all-regions
+mode a real mismatch prints "Skipped" and exits 0.
 
-### Phase 2 — Parameterize baselines ✅ *(complete, August 14, 2026)*
+### `check_environment.py` — two tiers, deliberately
 
-- [x] `--year 2024|2025` selects the HPC baseline tree; `--baseline` / `--candidate` override roots entirely
-- [x] 2025 wired up (`/fs/project/howat.4-3/greenland_glacier_flow`) and set as the **default**; 2024 available via `--year 2024`
-- [x] Renamed `dev` / `prod` → `candidate` / `baseline` throughout
-- [x] Landsat satellite label fixed — `satellite` is passed in rather than inferred from path depth
-- [x] Summary now reports regions **and** raster counts
-- [x] Resolved roots printed at the top of every run
-- [x] Missing baseline tree fails fast with exit 2 instead of per-region noise
+`environment.yml` pins only `python=3.13` and `gdal=3.10.3`; rioxarray, xarray, geopandas and numpy
+float. Hard-failing on floating packages would fire on an honest `conda env create`, and a check
+that cries wolf gets switched off.
 
-**Default is 2025** (user decision, August 14, 2026). 2025 survives until 2026 data is delivered, so it is the longer-lived reference; 2024 may be cleared.
+| Tier | Packages | Source of truth | On mismatch |
+|---|---|---|---|
+| **Pinned** | Python `3.13.x`, GDAL `3.10.3`, rasterio `1.4.x` | `environment.yml` | **hard fail**, exit 1 |
+| **Advisory** | rioxarray, xarray, geopandas, numpy | current known-good set | warn, exit 0 |
 
-⚠️ **Consequence**: the August 14 verification runs used 2024-dated data, so reproducing them now requires `--year 2024` explicitly. Running them without it compares 2024 output against the 2025 tree and reports mismatches that are **not** regressions. The resolved baseline prints at the top of every run — check that line before trusting a result.
+- rasterio is checked at **minor** level — the constraint is "not 1.5", and a 1.4.5 patch is not a
+  reason to block production.
+- GDAL is checked **exactly** — `environment.yml` says `gdal=3.10.3`, not a range.
+- GDAL version comes from `rasterio.__gdal_version__`, **not** `from osgeo import gdal`. Step 1 has
+  zero `osgeo` imports and this keeps it that way.
+- `--allow-version-drift` downgrades a hard failure to a warning, for deliberate experiments in a
+  `glacier_velocity1` env. The safe path is the default.
 
-**Year → path mapping is duplicated** from `qaqc/data_paths.yml`. That file is gitignored, so tracked code cannot import it; `tests/` must stay self-contained on a fresh clone. Adding a year means updating both.
+⚠️ **The advisory tier tracks the *current* environment, not the 2025-season one.** Rebuilding to
+match the 2025 season emits advisory warnings and still exits 0 — correct, but surprising. Both
+version sets, and the drift procedure, are in `docs/ENVIRONMENT_PROVENANCE.md`.
 
-Verified:
+### `check_raster_sanity.py` — the one that survives 2026
 
-| Scenario | Expected | Exit |
-|---|---|---|
-| Default invocation, both satellites | unchanged, 2/2 each | `0` ✅ |
-| Landsat label | prints `landsat`, not `1_download_merge_and_clip` | ✅ |
-| `--year 2099` | rejected, lists known years | `1` ✅ |
-| `--baseline /nope/gone` | fail fast, "NOT a pass" | `2` ✅ |
-| `--baseline`/`--candidate` override + all-regions | summary with raster counts | `1` ✅ (fixtures contain a real mismatch) |
-| `--year` in local mode | warns it was ignored | `0` ✅ |
+The only tool that works with **no baseline**, which is the situation for the entire 2026 season.
+It would also have caught the historical `x_` prefix corruption without needing a reference.
 
-### Phase 3 — Preflight environment check ✅ *(complete, August 14, 2026)*
+---
 
-Implemented as `1_download_merge_and_clip/tests/check_environment.py`. Verified behaviour:
+## Failure modes are proven, not assumed
+
+A test whose failure mode is untested is not trustworthy. Every behavioural claim below was
+demonstrated with a deliberately broken input, exit codes captured.
+
+### `check_environment.py`
 
 | Scenario | Expected | Exit |
 |---|---|---|
@@ -226,62 +165,14 @@ Implemented as `1_download_merge_and_clip/tests/check_environment.py`. Verified 
 | rasterio unimportable | fail, no crash | `1` ✅ |
 | Advisory-only drift (numpy) | warn, still pass | `0` ✅ |
 
+### `check_raster_sanity.py`
 
-Assert the pinned dependencies before a production run. The GDAL pin is the single point of protection against a rasterio upgrade; this makes drift fail loudly instead of silently changing output.
-
-**Two tiers — decided August 14, 2026 after reading `environment.yml`.** It pins only `python=3.13` and `gdal=3.10.3`; rioxarray, xarray, geopandas and numpy all float. Hard-failing on floating packages would fire on an honest `conda env create`, and a check that cries wolf gets switched off.
-
-| Tier | Packages | Source of truth | On mismatch |
-|---|---|---|---|
-| **Pinned** | Python `3.13.x`, GDAL `3.10.3`, rasterio `1.4.x` | `environment.yml` | **hard fail**, exit 1 |
-| **Advisory** | rioxarray, xarray, geopandas, numpy | verified-good snapshot, Aug 14 2026 | warn, exit 0 |
-
-- rasterio is checked at **minor** level (`1.4.x`): the hard constraint is "not 1.5.0", and a 1.4.5 patch is not a reason to block production.
-- GDAL is checked **exactly** — `environment.yml` says `gdal=3.10.3`, not a range.
-- GDAL version comes from `rasterio.__gdal_version__`, **not** `from osgeo import gdal`. Step 1 has zero `osgeo` imports and this keeps it that way.
-- `--allow-version-drift` downgrades a hard failure to a loud warning, so deliberate experiments in a `glacier_velocity1` env stay possible. The safe path is what you get by default.
-
-### Phase 4 — Smoke and structure tests ✅ *(complete, August 14, 2026)*
-
-**Smoke** — `check_job_generation.py`. Generates job files for both satellites × both execution modes with `--dry-run true`, asserting the activation guard, conda activation, processing-script invocation, and pass-through of region/dates. 4 combinations, seconds, no data.
-
-Verified: passes against the real generator; against a generator with the guard stripped it fails all 4 with `missing: activation guard`.
-
-⚠️ **Finding — `--base-dir` does not redirect a local-mode run.** `submit_satellite_job.py` applies the CLI `--base-dir` to `config_dict['base_dir']`, then later overrides `root_dir` with `config.ini`'s `local_base_dir` when `execution_mode == 'local'`. This inverts the documented precedence (*CLI args > config.ini*). **Not changed** — it is core Step 1 logic and may be deliberate, to stop local runs writing to HPC paths. The smoke test works around it with a temporary `--config` that rewrites both keys. Worth a decision later; parked, not fixed.
-
-**Structure** — `check_output_structure.py`. Per region, asserts the expected directories exist.
-
-| Sentinel-2 | Landsat |
-|---|---|
-| `{region}/clipped/`, `metadata/`, `template/` required | `{region}/` required |
-| `{region}/download/` **optional** | `_reference/` required, satellite level |
-
-`download/` is optional by design — it is deleted after processing to reclaim storage (~15.56 TB freed for 2024), so its absence is a note, not a failure.
-
-Verified: complete region passes; missing `metadata/` → exit 1; missing only `download/` → exit 0 with a note; Landsat missing `_reference/` → exit 1; nonexistent tree → exit 2.
-
-### Phase 5 — Baseline-free sanity checks ✅ *(complete, August 14, 2026)*
-
-Implemented as `1_download_merge_and_clip/tests/check_raster_sanity.py`.
-
-**This is the only test that works on genuinely new data** — e.g. the 2026 season, where no production baseline exists by definition. It is also the class of check that would have caught the historical `x_` prefix corruption without needing a reference.
-
-Invariants, derived by inspecting real production rasters rather than assumed:
-
-| | CRS | Resolution | dtype | nodata | bands |
-|---|---|---|---|---|---|
-| Sentinel-2 | EPSG:3413 | 10 m | uint16 | 0 | 1 |
-| Landsat | EPSG:3413 | 15 m | uint16 | 0 | 1 |
-
-⚠️ **Finding**: `landsat/_reference/*.tif` are **uint8** templates, not scene output. They are excluded by the `_` prefix rule in region discovery. Do not relax the dtype expectation to accommodate them.
-
-Plus content checks: not entirely nodata, not constant, and not pixel-identical to a sibling raster.
-
-Verified — ten scenarios, each fixture isolating one defect:
+Expectations: **Sentinel-2** EPSG:3413 / 10 m / uint16 / nodata 0 / 1 band · **Landsat** identical
+but **15 m**.
 
 | Fixture | Exit |
 |---|---|
-| correct raster | `0` ✅ |
+| correct raster (control) | `0` ✅ |
 | `EPSG:4326` | `1` ✅ |
 | 30 m resolution | `1` ✅ |
 | `uint8` | `1` ✅ |
@@ -292,43 +183,38 @@ Verified — ten scenarios, each fixture isolating one defect:
 | empty tree | `2` ✅ |
 | missing tree | `2` ✅ |
 
-Path logic is imported from `compare_raster.py` rather than restated — the Sentinel-2/Landsat depth asymmetry is a known way to get it wrong twice.
+The two `2`s matter as much as the `1`s: "nothing to check" stays distinct from "checked and fine".
+
+### `compare_raster.py`
+
+Mismatch → exit 1 · missing baseline → exit 2 · subset-download skip preserved. Verified on
+synthetic fixtures **and** on real data, where a genuinely absent baseline reported cleanly and
+exited 2 rather than crashing as the prototype did.
 
 ---
 
-## Status: complete
+## Not covered
 
-**All five phases are done, merged into `dev`, and verified on HPC with captured exit codes** (August 15, 2026). Both satellites, both machines, both production years, every execution mode.
+| Gap | Note |
+|---|---|
+| **Batch mode** (`--start_end_index`) | Production uses it for all three Sentinel-2 batches. Region selection is the only difference from `--regions`, which *is* tested. |
+| **`cores > 1`** | Production runs `cores = 1`, so serial **is** the production path. Testing parallel would validate a configuration nobody uses. |
+| **Regions beyond those listed** | `104_sorgenfri`, `134_Arsuk`, `139_SouthLindenow` remain untouched. |
+| **`check_environment.py` is manual** | It protects the `gdal` pin only if someone runs it. Automating it means modifying `submit_satellite_job.py` — core Step 1 logic, off-limits without instruction. |
 
-The items below are **deliberately deferred**. The user reviewed them on August 15, 2026 and judged them **not critical for Step 1**. They are recorded so they are not silently lost — **not** because they block anything. Do not treat them as outstanding work, and do not action them unasked.
+**Known quirk, not a bug**: `submit_satellite_job.py` applies CLI `--base-dir`, then overrides
+`root_dir` with `config.ini`'s `local_base_dir` when `execution_mode == 'local'` — inverting the
+documented *CLI > config* precedence. It plausibly exists to stop local runs writing to HPC paths.
+`check_job_generation.py` works around it with a temporary `--config`.
 
-### Deferred — decisions the user has not made
-
-1. **Should `check_environment.py` run automatically?**
-   Today it is manual, so it protects the `gdal=3.10.3` pin only if someone remembers to run it. Wiring it into the generated job would make it real protection.
-   **Blocked on**: this means modifying `submit_satellite_job.py`, which is core Step 1 logic and off-limits without explicit instruction.
-
-2. **The `--base-dir` local-mode precedence quirk.**
-   `submit_satellite_job.py` applies the CLI `--base-dir`, then overrides `root_dir` with `config.ini`'s `local_base_dir` when `execution_mode == 'local'`. This inverts the documented precedence (*CLI args > config.ini*).
-   **Not a bug until the user says so** — it plausibly exists to stop local runs writing to HPC paths. `check_job_generation.py` works around it with a temporary `--config` that rewrites both keys.
-
-### Deferred — behaviours no test covers
-
-3. **Batch mode** (`--start_end_index`). Production uses it for all three Sentinel-2 batches, but no test exercises it. Region selection is the only thing that differs from `--regions`, which *is* tested.
-
-4. **`cores > 1`.** Production runs `cores = 1`, so **serial is the production path**. This is the least important item here — testing parallel would validate a configuration nobody uses.
-
-### Closed on August 15, 2026 — do not re-add
-
-- ~~S2C scenes untested~~ — 10 S2C rasters verified bit-identical to 2025 production.
-- ~~All-regions mode never run on HPC~~ — run across the full candidate tree; exit 2 behaviour confirmed on real data.
-- ~~Three tools without captured HPC exit codes~~ — all five tools now verified on HPC.
+**Open, not a Step 1 defect**: a NumPy 2.5 deprecation fires inside rasterio 1.4.4's read path on
+both satellites. Harmless today. It is an environment-drift risk — see `Scratch.md` and
+`docs/ENVIRONMENT_PROVENANCE.md`.
 
 ---
 
-## Out of Scope
+## Out of scope
 
 - Deleting or reorganizing `qaqc/` — the user's decision, later
-- Modifying Step 1 processing scripts
-- Anything in Step 3 (untested against the current environment; separate effort)
-- Changes to `README.md`, `docs/QUICKSTART.md`, or other docs during the current refactor
+- Modifying Step 1 processing scripts, regardless of test results
+- Anything in Step 3 — separate suite, separate effort
