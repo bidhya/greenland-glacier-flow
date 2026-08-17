@@ -560,10 +560,11 @@ evidence about the science.
    `validate_netcdf.py` by exact id, so `--glacier 014` passes one and exits 2 on the other.
    Failure mode is safe and it is documented under *Known limitations* in `tests/README.md`.
    Making compare's match exact is the smaller change.
-2. **Should this plan's evidence travel?** This file is gitignored; Step 1's equivalent
-   (`docs/STEP1_TEST_PLAN.md`) is tracked. It now holds the complete Phase 1–5 record, including
-   the HPC verification. Deleting it destroys that. Promoting it to a tracked
-   `docs/STEP3_TEST_PLAN.md` would mirror Step 1.
+2. ✅ **RESOLVED August 16, 2026 — this plan is now tracked.** It was gitignored while it was a
+   moving target; with all six phases closed it holds the only record of the Phase 1–5 evidence,
+   so it was committed. Kept here in `tests/` rather than moved to `docs/`, because root `docs/`
+   is effectively *Step 1's* home — Step 1's entry points live at root too — so the structural
+   mirror for Step 3 is inside `3_orthocorrect_and_netcdf-package/`.
 3. **`--mode encoding` remains unexercised** — see 🔶 REVISIT above. Parked at user direction.
 4. **Pre-flight and run-completeness tools** — see the risk inventory below. Deliberately out of
    scope for this round.
