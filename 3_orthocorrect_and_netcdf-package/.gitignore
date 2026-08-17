@@ -10,6 +10,10 @@
 # Documentation folder (intended for local drafts and preview) - can be ignored during incremental commits
 docs/
 
+# tests/STEP3_TEST_PLAN.md was ignored here from August 15-16, 2026, while it was a
+# moving target. It is now TRACKED — all six phases are closed and it holds the only
+# record of the Phase 1-5 verification evidence. Mirrors docs/STEP1_TEST_PLAN.md.
+
 # Local HPC sync script (experimental, keep untracked until finalized)
 sync_to_hpc.sh
 processing_chain/4c_netcdf_stack_landsat_sentinel_combined.bak.py

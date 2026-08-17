@@ -34,6 +34,24 @@ Each entry includes the date, affected file, issue description, fix details, and
 
 ---
 
+## SLURM output path consolidation (February 13, 2026)
+
+### 2026-02-13: SLURM job output unified under `logs/`
+**Issue**: SLURM job output went to `runs_output/` while per-glacier processing logs and `errored_glaciers.log` went to `logs/`, so the records for a single run were split across two directories
+**Fix**: Changed the `#SBATCH --output` path from `runs_output/ortho_nc_pkg_%j.out` to `logs/ortho_nc_pkg_%j.out`
+**Files**: `slurm_step3/orthocorrect_netcdf-package_batch.sh`
+**Commit**: `b415b26` — which also updated `lib/config.py` paths and `.gitignore` in preparation for the 2025 runs
+**Impact**: One directory to check after a run. Still in effect — verified August 15, 2026.
+
+> **Recovered entry, filed August 15, 2026.** This change went unrecorded at the time. A note
+> describing it survived only in a local scratch file, and was verified against git history before
+> being filed here. Two errors in that note were corrected: it dated the change February 3 (nothing
+> was committed that day) and named `orthocorrect_netcdf-package.sh` rather than
+> `orthocorrect_netcdf-package_batch.sh` — a different, since-deprecated script that moved to
+> `legacy/slurm_jobs/` in April 2026.
+
+---
+
 ## Repository Integration & Documentation Updates
 
 ### 2026-01-25: Repository Structure Integration Complete
