@@ -4,11 +4,15 @@
 # Active config (user-specific, not tracked - use config_template.py)
 # lib/config.py
 
-# Docs/agent guide (ignore local edits; note: already tracked unless removed from index)
-Step3_Agents.md  
+# Agent guide (AGENTS.md, renamed from Step3_Agents.md August 11, 2026) is ignored
+# by the root .gitignore's bare AGENTS.md/CLAUDE.md patterns — no rule needed here.
 
 # Documentation folder (intended for local drafts and preview) - can be ignored during incremental commits
 docs/
+
+# tests/STEP3_TEST_PLAN.md was ignored here from August 15-16, 2026, while it was a
+# moving target. It is now TRACKED — all six phases are closed and it holds the only
+# record of the Phase 1-5 verification evidence. Mirrors docs/STEP1_TEST_PLAN.md.
 
 # Local HPC sync script (experimental, keep untracked until finalized)
 sync_to_hpc.sh

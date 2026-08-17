@@ -54,8 +54,21 @@ chmod +x submit_job.sh
 
 Command line argument overwrites provided for many of the args. However, it is strongly recommended to setup these args in `config.ini`. Do overwrite only for `satellite, start_end_index and runtime` as you see in production-level copy/past commands above.  
 
+## ✅ Testing Step 1
+
+Step 1 has a git-tracked test suite at **[1_download_merge_and_clip/tests/](1_download_merge_and_clip/tests/)**. Five tools, each answering a different question: does output match the production baseline, is the conda environment the pinned one, does job generation still work, did the run write everything, and is the output well-formed without needing a baseline.
+
+Before a production run, check the environment matches the pinned dependencies:
+
+```bash
+python 1_download_merge_and_clip/tests/check_environment.py
+```
+
+All tools share exit codes: `0` passed, `1` failed, `2` could not check (**not** a pass). See [tests/README.md](1_download_merge_and_clip/tests/README.md) for usage.
+
 ## 📖 Documentation
 
+- **[tests/README.md](1_download_merge_and_clip/tests/README.md)** - Step 1 test suite: what each tool checks and how to run it
 - **[QUICKSTART.md](docs/QUICKSTART.md)** - Step1 detailed setup, operational commands, and troubleshooting
 - **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** - System architecture and design decisions
 - **[SENTINEL2_WORKFLOW_DOCUMENTATION.md](docs/SENTINEL2_WORKFLOW_DOCUMENTATION.md)** - Sentinel-2 processing details

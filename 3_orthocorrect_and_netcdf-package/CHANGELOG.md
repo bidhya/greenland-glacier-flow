@@ -3,6 +3,19 @@
 This file documents changes to the orthocorrect and NetCDF packaging workflow in chronological order.
 Each entry includes the date, affected file, issue description, fix details, and impact.
 
+## Code cleanup and config template update (April 19, 2026)
+
+### 2026-04-19: config_template.py updated to 2025 production values
+**Change**: Replaced stale 2024 paths and typos (`howat.4`, `D3_orthocorrect...`, `logsD`, year 2024) with current production values matching `config.py`
+**Files**: `lib/config_template.py`
+**Impact**: Future users copying template to `config.py` require minimal edits
+
+### 2026-04-19: Legacy slurm script moved; unused file deleted
+**Change**: Moved `slurm_jobs/orthocorrect_netcdf-package.sh` to `legacy/slurm_jobs/` (superseded by `slurm_step3/` architecture). Deleted `lib/config_template_original.py` (unreferenced).
+**Files**: `slurm_jobs/orthocorrect_netcdf-package.sh` → `legacy/slurm_jobs/`, `lib/config_template_original.py` (deleted)
+
+---
+
 ## datetime dtype fix and midpoint rounding validation (April 12–16, 2026)
 
 ### 2026-04-12: scene_1/2_datetime dtype corrected to int64 (issue #4)
@@ -18,6 +31,24 @@ Each entry includes the date, affected file, issue description, fix details, and
 **Decision**: Not applied to production run. Production uses no rounding (float64 stores midpoint exactly).
 **Future path**: Both `.dt.round("s")` AND dtype change to `int64` needed if NSIDC approves int64 for midpoint. Both changes are pre-marked as comments in `4b` for easy switching.
 **Files**: `processing_chain/4b_netcdf_stack_landsat.py` (comment updated with verified result)
+
+---
+
+## SLURM output path consolidation (February 13, 2026)
+
+### 2026-02-13: SLURM job output unified under `logs/`
+**Issue**: SLURM job output went to `runs_output/` while per-glacier processing logs and `errored_glaciers.log` went to `logs/`, so the records for a single run were split across two directories
+**Fix**: Changed the `#SBATCH --output` path from `runs_output/ortho_nc_pkg_%j.out` to `logs/ortho_nc_pkg_%j.out`
+**Files**: `slurm_step3/orthocorrect_netcdf-package_batch.sh`
+**Commit**: `b415b26` — which also updated `lib/config.py` paths and `.gitignore` in preparation for the 2025 runs
+**Impact**: One directory to check after a run. Still in effect — verified August 15, 2026.
+
+> **Recovered entry, filed August 15, 2026.** This change went unrecorded at the time. A note
+> describing it survived only in a local scratch file, and was verified against git history before
+> being filed here. Two errors in that note were corrected: it dated the change February 3 (nothing
+> was committed that day) and named `orthocorrect_netcdf-package.sh` rather than
+> `orthocorrect_netcdf-package_batch.sh` — a different, since-deprecated script that moved to
+> `legacy/slurm_jobs/` in April 2026.
 
 ---
 
@@ -70,7 +101,7 @@ Each entry includes the date, affected file, issue description, fix details, and
 **Solution**: Established comprehensive QAQC framework with dedicated prototyping environment
 **Components Added**:
 - `qaqc/Step3/` folder for prototyping work (excluded from git tracking)
-- `qaqc/Step3/QAQC_Agents.md` - specialized agent instructions for QAQC development
+- `qaqc/Step3/AGENTS.md` - specialized agent instructions for QAQC development
 - Interactive Jupyter notebooks for NetCDF metadata analysis
 - Quality metrics tools for velocity field assessment
 **Impact**: Enables rapid prototyping and investigation without affecting production code

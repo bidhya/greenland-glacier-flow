@@ -2,10 +2,19 @@
 """
 NSIDC Absolute Compliance Validator for Step 3 NetCDF Files.
 
-Validates NetCDF delivery files against the fixed NSIDC spec derived from the
-2024 NSIDC-accepted reference (014_Courtauld_2024_v01.1.nc).
+Validates delivery files against a fixed NSIDC spec held in the constants below.
+**No baseline needed** — this is what makes it usable on a season with nothing to
+compare against, which is what 2026 will be.
 
-No reference file needed — all specs are hardcoded from the accepted 2024 delivery.
+⚠️ This tool and compare_netcdf.py are BOTH required; neither replaces the other.
+   In 2025 a library update silently changed a fill value, compare_netcdf.py
+   --mode pixel-perfect passed, and NSIDC flagged the delivery — because
+   xr.testing.assert_identical() ignores .encoding. This validator reads encoding
+   directly, and catches that.
+   The gap in the other direction: this is a pure WHITELIST checker. Every check
+   iterates the spec, never the file, so it detects anything MISSING and nothing
+   ADDED. A library that injects a new attribute or variable passes here silently;
+   compare_netcdf.py --mode encoding compares variable sets and would see it.
 
 Spec checks:
   1. Required dimensions present (index, x, y)
@@ -13,28 +22,47 @@ Spec checks:
   3. Per-variable encoding: dtype, zlib, complevel, shuffle, units, calendar, _FillValue
   4. Global attributes: exact value for fixed attrs; presence-only for variable attrs
 
+HPC only — no Step 3 NetCDF data exists locally. Allocate resources first:
+    srun --cpus-per-task=1 --mem=32gb -t 04:00:00 -p howat,batch --pty bash -i
+
 Usage:
-    # All files for a year (from data_paths.yml):
+    # the candidate run (default — same default root as compare_netcdf.py):
+    python validate_netcdf.py
+
+    # a recorded baseline delivery instead:
     python validate_netcdf.py --year 2025
 
-    # Single glacier:
-    python validate_netcdf.py --year 2025 --glacier 014_Courtauld
+    # single glacier:
+    python validate_netcdf.py --glacier 014_Courtauld
 
-    # Raw path to a single file:
+    # explicit delivery root:
+    python validate_netcdf.py --candidate /path/to/3_orthocorrect_and_netcdf-package
+
+    # single file:
     python validate_netcdf.py --file /path/to/014_Courtauld_2025_v01.1.nc
 
-    # Raw path to a delivery directory:
-    python validate_netcdf.py --base /path/to/nsidic_v01.1_delivery/
+Exit codes: 0 passed · 1 failed · 2 could not check.
 """
 
 import math
 import typer
-import yaml
 from pathlib import Path
 from typing import Optional
 
 import xarray as xr
 import numpy as np
+
+# Path constants are defined once, in compare_netcdf.py, and imported here —
+# mirroring 1_download_merge_and_clip/tests/check_raster_sanity.py, which imports
+# from compare_raster.py. Both files previously carried their own copy.
+from compare_netcdf import (
+    BASELINES,
+    CANDIDATE_DEFAULT,
+    DEFAULT_YEAR,
+    _delivery_dir,
+    _glacier_id,
+    _resolve_baseline,
+)
 
 app = typer.Typer()
 
@@ -42,6 +70,12 @@ app = typer.Typer()
 # NSIDC Spec: derived from 014_Courtauld_2024_v01.1.nc (NSIDC-accepted)
 # Inspected: April 2026. Do not edit without re-validating against a new
 # NSIDC-accepted reference file.
+#
+# The 2024 filename is PROVENANCE — where these numbers were first read from —
+# not a statement that the spec tracks 2024. No 2024 file is opened at runtime.
+# The spec is a FORMAT CONTRACT, not a year: the 2025 delivery passes it 184/184,
+# which is itself the evidence that it describes the accepted 2025 format. Do not
+# "re-base" it onto a 2025 file; that would change no values.
 # ---------------------------------------------------------------------------
 
 _REQUIRED_DIMS = {"index", "x", "y"}
@@ -115,6 +149,12 @@ _COORD_SPEC: dict[str, dict] = {
 # Global attribute spec: (attr_name, check_value, expected_value)
 #   check_value = True  → exact value must match
 #   check_value = False → only presence required (value varies per glacier/year)
+#
+# Exactly three vary: glacier_id, data_acknowledgement, creation_date. This list is
+# the authoritative classification of which global attributes are allowed to differ.
+# compare_netcdf.py skips only two of them (creation_date, data_acknowledgement) and
+# that difference is correct, not a bug: compare pairs glacier X against glacier X,
+# so glacier_id is already identical between the two files. Do not "reconcile" them.
 _GLOBAL_ATTR_SPEC: list[tuple] = [
     ("project",                 True,  "MEaSUREs Greenland Ice Mapping Project (GIMP)"),
     ("title",                   True,  "MEaSUREs Greenland Ice Velocity: Selected Glacier Site Singel-Pair Velocity Maps from Optical Images."),
@@ -273,36 +313,12 @@ def validate_file(path: Path) -> bool:
         return True
 
 
-# ---------------------------------------------------------------------------
-# Path resolution (mirrors compare_netcdf.py conventions)
-# ---------------------------------------------------------------------------
-
-def _resolve_base(year: str) -> Path:
-    """Resolve delivery root directory for a given year key from data_paths.yml."""
-    yml = Path(__file__).resolve().parents[1] / "data_paths.yml"
-    with open(yml) as f:
-        data = yaml.safe_load(f)
-    if year not in data:
-        raise ValueError(f"Year key '{year}' not found in data_paths.yml. Available: {list(data.keys())}")
-    p = data[year]
-    return Path(p["root"]) / p["step3"]["subfolder"]
-
-
-def _delivery_dir(base: Path) -> Path:
-    return base / "nsidic_v01.1_delivery"
-
-
 def _discover(base: Path) -> list[Path]:
+    """List .nc files in the delivery subfolder of a delivery ROOT."""
     d = _delivery_dir(base)
     if not d.exists():
         return []
     return sorted(f for f in d.iterdir() if f.is_file() and f.suffix == ".nc")
-
-
-def _glacier_id(filename: str) -> str:
-    """Return the 3-digit_Name prefix, e.g. '014_Courtauld'."""
-    parts = Path(filename).stem.split("_")
-    return "_".join(parts[:2])
 
 
 # ---------------------------------------------------------------------------
@@ -311,54 +327,53 @@ def _glacier_id(filename: str) -> str:
 
 @app.command()
 def main(
-    year:    Optional[str] = typer.Option(None, help="Year key from data_paths.yml (e.g. '2025', '2024')"),
-    glacier: Optional[str] = typer.Option(None, help="Glacier prefix to validate (e.g. '014_Courtauld'). Used with --year."),
-    file:    Optional[str] = typer.Option(None, help="Absolute path to a single .nc file to validate."),
-    base:    Optional[str] = typer.Option(None, help="Absolute path to a delivery directory (raw override; skips data_paths.yml)."),
+    year: Optional[str] = typer.Option(None, help=f"Validate a recorded baseline delivery instead of the candidate. Available: {sorted(BASELINES)}"),
+    candidate: Optional[str] = typer.Option(None, help=f"Delivery ROOT to validate (default: {CANDIDATE_DEFAULT})"),
+    glacier: Optional[str] = typer.Option(None, help="Validate a single glacier prefix (e.g. '014_Courtauld')"),
+    file: Optional[str] = typer.Option(None, help="Absolute path to a single .nc file to validate"),
 ):
     """Validate Step 3 NetCDF delivery files against the NSIDC absolute spec."""
 
+    if year and candidate:
+        typer.echo("ERROR: --year and --candidate are mutually exclusive.", err=True)
+        raise typer.Exit(1)
+
     # --- Collect files to validate ---
     files: list[Path] = []
+    source = ""
 
     if file:
-        # Single-file mode
         p = Path(file)
         if not p.exists():
-            typer.echo(f"ERROR: file not found: {p}", err=True)
-            raise typer.Exit(1)
+            typer.echo(f"⚠️  COULD NOT CHECK: file not found: {p}", err=True)
+            raise typer.Exit(2)
         files = [p]
-
-    elif base:
-        # Raw directory override — treat as the delivery directory directly (no subfolder appended)
-        b = Path(base)
-        files = sorted(f for f in b.iterdir() if f.is_file() and f.suffix == ".nc") if b.exists() else []
+        source = str(p)
+    else:
+        # --year selects a recorded baseline root; otherwise the candidate root.
+        # Both are delivery ROOTS — the nsidic_v01.1_delivery/ subfolder is appended
+        # internally, matching compare_netcdf.py. (The qaqc/ original's --base took
+        # the subfolder itself; --candidate is deliberately a new name so the changed
+        # meaning cannot be inherited silently by an old saved command.)
+        if year:
+            base = _resolve_baseline(year)
+        else:
+            base = Path(candidate) if candidate else Path(CANDIDATE_DEFAULT)
+        source = str(base)
+        files = _discover(base)
         if not files:
-            typer.echo(f"ERROR: no .nc files found under {base}", err=True)
-            raise typer.Exit(1)
-
-    elif year:
-        try:
-            b = _resolve_base(year)
-        except ValueError as e:
-            typer.echo(f"ERROR: {e}", err=True)
-            raise typer.Exit(1)
-        files = _discover(b)
-        if not files:
-            typer.echo(f"ERROR: no .nc files found in delivery dir for year '{year}'", err=True)
-            raise typer.Exit(1)
+            typer.echo(f"⚠️  COULD NOT CHECK: no .nc files under {_delivery_dir(base)}", err=True)
+            raise typer.Exit(2)
         if glacier:
             files = [f for f in files if _glacier_id(f.name) == glacier]
             if not files:
-                typer.echo(f"ERROR: no file matching glacier '{glacier}' in year '{year}'", err=True)
-                raise typer.Exit(1)
-    else:
-        typer.echo("ERROR: provide --year, --file, or --base.", err=True)
-        raise typer.Exit(1)
+                typer.echo(f"⚠️  COULD NOT CHECK: no file for glacier '{glacier}' under {_delivery_dir(base)}", err=True)
+                raise typer.Exit(2)
 
     # --- Run validation ---
-    print(f"NSIDC Absolute Compliance Validator")
-    print(f"Spec source: 014_Courtauld_2024_v01.1.nc (NSIDC-accepted 2024 delivery)")
+    print("NSIDC Absolute Compliance Validator")
+    print("Spec provenance: 014_Courtauld_2024_v01.1.nc — a format contract, not a year")
+    print(f"Validating: {source}")
     print(f"Files to validate: {len(files)}")
     print("-" * 70)
 
@@ -372,8 +387,13 @@ def main(
 
     print(f"\n{'='*70}")
     print(f"PASS: {passed}  |  FAIL: {failed}  |  Total: {len(files)}")
+
+    # Exit code is the contract: 0 passed · 1 failed · 2 could not check.
     if failed:
+        print(f"RESULT: FAIL — {failed} file(s) do not meet the NSIDC spec")
         raise typer.Exit(1)
+    print(f"RESULT: PASS — {passed} file(s) meet the NSIDC spec")
+    raise typer.Exit(0)
 
 
 if __name__ == "__main__":

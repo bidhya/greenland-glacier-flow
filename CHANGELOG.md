@@ -9,6 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+### Step 1 reorganization and config template update (April 19, 2026)
+
+**Achievement**: Cleaned up `1_download_merge_and_clip/` folder structure — legacy scripts, READMEs, and environment files moved to `legacy/` subfolder; production code now front and center. Also updated `config.template.ini` with 2025 production defaults.
+
+#### `1_download_merge_and_clip/` reorganization
+- Created `legacy/` subfolder to hold superseded files (mirrors Step 3 pattern)
+- **sentinel2/**: Moved `slurm_jobs/`, `starting_materials/`, and `README.md` to `legacy/sentinel2/` — all referenced old manual slurm workflow superseded by `submit_satellite_job.py`
+- **landsat/**: Moved `slurm_jobs/` (all 3 scripts), `starting_materials/` (env files), and `README.md` to `legacy/landsat/`; promoted `AWS_user_credentials.csv.template` to `landsat/` root for visibility
+- **Result**: `sentinel2/` now contains only `download_merge_clip_sentinel2.py` + `lib/`; `landsat/` contains only `download_clip_landsat.py`, `AWS_user_credentials.csv.template`, `lib/`, `regions/`
+- Deleted local `Archive/` folder (gitignored, purely local legacy artifacts)
+
+#### `config.template.ini` updated
+- Updated to 2025 production defaults: batch commands, `howat.4-3` paths, full-year date range, correct runtime, `glacier_velocity` env
+- Added header note clarifying template reflects 2025 production defaults
+
+---
+
 ### NetCDF datetime dtype fix, QAQC validation, and dev branch setup (April 12–16, 2026)
 
 **Achievement**: Corrected `scene_1/2_datetime` dtype back to `int64`, confirmed `midpoint_datetime` stays `float64` to match 2024 NSIDC-accepted delivery, validated 184/184 glaciers on HPC, and established `dev` branch as the primary working branch.

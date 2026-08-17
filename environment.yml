@@ -15,3 +15,13 @@ dependencies:
   - typer
   #- rasterio  # dependency of rioxarray
   #- pystac  # dependency of pystac-client
+
+# NOTE on rasterio (verified Aug 14, 2026):
+# The gdal=3.10.3 pin above ALSO pins rasterio, indirectly. rasterio builds link
+# against a specific libgdal-core minor version:
+#   rasterio 1.4.4 requires libgdal-core >=3.10.3,<3.11
+#   rasterio 1.5.0 requires libgdal-core >=3.13.2
+# So gdal=3.10.3 holds rasterio at 1.4.4 and structurally blocks 1.5.0.
+# Relaxing the gdal pin would therefore upgrade rasterio too, reopening the
+# rasterio 1.5.0 compatibility work (CPLE warnings, bilinear vs cubic resampling).
+# This is the single point of protection - there is no separate rasterio<1.5 guard.
