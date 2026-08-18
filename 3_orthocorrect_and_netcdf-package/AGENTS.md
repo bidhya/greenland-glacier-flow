@@ -7,8 +7,9 @@ fields and packages Sentinel-2 + Landsat results into NetCDF for delivery to **N
 data exists there. Host and account details are deliberately **not** recorded in this file — they
 live in local-only notes and `sync_to_hpc.sh`. Do not add them back.
 
-**Status**: processing code is stable and unchanged since April 19, 2026. The 2025 season has been
-reproduced from it repeatedly, bit-for-bit.
+**Status**: check `git log -1 -- processing_chain/ lib/` for the last processing-code change rather
+than trusting a fixed date here. The 2025 season has been reproduced from it repeatedly,
+bit-for-bit.
 
 ---
 

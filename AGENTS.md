@@ -16,14 +16,13 @@
 
 ## 🧭 Cold Start
 
-### Where things stand (August 17, 2026)
+### Where things stand
 
-- **Active work: none.** Both test suites are built, verified on HPC, and on both branches.
-- **Branches**: work on **`dev`**, keep `main` clean — Hard Constraint #6. Both sit at `5367def`
-  with identical trees; HPC tracks `dev`.
-- **The current tree is test-verified.** Step 1 passed 8/8 tool invocations with 10 rasters
-  bit-identical to 2025 production; Step 3 passed 184/184 on all three checks. Both ran against the
-  code now on both branches, so `main` is a known-good fallback.
+- **Branches**: work on **`dev`**, keep `main` clean — Hard Constraint #6. HPC tracks `dev`. Check
+  `git log --oneline -5 main dev` for current divergence rather than trusting a snapshot here.
+- **Test verification, as of commit `5367def`**: Step 1 passed 8/8 tool invocations with 10 rasters
+  bit-identical to 2025 production; Step 3 passed 184/184 on all three checks. Re-run the suites
+  rather than assuming this still holds for later commits.
 
 **Step 1 — nothing known-broken.** Verified against both production years: 104 rasters
 bit-identical for 2024 (both satellites, both machines, single- and multi-tile) and three regions
@@ -45,13 +44,13 @@ instrument works, not the science. Keep the two claims apart.
 **Environment**: which library versions ran which season, and what to do if results drift, is in
 `docs/ENVIRONMENT_PROVENANCE.md`. Versions float deliberately — **do not propose pinning them.**
 
-### ✅ The `main` vs `dev` divergence question is closed
+### Root-level files are part of Step 1 — a lesson from the last merge review
 
-`main` and `dev` now hold **identical trees** — `dev` was fast-forwarded to `main` after the merge,
-so there is nothing to compare and no drift to worry about. The merge review that preceded this
-found no live Step 1 or Step 3 processing code differed; the changes were at root level
-(`submit_job.sh`, `submit_satellite_job.py`, `config.template.ini`, `environment.yml`) plus the
-purely additive test suites. Full record in the local-only git working notes, §7.
+**Whether `dev` and `main` currently match is a `git diff --stat main dev` check**, not something to
+assume from this file. The last merge review found no live Step 1 or Step 3 processing code had
+diverged between them; the changes were at root level (`submit_job.sh`, `submit_satellite_job.py`,
+`config.template.ini`, `environment.yml`) plus the purely additive test suites. Full record in the
+local-only git working notes, §7.
 
 ⚠️ **Root-level does not mean peripheral** — a lesson worth keeping now that work resumes on `dev`.
 `submit_job.sh` and `submit_satellite_job.py` **are** Step 1's entry points; they simply live at
@@ -78,7 +77,7 @@ if ! python -c "import sys; sys.exit(0 if sys.prefix.split('/')[-1] == 'glacier_
 
 | Question | Doc | Travels with the repo? |
 |---|---|---|
-| How do I run Step 1? | this file → *Running Step 1* | no — local only |
+| How do I run Step 1? | this file → *Running Step 1* | ✅ tracked |
 | Install, `config.ini` structure, output structure, troubleshooting | `docs/QUICKSTART.md` | ✅ tracked |
 | Project overview, production commands | `README.md` | ✅ tracked |
 | System design | `docs/ARCHITECTURE.md` | ✅ tracked |
@@ -88,15 +87,13 @@ if ! python -c "import sys; sys.exit(0 if sys.prefix.split('/')[-1] == 'glacier_
 | Which library versions ran which season, and what to do if results drift | `docs/ENVIRONMENT_PROVENANCE.md` | ✅ tracked |
 | How do I test Step 1? | `1_download_merge_and_clip/tests/README.md` | ✅ tracked |
 | What Step 1 tests establish, and what they do not cover | `docs/STEP1_TEST_PLAN.md` | ✅ tracked |
-| Working *on* the Step 1 tests | `1_download_merge_and_clip/tests/AGENTS.md` | no — local only |
+| Working *on* the Step 1 tests | `1_download_merge_and_clip/tests/AGENTS.md` | ✅ tracked |
 | How do I test Step 3? | `3_orthocorrect_and_netcdf-package/tests/README.md` | ✅ tracked |
 | What Step 3 tests establish, and what they do not cover | `3_orthocorrect_and_netcdf-package/tests/STEP3_TEST_PLAN.md` | ✅ tracked |
-| Running Step 3, baselines, Step 3 risks | `3_orthocorrect_and_netcdf-package/AGENTS.md` | no — local only |
+| Running Step 3, baselines, Step 3 risks | `3_orthocorrect_and_netcdf-package/AGENTS.md` | ✅ tracked |
 | **In-flight work with no permanent home yet** | `inbox/README.md` (repo root) | no — gitignored, rsync to HPC |
 | Git working notes | `docs/GIT_AGENTS.md` | no — gitignored |
 | Pre-cleanup version of this file | `docs/bak.AGENTS.md` | no — gitignored |
-
-**⚠️ Every agent guide is gitignored** — this file, `CLAUDE.md`, and all subfolder `AGENTS.md`. **This is deliberate, not an oversight.** All development happens locally on WSL2; HPC only *executes* the workflow. No agent works from the HPC checkout, so no agent guide needs to travel there. **Do not "fix" this by tracking the agent guides.**
 
 ### Step 1 code layout
 
@@ -423,14 +420,15 @@ Many files are gitignored for prototyping. Run `git status --short` after change
 **`main` ← `dev` ← feature branches.** Work lands on **`dev`**; `main` is the release branch and
 moves only when `dev` is merged in. **Do not commit to `main` directly** (Hard Constraint #6).
 
-**Currently on `dev`. Two branches, both at `5367def` with identical trees, both pushed:**
+Check `git log --oneline -3 main dev` and `git branch -a` for current commits and whether any
+feature branches exist, rather than trusting a snapshot here:
 
 | Branch | Role |
 |---|---|
 | `dev` | **where work goes** — day-to-day commits, and the branch point for feature work |
 | `main` | release branch — clean, moves only by merge from `dev` |
 
-No feature branches exist. Cut new ones from `dev`.
+Cut new feature branches from `dev`.
 
 **Both test-suite feature branches were deleted August 17, 2026**, local, remote and HPC. In each
 case the content was already on `main` and the tools were byte-identical, so only the granular

@@ -7,7 +7,7 @@
 | Doc | Audience | Tracked? |
 |---|---|---|
 | `README.md` (this folder) | anyone **using** the tests — how to run them, what they mean | ✅ tracked, travels to HPC |
-| this file | agents **modifying** the tests | ❌ gitignored, local only |
+| this file | agents **modifying** the tests | ✅ tracked, travels to HPC |
 | `docs/STEP1_TEST_PLAN.md` | full history, phases, verification evidence | ✅ tracked |
 
 Keep that split. **User-facing content belongs in `README.md`** — it is the only one of the three that reaches a fresh clone alongside the code. Do not move usage instructions, exit codes, or design rationale into this file.
