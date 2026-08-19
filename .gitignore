@@ -170,8 +170,11 @@ bak.AGENTS.md
 container/AGENTS.md
 container/CLAUDE.md
 
-# Local-only Claude Code config (permission guardrails). Not shared with the repo.
-.claude/
+# Claude Code config. The permission baseline (.claude/settings.json) IS tracked, so it
+# travels to HPC by git pull like the AGENTS.md files. Only the personal per-machine layer
+# is ignored. Note this ignores ONE FILE, not the directory - deliberately, so no "!"
+# exception is ever needed here. See the inbox/ block above for why that matters.
+.claude/settings.local.json
 Archive/
 
 # qaqc/ is a local prototyping and proof-of-concept area. Nothing in it is tracked.

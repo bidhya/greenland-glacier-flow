@@ -110,11 +110,40 @@ if ! python -c "import sys; sys.exit(0 if sys.prefix.split('/')[-1] == 'glacier_
 
 **⚠️ `bak.submit_satellite_job.py` at the repo root is a backup.** The live file is `submit_satellite_job.py`.
 
+### Claude Code runs on HPC as well as WSL2
+
+Since August 18, 2026. This is *why* the agent guides are tracked — context reaches the HPC checkout
+by `git pull` rather than rsync.
+
+**On HPC it runs on a login node, which is shared with the whole cluster.** Keep inline commands
+light: reading files, `git log`, `squeue`. Anything that scans the domain or touches real data
+belongs in a SLURM job, or in an `srun` allocation **the user opens** — not in a Bash call. A
+recursive `find` or `grep` over `/fs/project` from a login node is the quickest way to annoy the
+cluster's admins.
+
+HPC use is **QA/QC, discovery, troubleshooting and understanding** — parsing logs and outputs to
+spot problems. Production runs are the user's.
+
 ### Permission guardrails are active
 
-`.claude/settings.local.json` (gitignored) **denies** `rm -rf`, `git push --force`, `git reset --hard`, `git clean -f`, `conda`/`mamba env remove`, and any write under `/fs/project/**`. It **asks** before any `rm`, `git commit`, `git push`, or edit to `1_download_merge_and_clip/**`, `config.ini`, `environment.yml`.
+`.claude/settings.json` is **tracked**, so one baseline covers both machines. **Read the file rather
+than trusting a summary** — it is the authority, and any list repeated here would drift from it.
 
-These are a floor, not a sandbox — they match command *text*, so a deletion routed through Python, a shell variable, or `ssh` would not trip them. **Confirm destructive actions with the user regardless.**
+Its shape: a short read-only `allow`, a `deny` covering the irreversible and the shared-resource
+actions, and everything else prompting. `.claude/settings.local.json` stays gitignored for
+per-machine relaxations — but note a local file **cannot loosen a `deny`**.
+
+**The settings guard themselves** — `.claude/**` is in `ask`, so widening a permission is a visible,
+deliberate act rather than something an agent can do quietly en route to another task. And because
+the baseline is tracked, such a change would otherwise ride along in a commit unnoticed.
+
+**Claude does not submit jobs or delete things.** `sbatch`, `srun`, `salloc`, `scancel`, `rm` and
+`ssh` are denied outright. When one is needed, **hand the user a single-line copy/paste command and
+let them run it.** That is the intended division of labour, not an obstacle to route around — do
+not reach for a Python or shell-variable equivalent to get the same effect.
+
+These are a floor, not a sandbox — they match command *text*, so a deletion routed through Python, a
+shell variable, or `ssh` would not trip them. **Confirm destructive actions with the user regardless.**
 
 ---
 
@@ -438,7 +467,7 @@ expire around **mid-September 2026**. The pre-trim `STEP3_TEST_PLAN.md` that `fe
 carried is independently recoverable from `main`'s history at `3abf9d5`.
 
 ⚠️ **Squash merges are invisible to `git branch -d`** — it refuses, and `-D` is required. `-D` is
-also in the `deny` list in `.claude/settings.local.json`, so an agent cannot run it at all; hand the
+also in the `deny` list in `.claude/settings.json`, so an agent cannot run it at all; hand the
 user the command instead. Check with `git branch -vv` — this block will go stale.
 
 ### Backups
