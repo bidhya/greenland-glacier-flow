@@ -208,8 +208,8 @@ documented *CLI > config* precedence. It plausibly exists to stop local runs wri
 `check_job_generation.py` works around it with a temporary `--config`.
 
 **Open, not a Step 1 defect**: a NumPy 2.5 deprecation fires inside rasterio 1.4.4's read path on
-both satellites. Harmless today. It is an environment-drift risk — see `Scratch.md` and
-`docs/ENVIRONMENT_PROVENANCE.md`.
+both satellites. Harmless today. It is an environment-drift risk — the durable context is in
+`docs/ENVIRONMENT_PROVENANCE.md`; the open decision is carried in local-only working notes.
 
 ---
 

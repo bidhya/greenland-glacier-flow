@@ -71,9 +71,13 @@ instance/
 # Sphinx documentation
 docs/_build/
 docs/TODO.md
-Scratch.md
+# inbox/ - local-only holding area for work with no permanent home yet. Reaches
+# HPC by rsync (one-liners in inbox/README.md), never by git. Keep this a single
+# bare line: NEVER add "!" exceptions, which is the trap that cost us qaqc/ twice.
+inbox/
 docs/performance_review_2026.md
 docs/GIT_AGENTS.md
+docs/SECURITY_AUDIT.md
 
 # PyBuilder
 .pybuilder/
@@ -160,55 +164,25 @@ __marimo__/
 .flake8
 1_download_merge_and_clip/docs/
 # control/config.sh
-# Local-only AI agent guides. All development happens locally; HPC only executes,
-# so no agent guide is tracked. Bare patterns match at any depth (root,
-# 3_orthocorrect_and_netcdf-package/, container/, aws/, qaqc/, ...).
-AGENTS.md
-CLAUDE.md
 bak.AGENTS.md
 
-# Local-only Claude Code config (permission guardrails). Not shared with the repo.
-.claude/
+# container/ guides: DORMANT work. aws/ has its own aws/.gitignore.
+container/AGENTS.md
+container/CLAUDE.md
+
+# Claude Code config. The permission baseline (.claude/settings.json) IS tracked, so it
+# travels to HPC by git pull like the AGENTS.md files. Only the personal per-machine layer
+# is ignored. Note this ignores ONE FILE, not the directory - deliberately, so no "!"
+# exception is ever needed here. See the inbox/ block above for why that matters.
+.claude/settings.local.json
 Archive/
 
 # qaqc/ is a local prototyping and proof-of-concept area. Nothing in it is tracked.
-#
-# Until August 16, 2026 this block carried ten "!" exceptions tracking 8 helper
-# scripts. They were removed once the Step 3 tools graduated to
-# 3_orthocorrect_and_netcdf-package/tests/ (verified on HPC, 7/7). The partial
-# tracking was a trap: "qaqc/ is gitignored" was repeated in several docs as a
-# reason for design decisions, while 8 files were in fact tracked.
-#
 # The intended direction is to graduate useful qaqc/ scripts into
-# 1_download_merge_and_clip/tests/ and 3_orthocorrect_and_netcdf-package/tests/
-# rather than re-adding exceptions here. qaqc/ reaches HPC by sync_to_hpc.sh.
+# reaches HPC by sync_to_hpc.sh.
 qaqc/
 # config.ini
 sync.ffs_db
-
-# AWS test files and logs
-aws/scripts/*test*.json
-aws/scripts/*result*.json
-aws/scripts/*response*.json
-aws/scripts/*fresh*.json
-aws/scripts/*final*.json
-aws/scripts/*debug*.json
-aws/scripts/*detailed*.json
-aws/scripts/*pathfix*.json
-aws/scripts/*simplified*.json
-aws/scripts/with10gb*.json
-aws/scripts/simple_download.json
-aws/scripts/historical*.json
-aws/scripts/*.log
-aws/logs/*.log
-
-# Keep these AWS config files (use ! to negate ignore)
-!aws/config/*.json
-
-# AWS agent documentation is ignored in the agent-guides block above
-# aws/AWS_AGENTS.md.backup
-# User-specific git strategy notes
-# aws/docs/GIT_STRATEGY.md
 
 # SLURM job logs (generated on HPC)
 **/*logs*/

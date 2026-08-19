@@ -51,7 +51,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`dev` branch**: Created from `main` (April 12, 2026) as primary working branch; all development work goes here before merging to `main`
 - **Workflow**: `main` ← `dev` ← feature branches (replaces old feature-branch-direct-to-main pattern)
 - **AGENTS.md**: Updated Git Flow section and Active Branches to reflect new `dev`-first workflow
-- **`docs/Scratch.md`**: Added as gitignored scratchpad for draft notes and copy-paste content
+- **Gitignored scratch file**: Added at the repo root for draft notes and copy-paste content. Since retired — replaced by the local-only `inbox/` folder, which holds one file per in-flight item and syncs to HPC by rsync.
 
 ---
 

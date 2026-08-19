@@ -135,7 +135,7 @@ silently altering how a variable was written. This time it did not.
 ## Where the numbers come from
 
 The Step 3 SLURM job prints its own version block on every run. **It omits numpy** — the one library
-both unpinned and currently emitting a deprecation warning through rasterio 1.4.4 (see `Scratch.md`).
+both unpinned and currently emitting a deprecation warning through rasterio 1.4.4.
 Use `check_environment.py` for the complete set.
 
 ---

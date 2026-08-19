@@ -1,0 +1,33 @@
+# Ignore rules for aws/ only. Patterns are relative to this directory.
+# A leading "/" anchors to aws/ itself; a pattern with no slash would match at
+# any depth below it.
+
+# Agent guides - aws/ is dormant work, see root AGENTS.md "aws/ and container/
+# are dormant". Not published while the work is parked.
+/AGENTS.md
+/CLAUDE.md
+
+# Generated test artifacts from Lambda/Batch experiments. These match nothing
+# today - scripts/ holds only .sh and .py - they exist to catch future output.
+scripts/*test*.json
+scripts/*result*.json
+scripts/*response*.json
+scripts/*fresh*.json
+scripts/*final*.json
+scripts/*debug*.json
+scripts/*detailed*.json
+scripts/*pathfix*.json
+scripts/*simplified*.json
+scripts/with10gb*.json
+scripts/simple_download.json
+scripts/historical*.json
+scripts/*.log
+
+# Run logs. Note the root .gitignore already catches aws/logs/ via "**/*logs*/";
+# this line is kept so the rule is visible where it applies.
+logs/*.log
+
+# config/*.json is deliberately TRACKED (IAM policy lives there). Currently a
+# no-op - no pattern above matches it - kept as a guard in case a broader *.json
+# rule is ever added here.
+!config/*.json
