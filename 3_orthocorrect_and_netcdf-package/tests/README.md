@@ -55,10 +55,12 @@ The `2025_` delivery went to NSIDC in April 2026 and will not change. **NSIDC co
 **1. Allocate resources first. Never run these on a login node.**
 
 ```bash
-srun --cpus-per-task=1 --mem=32gb -t 04:00:00 -p howat,batch --pty bash -i
+srun --cpus-per-task=2 --mem=32gb -t 03:00:00 -p howat,batch --pty bash -i
 ```
 
-Both tools are serial loops — raise memory and wall time, not CPUs. A full 184-file pixel-perfect comparison took 28 minutes.
+Both tools are serial loops, so **one tool gains nothing from extra CPUs** — raise memory and wall time instead. The 2 CPUs let the two tools run at the same time without contending for a single core, which is worth it because the pixel-perfect comparison is long: a full 184-file run took 28 minutes.
+
+⚠️ **If you background one yourself with a shell `&`, you lose the verdict.** `$?` then reports that the job *started*, not whether it passed — and the exit code is the whole contract here. Capture the PID and `wait` on it, or simply run the two tools one after the other.
 
 **2. Change to the repository root, once.** Every command below is relative to it:
 

@@ -115,11 +115,23 @@ if ! python -c "import sys; sys.exit(0 if sys.prefix.split('/')[-1] == 'glacier_
 Since August 18, 2026. This is *why* the agent guides are tracked — context reaches the HPC checkout
 by `git pull` rather than rsync.
 
-**On HPC it runs on a login node, which is shared with the whole cluster.** Keep inline commands
-light: reading files, `git log`, `squeue`. Anything that scans the domain or touches real data
-belongs in a SLURM job, or in an `srun` allocation **the user opens** — not in a Bash call. A
-recursive `find` or `grep` over `/fs/project` from a login node is the quickest way to annoy the
-cluster's admins.
+**It runs in two places, chosen per task** — the user decides which, and starts it there:
+
+| Where | Use it for |
+|---|---|
+| **Login node** | quick context work — reading files, `git log`, `squeue` |
+| **Inside an `srun` allocation** | test runs, and anything touching real data at scale |
+
+**This cluster has outbound network access on compute nodes**, so Claude works normally inside an
+allocation. That is not true of every cluster — it is what makes the allocate-then-start pattern
+available here at all.
+
+⚠️ **Inside an allocation the session ends when the allocation does.** Size `-t` for the
+conversation, not just for the job.
+
+⚠️ **On a login node, keep commands light.** A recursive `find` or `grep` over `/fs/project` from a
+login node is the quickest way to annoy the cluster's admins. From a compute node the CPU contention
+goes away but **the shared filesystem load does not** — scale is still worth thinking about.
 
 HPC use is **QA/QC, discovery, troubleshooting and understanding** — parsing logs and outputs to
 spot problems. Production runs are the user's.
